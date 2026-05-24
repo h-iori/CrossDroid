@@ -25,8 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,11 +88,11 @@ fun ReceiveScreen(
                 .padding(Spacing.Medium),
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
         ) {
+            Spacer(modifier = Modifier.weight(1f))
             ReceiveStatusBand()
             ReceiverHeroCard()
             ConnectionPinCard()
-            TrustMetadataGrid()
-            WaitingActivityCard()
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 
@@ -312,144 +310,6 @@ private fun ConnectionPinCard() {
     }
 }
 
-@Composable
-private fun TrustMetadataGrid() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
-    ) {
-        MetadataTile(
-            label = "Mode",
-            value = "Private",
-            icon = Icons.Default.Security,
-            color = NeonHighlight,
-            modifier = Modifier.weight(1f)
-        )
-        MetadataTile(
-            label = "Channel",
-            value = "Local",
-            icon = Icons.Default.Speed,
-            color = AccentCyan,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-private fun MetadataTile(
-    label: String,
-    value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .height(72.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(BgPanelMuted.copy(alpha = 0.86f))
-            .border(1.dp, color.copy(alpha = 0.22f), RoundedCornerShape(14.dp))
-            .padding(Spacing.Medium),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(34.dp)
-                .clip(RoundedCornerShape(11.dp))
-                .background(color.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(IconSize.Small)
-            )
-        }
-        Spacer(modifier = Modifier.width(Spacing.Small))
-        Column {
-            Text(
-                text = label,
-                style = CustomTypography.labelSmall.copy(letterSpacing = 0.sp),
-                color = TextMuted
-            )
-            Text(
-                text = value,
-                style = CustomTypography.labelLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.sp
-                ),
-                color = TextStrong,
-                maxLines = 1
-            )
-        }
-    }
-}
-
-@Composable
-private fun WaitingActivityCard() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radii.CardStandard))
-            .background(BgElevated.copy(alpha = 0.82f))
-            .border(1.dp, BorderSubtle.copy(alpha = 0.76f), RoundedCornerShape(Radii.CardStandard))
-            .padding(Spacing.Medium)
-    ) {
-        Text(
-            text = "Intake queue",
-            style = CustomTypography.titleMedium.copy(
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 15.sp,
-                letterSpacing = 0.sp
-            ),
-            color = TextStrong
-        )
-        Spacer(modifier = Modifier.height(Spacing.Small))
-        ActivityRow("Discovery broadcast", "Running", AccentCyan)
-        ActivityRow("Incoming approvals", "Manual", NeonHighlight)
-        ActivityRow("History logging", "Silent", TextSecondary)
-    }
-}
-
-@Composable
-private fun ActivityRow(
-    label: String,
-    value: String,
-    color: Color
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(7.dp)
-                .clip(CircleShape)
-                .background(color)
-        )
-        Spacer(modifier = Modifier.width(Spacing.Small))
-        Text(
-            text = label,
-            style = CustomTypography.labelMedium.copy(letterSpacing = 0.sp),
-            color = TextSecondary,
-            modifier = Modifier.weight(1f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = value,
-            style = CustomTypography.labelMedium.copy(
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.sp
-            ),
-            color = color,
-            maxLines = 1
-        )
-    }
-}
 
 @Composable
 private fun StatusDot() {
