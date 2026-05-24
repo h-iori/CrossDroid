@@ -192,6 +192,11 @@ class CrossDroidViewModel : ViewModel() {
                 cancelTransfer(context)
                 return
             }
+            if (current == Screen.SEND && _activeFilter.value == FileType.ALL) {
+                if (goUpDirectory(if (triggerHaptic) context else null)) {
+                    return
+                }
+            }
             history.removeAt(history.lastIndex)
             val prevScreen = history.last()
             _navigationHistory.value = history

@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.data.FileKind
 import com.ioristudios.crossdroid.data.FileType
+import com.ioristudios.crossdroid.data.MockData
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
 import com.ioristudios.crossdroid.ui.components.FilterTabs
@@ -98,7 +99,6 @@ fun SendScreen(
     val activeFilter by viewModel.activeFilter.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val entries by viewModel.fileManagerEntries.collectAsState()
-    val currentPath by viewModel.currentDirectoryPath.collectAsState()
     val isLoading by viewModel.isFileManagerLoading.collectAsState()
     val error by viewModel.fileManagerError.collectAsState()
     var hasAllFilesAccess by remember { mutableStateOf(viewModel.hasAllFilesAccess()) }
@@ -117,11 +117,19 @@ fun SendScreen(
         }
     }
 
-    val visibleEntries = entries.filter { entry ->
-        val matchesSearch = searchQuery.isBlank() || entry.name.contains(searchQuery, ignoreCase = true)
-        val matchesType = activeFilter == FileType.ALL ||
-            (entry.kind == FileKind.FILE && entry.type == activeFilter)
-        matchesSearch && matchesType
+    val visibleEntries = remember(entries, activeFilter, searchQuery) {
+        val filtered = entries.filter { entry ->
+            val matchesSearch = searchQuery.isBlank() || entry.name.contains(searchQuery, ignoreCase = true)
+            val matchesType = activeFilter == FileType.ALL ||
+                (entry.kind == FileKind.FILE && entry.type == activeFilter)
+            matchesSearch && matchesType
+        }
+        if (activeFilter != FileType.ALL) {
+            val dummyItems = MockData.filesList.filter { it.type == activeFilter && (searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true)) }
+            filtered + dummyItems
+        } else {
+            filtered
+        }
     }
 
     Column(
@@ -132,33 +140,23 @@ fun SendScreen(
         TopAppBar(
             title = "Send Files",
             viewModel = viewModel,
-            showBackButton = true
+            showBackButton = true,
+            showSearch = true
         )
 
-        SendPackageSummary(
-            selectedCount = selectedFiles.size,
-            currentPath = currentPath,
-            activeFilter = activeFilter
-        )
+        Spacer(modifier = Modifier.height(Spacing.Medium))
 
         FilterTabs(
             viewModel = viewModel,
             modifier = Modifier.padding(horizontal = Spacing.Medium)
         )
 
-        SearchPanel(
-            value = searchQuery,
-            onValueChange = viewModel::setSearchQuery,
-            onClear = { viewModel.setSearchQuery("") },
-            modifier = Modifier.padding(horizontal = Spacing.Medium)
-        )
+        Spacer(modifier = Modifier.height(Spacing.Small))
 
         if (activeFilter == FileType.ALL) {
             BreadcrumbBar(
                 breadcrumbs = viewModel.directoryBreadcrumbs(),
                 onCrumbClick = { viewModel.openDirectory(it, context) },
-                onUpClick = { viewModel.goUpDirectory(context) },
-                onRefreshClick = { viewModel.loadCurrentDirectory() },
                 modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
             )
         } else {
@@ -298,96 +296,22 @@ private fun SendPackageSummary(
     }
 }
 
-@Composable
-private fun SearchPanel(
-    value: String,
-    onValueChange: (String) -> Unit,
-    onClear: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(Radii.ButtonSmall))
-            .background(BgPanelMuted)
-            .border(1.dp, BorderSubtle, RoundedCornerShape(Radii.ButtonSmall))
-            .padding(horizontal = Spacing.Medium),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = null,
-            tint = TextMuted,
-            modifier = Modifier.size(IconSize.Small)
-        )
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            textStyle = CustomTypography.bodyMedium.copy(color = TextBody),
-            cursorBrush = SolidColor(NeonHighlight),
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = Spacing.Small),
-            singleLine = true,
-            decorationBox = { innerTextField ->
-                if (value.isEmpty()) {
-                    Text(
-                        text = "Search current location...",
-                        style = CustomTypography.bodyMedium,
-                        color = TextMuted,
-                        maxLines = 1
-                    )
-                }
-                innerTextField()
-            }
-        )
-        if (value.isNotBlank()) {
-            IconButton(onClick = onClear, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Clear search",
-                    tint = TextSecondary,
-                    modifier = Modifier.size(IconSize.Small)
-                )
-            }
-        }
-    }
-}
+
 
 @Composable
 private fun BreadcrumbBar(
     breadcrumbs: List<Pair<String, String>>,
     onCrumbClick: (String) -> Unit,
-    onUpClick: () -> Unit,
-    onRefreshClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(
-            onClick = onUpClick,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(BgPanelMuted)
-                .border(1.dp, BorderSubtle, CircleShape)
-        ) {
-            Icon(
-                imageVector = Icons.Default.ArrowUpward,
-                contentDescription = "Go up one folder",
-                tint = TextStrong,
-                modifier = Modifier.size(IconSize.Small)
-            )
-        }
-
         Row(
             modifier = Modifier
                 .weight(1f)
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.Small),
+                .horizontalScroll(rememberScrollState()),
             verticalAlignment = Alignment.CenterVertically
         ) {
             breadcrumbs.forEachIndexed { index, crumb ->
@@ -413,22 +337,6 @@ private fun BreadcrumbBar(
                         .padding(horizontal = Spacing.Small, vertical = Spacing.Tiny)
                 )
             }
-        }
-
-        IconButton(
-            onClick = onRefreshClick,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(BgPanelMuted)
-                .border(1.dp, BorderSubtle, CircleShape)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Refresh,
-                contentDescription = "Refresh folder",
-                tint = AccentCyan,
-                modifier = Modifier.size(IconSize.Small)
-            )
         }
     }
 }
@@ -624,7 +532,7 @@ private fun SendCommandBar(
                 )
                 Spacer(modifier = Modifier.width(Spacing.Small))
                 Text(
-                    text = "NEXT",
+                    text = "SEND",
                     style = CustomTypography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
                     color = Color.White
                 )
