@@ -150,6 +150,8 @@ fun TopAppBar(
                         modifier = Modifier.size(IconSize.Standard)
                     )
                 }
+            } else if (!showSearch) {
+                Box(modifier = Modifier.size(44.dp))
             }
         }
 

@@ -96,12 +96,6 @@ fun RadarScreen(
                 .weight(1f)
                 .padding(horizontal = Spacing.Large, vertical = Spacing.Medium)
         ) {
-            DiscoveryStatusStrip(
-                nearbyCount = radarDevices.size,
-                selectedCount = chosenFiles.size
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.Medium))
 
             RadarViewport(
                 devices = radarDevices,
@@ -123,84 +117,6 @@ fun RadarScreen(
     }
 }
 
-@Composable
-private fun DiscoveryStatusStrip(
-    nearbyCount: Int,
-    selectedCount: Int
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        BgPanelMuted.copy(alpha = 0.96f),
-                        BgPanel.copy(alpha = 0.92f)
-                    )
-                )
-            )
-            .border(1.dp, BorderSubtle, RoundedCornerShape(18.dp))
-            .padding(Spacing.Medium),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
-    ) {
-        StatusPill(
-            label = "SCANNING",
-            value = "LIVE",
-            accent = AccentCyan,
-            modifier = Modifier.weight(1f)
-        )
-        StatusPill(
-            label = "NEARBY",
-            value = nearbyCount.toString(),
-            accent = NeonHighlight,
-            modifier = Modifier.weight(1f)
-        )
-        StatusPill(
-            label = "QUEUE",
-            value = selectedCount.toString(),
-            accent = AccentGreen,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-private fun StatusPill(
-    label: String,
-    value: String,
-    accent: Color,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(BgMain.copy(alpha = 0.62f))
-            .border(1.dp, accent.copy(alpha = 0.24f), CircleShape)
-            .padding(horizontal = Spacing.Small, vertical = Spacing.Small),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .size(7.dp)
-                .clip(CircleShape)
-                .background(accent)
-        )
-        Spacer(modifier = Modifier.width(Spacing.Small))
-        Text(
-            text = "$label $value",
-            style = CustomTypography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.4.sp
-            ),
-            color = TextStrong,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
 
 @Composable
 private fun RadarViewport(
@@ -227,7 +143,7 @@ private fun RadarViewport(
             .padding(Spacing.Medium),
         contentAlignment = Alignment.Center
     ) {
-        val radarSize = minOf(maxWidth, maxHeight) * 0.88f
+        val radarSize = minOf(maxWidth, maxHeight) * 1.0f
         val radius = radarSize / 2
 
         RadarWidget(

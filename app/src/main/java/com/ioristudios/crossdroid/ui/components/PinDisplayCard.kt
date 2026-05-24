@@ -1,10 +1,5 @@
 package com.ioristudios.crossdroid.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,9 +47,7 @@ import com.ioristudios.crossdroid.ui.theme.HapticHelper
 import com.ioristudios.crossdroid.ui.theme.IconSize
 import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
-import com.ioristudios.crossdroid.ui.theme.Radii
 import com.ioristudios.crossdroid.ui.theme.Spacing
-import com.ioristudios.crossdroid.ui.theme.TextMuted
 import com.ioristudios.crossdroid.ui.theme.TextSecondary
 import com.ioristudios.crossdroid.ui.theme.TextStrong
 import com.ioristudios.crossdroid.ui.theme.neonGlow
@@ -79,12 +72,16 @@ fun PinDisplayCard(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-        val keySize = ((maxWidth - 112.dp) / 3).coerceIn(52.dp, 68.dp)
-        val pinBoxSize = ((maxWidth - 104.dp) / 4).coerceIn(48.dp, 62.dp)
+        val widthBasedKeySize = ((maxWidth - 112.dp) / 3).coerceIn(50.dp, 64.dp)
+        val heightBasedKeySize = ((maxHeight - 156.dp) / 4).coerceIn(46.dp, 64.dp)
+        val keySize = minOf(widthBasedKeySize, heightBasedKeySize)
+        val pinBoxSize = ((maxWidth - 104.dp) / 4).coerceIn(46.dp, 58.dp)
+        val rowSpacing = if (maxHeight < 420.dp) Spacing.Tiny else Spacing.Small
 
         Column(
             modifier = Modifier
                 .scale(panelScale)
+                .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
                 .neonGlow(
                     color = if (errorMessage == null) NeonPrimary else ColorError,
@@ -113,10 +110,6 @@ fun PinDisplayCard(
                 .padding(Spacing.Medium),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SecurityStatusRow()
-
-            Spacer(modifier = Modifier.height(Spacing.Medium))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
@@ -153,10 +146,12 @@ fun PinDisplayCard(
                 }
             }
 
-            AnimatedVisibility(
-                visible = errorMessage != null,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(28.dp)
+                    .padding(top = Spacing.Small),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = errorMessage.orEmpty(),
@@ -166,13 +161,11 @@ fun PinDisplayCard(
                         letterSpacing = 0.sp
                     ),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = Spacing.Medium)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            Spacer(modifier = Modifier.height(Spacing.Medium))
+            Spacer(modifier = Modifier.height(rowSpacing))
 
             val keys = listOf(
                 listOf('1', '2', '3'),
@@ -183,7 +176,7 @@ fun PinDisplayCard(
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+                verticalArrangement = Arrangement.spacedBy(rowSpacing)
             ) {
                 keys.forEach { rowKeys ->
                     Row(
@@ -207,43 +200,6 @@ fun PinDisplayCard(
     }
 }
 
-@Composable
-private fun SecurityStatusRow() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(CircleShape)
-            .background(BgPanelMuted)
-            .border(1.dp, BorderSubtle, CircleShape)
-            .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(ColorSuccess)
-        )
-        Spacer(modifier = Modifier.width(Spacing.Small))
-        Text(
-            text = "ENCRYPTED LOCAL PAIRING",
-            style = CustomTypography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.7.sp
-            ),
-            color = AccentCyan
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Text(
-            text = "RECEIVER PIN",
-            style = CustomTypography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.7.sp
-            ),
-            color = TextMuted
-        )
-    }
-}
 
 @Composable
 private fun PinKey(

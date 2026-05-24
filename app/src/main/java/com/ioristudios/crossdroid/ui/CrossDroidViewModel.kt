@@ -365,6 +365,12 @@ class CrossDroidViewModel : ViewModel() {
         }
     }
 
+    fun clearPinCode(context: Context) {
+        _pinCode.value = ""
+        _pinError.value = null
+        HapticHelper.triggerLight(context)
+    }
+
     fun verifyPinCode(context: Context) {
         if (_pinCode.value == "1234") {
             HapticHelper.triggerSuccess(context)

@@ -196,33 +196,6 @@ private fun ScannerHeader(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(BgPanelMuted)
-                .border(1.dp, BorderSubtle, CircleShape)
-                .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(if (hasCameraPermission) AccentGreen else ColorError)
-            )
-            Spacer(modifier = Modifier.width(Spacing.Small))
-            Text(
-                text = status.uppercase(),
-                style = CustomTypography.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                ),
-                color = if (hasCameraPermission) AccentCyan else TextSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
         Spacer(modifier = Modifier.height(Spacing.Medium))
 
         Text(

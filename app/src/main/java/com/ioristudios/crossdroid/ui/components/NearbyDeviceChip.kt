@@ -6,18 +6,16 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Computer
-import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -37,7 +34,6 @@ import com.ioristudios.crossdroid.ui.theme.BgElevated
 import com.ioristudios.crossdroid.ui.theme.ColorSuccess
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
 import com.ioristudios.crossdroid.ui.theme.HapticHelper
-import com.ioristudios.crossdroid.ui.theme.NeonPrimary
 import com.ioristudios.crossdroid.ui.theme.Spacing
 import com.ioristudios.crossdroid.ui.theme.TextStrong
 import com.ioristudios.crossdroid.ui.theme.neonGlow
@@ -71,59 +67,49 @@ fun NearbyDeviceChip(
         label = "PulseGlowOpacity"
     )
 
-    val deviceIcon = if (device.osType == "android") Icons.Default.PhoneAndroid else Icons.Default.Computer
     val deviceColor = if (device.osType == "android") ColorSuccess else Color(0xFF00E5FF)
 
-    Row(
+    Column(
         modifier = modifier
             .scale(pulseScale)
-            .clip(RoundedCornerShape(999.dp))
-            .neonGlow(
-                color = deviceColor,
-                borderRadius = 22.dp,
-                glowRadius = 10.dp,
-                opacity = glowOpacity
-            )
-            .background(BgElevated.copy(alpha = 0.94f))
-            .border(
-                width = 1.dp,
-                brush = Brush.horizontalGradient(
-                    colors = listOf(deviceColor.copy(alpha = 0.7f), NeonPrimary.copy(alpha = 0.3f))
-                ),
-                shape = RoundedCornerShape(999.dp)
-            )
             .clickable {
                 HapticHelper.triggerMedium(context)
                 onClick()
-            }
-            .padding(horizontal = Spacing.Small, vertical = Spacing.Small),
-        verticalAlignment = Alignment.CenterVertically
+            },
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            modifier = Modifier
-                .size(26.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(deviceColor.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = deviceIcon,
-                contentDescription = "Device OS",
-                tint = deviceColor,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-        
-        Spacer(modifier = Modifier.width(Spacing.Small))
-        
         Text(
             text = device.name.take(16),
             color = TextStrong,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(BgElevated.copy(alpha = 0.8f))
+                .padding(horizontal = Spacing.Small, vertical = 2.dp),
             style = CustomTypography.labelMedium.copy(
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp,
                 letterSpacing = 0.sp
             )
         )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Box(
+            modifier = Modifier
+                .neonGlow(
+                    color = deviceColor,
+                    borderRadius = 22.dp,
+                    glowRadius = 10.dp,
+                    opacity = glowOpacity
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = "Device Pin",
+                tint = deviceColor,
+                modifier = Modifier.size(32.dp)
+            )
+        }
     }
 }
