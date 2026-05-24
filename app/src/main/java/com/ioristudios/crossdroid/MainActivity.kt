@@ -45,6 +45,20 @@ import com.ioristudios.crossdroid.ui.theme.CustomTypography
 import com.ioristudios.crossdroid.ui.theme.TextStrong
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
 import com.ioristudios.crossdroid.ui.theme.neonGlow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Icon
+import com.ioristudios.crossdroid.ui.theme.NeonHighlight
+import com.ioristudios.crossdroid.ui.theme.BgPanel
+import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
+import com.ioristudios.crossdroid.ui.theme.IconSize
 
 class MainActivity : ComponentActivity() {
     private val viewModel: CrossDroidViewModel by viewModels()
@@ -96,25 +110,63 @@ class MainActivity : ComponentActivity() {
                         },
                         snackbarHost = {
                             SnackbarHost(hostState = snackbarHostState) { data ->
-                                Box(
+                                Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
                                         .clip(RoundedCornerShape(Radii.CardStandard))
-                                        .background(BgElevated)
-                                        .border(1.dp, BorderSubtle, RoundedCornerShape(Radii.CardStandard))
+                                        .background(
+                                            brush = Brush.linearGradient(
+                                                colors = listOf(
+                                                    BgPanel.copy(alpha = 0.95f),
+                                                    BgPanelMuted.copy(alpha = 0.90f)
+                                                )
+                                            )
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            brush = Brush.horizontalGradient(
+                                                colors = listOf(
+                                                    NeonPrimary.copy(alpha = 0.45f),
+                                                    BorderSubtle.copy(alpha = 0.40f)
+                                                )
+                                            ),
+                                            shape = RoundedCornerShape(Radii.CardStandard)
+                                        )
                                         .neonGlow(
                                             color = NeonPrimary,
                                             borderRadius = Radii.CardStandard,
-                                            glowRadius = 8.dp,
-                                            opacity = 0.25f
+                                            glowRadius = 12.dp,
+                                            opacity = 0.18f
                                         )
-                                        .padding(horizontal = Spacing.Medium, vertical = Spacing.Medium)
+                                        .padding(horizontal = Spacing.Medium, vertical = Spacing.Small + 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    // Left vertical accent strip
+                                    Box(
+                                        modifier = Modifier
+                                            .width(4.dp)
+                                            .height(32.dp)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(
+                                                brush = Brush.verticalGradient(
+                                                    colors = listOf(NeonPrimary, NeonHighlight)
+                                                )
+                                            )
+                                    )
+                                    Spacer(modifier = Modifier.width(Spacing.Medium))
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = NeonHighlight,
+                                        modifier = Modifier.size(IconSize.Standard)
+                                    )
+                                    Spacer(modifier = Modifier.width(Spacing.Small + 2.dp))
                                     Text(
                                         text = data.visuals.message,
                                         style = CustomTypography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                                        color = TextStrong
+                                        color = TextStrong,
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
                             }

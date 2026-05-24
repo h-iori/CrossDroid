@@ -175,34 +175,37 @@ private fun BottomNavTab(
     Column(
         modifier = modifier
             .height(58.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .then(
-                if (selected) {
-                    Modifier
-                        .neonGlow(
-                            color = NeonPrimary,
-                            borderRadius = 18.dp,
-                            glowRadius = 10.dp,
-                            opacity = pulseAlpha
-                        )
-                        .background(NeonPrimary.copy(alpha = 0.12f + (pulseAlpha * 0.10f)))
-                } else {
-                    Modifier.background(Color.Transparent)
-                }
-            )
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = Spacing.Small),
+            .padding(vertical = Spacing.Tiny),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
+        verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier
-                .height(3.dp)
-                .fillMaxWidth(if (selected) 0.42f else 0.20f)
-                .clip(RoundedCornerShape(100.dp))
-                .background(if (selected) NeonHighlight else Color.Transparent)
-        )
-        icon(tint)
+                .size(width = 60.dp, height = 30.dp)
+                .then(
+                    if (selected) {
+                        Modifier
+                            .neonGlow(
+                                color = NeonPrimary,
+                                borderRadius = 15.dp,
+                                glowRadius = 8.dp,
+                                opacity = pulseAlpha * 0.45f
+                            )
+                            .background(NeonPrimary.copy(alpha = 0.12f + (pulseAlpha * 0.08f)), RoundedCornerShape(15.dp))
+                            .border(1.dp, NeonPrimary.copy(alpha = 0.25f + (pulseAlpha * 0.15f)), RoundedCornerShape(15.dp))
+                    } else {
+                        Modifier
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            icon(tint)
+        }
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
         Text(
             text = label,
             color = if (selected) TextStrong else TextSecondary,
