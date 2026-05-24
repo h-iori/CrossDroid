@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +30,6 @@ import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import com.ioristudios.crossdroid.data.FileKind
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -247,43 +247,45 @@ private fun FileBubbleHeader(
             Spacer(modifier = Modifier.width(Spacing.Small))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                IconButton(
-                    onClick = {
-                        if (bubble.status == TransferStatus.Paused) {
-                            onResume?.invoke(bubble.id)
-                        } else {
-                            onPause?.invoke(bubble.id)
-                        }
-                    },
+                Box(
                     modifier = Modifier
                         .size(30.dp)
                         .clip(CircleShape)
                         .background(accent.copy(alpha = 0.11f))
                         .border(1.dp, accent.copy(alpha = 0.24f), CircleShape)
+                        .clickable {
+                            if (bubble.status == TransferStatus.Paused) {
+                                onResume?.invoke(bubble.id)
+                            } else {
+                                onPause?.invoke(bubble.id)
+                            }
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = if (bubble.status == TransferStatus.Paused) Icons.Default.PlayCircle else Icons.Default.PauseCircle,
                         contentDescription = if (bubble.status == TransferStatus.Paused) "Resume item" else "Pause item",
                         tint = accent,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
 
-                IconButton(
-                    onClick = { onCancel?.invoke(bubble.id) },
+                Box(
                     modifier = Modifier
                         .size(30.dp)
                         .clip(CircleShape)
                         .background(ColorError.copy(alpha = 0.11f))
                         .border(1.dp, ColorError.copy(alpha = 0.24f), CircleShape)
+                        .clickable { onCancel?.invoke(bubble.id) },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Cancel item",
                         tint = ColorError,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
