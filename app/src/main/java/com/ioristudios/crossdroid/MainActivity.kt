@@ -20,6 +20,31 @@ import com.ioristudios.crossdroid.ui.components.BottomNavbar
 import com.ioristudios.crossdroid.ui.navigation.NavigationHost
 import com.ioristudios.crossdroid.ui.theme.BgMain
 import com.ioristudios.crossdroid.ui.theme.CrossDroidTheme
+import androidx.activity.compose.BackHandler
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.Text
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import com.ioristudios.crossdroid.ui.theme.Spacing
+import com.ioristudios.crossdroid.ui.theme.Radii
+import com.ioristudios.crossdroid.ui.theme.BgElevated
+import com.ioristudios.crossdroid.ui.theme.BorderSubtle
+import com.ioristudios.crossdroid.ui.theme.CustomTypography
+import com.ioristudios.crossdroid.ui.theme.TextStrong
+import com.ioristudios.crossdroid.ui.theme.NeonPrimary
+import com.ioristudios.crossdroid.ui.theme.neonGlow
 
 class MainActivity : ComponentActivity() {
     private val viewModel: CrossDroidViewModel by viewModels()
@@ -34,6 +59,32 @@ class MainActivity : ComponentActivity() {
             CrossDroidTheme {
                 val currentScreen by viewModel.currentScreen.collectAsState()
                 val isSidebarVisible by viewModel.isSidebarVisible.collectAsState()
+                val context = LocalContext.current
+                val scope = rememberCoroutineScope()
+                val snackbarHostState = remember { SnackbarHostState() }
+                var lastBackPressTime by remember { mutableLongStateOf(0L) }
+
+                BackHandler(enabled = true) {
+                    if (isSidebarVisible) {
+                        viewModel.setSidebarVisible(false)
+                    } else if (currentScreen != Screen.HOME) {
+                        viewModel.navigateBack(context, triggerHaptic = false)
+                    } else {
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastBackPressTime < 2000) {
+                            (context as? android.app.Activity)?.finish()
+                        } else {
+                            lastBackPressTime = currentTime
+                            scope.launch {
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                                snackbarHostState.showSnackbar(
+                                    message = "Double press back to exit",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                        }
+                    }
+                }
                 
                 Box(modifier = Modifier.fillMaxSize()) {
                     Scaffold(
@@ -41,6 +92,31 @@ class MainActivity : ComponentActivity() {
                             // Persistent navbar only on the three primary hubs
                             if (currentScreen in listOf(Screen.HOME, Screen.DEVICES, Screen.HISTORY)) {
                                 BottomNavbar(viewModel = viewModel)
+                            }
+                        },
+                        snackbarHost = {
+                            SnackbarHost(hostState = snackbarHostState) { data ->
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
+                                        .clip(RoundedCornerShape(Radii.CardStandard))
+                                        .background(BgElevated)
+                                        .border(1.dp, BorderSubtle, RoundedCornerShape(Radii.CardStandard))
+                                        .neonGlow(
+                                            color = NeonPrimary,
+                                            borderRadius = Radii.CardStandard,
+                                            glowRadius = 8.dp,
+                                            opacity = 0.25f
+                                        )
+                                        .padding(horizontal = Spacing.Medium, vertical = Spacing.Medium)
+                                ) {
+                                    Text(
+                                        text = data.visuals.message,
+                                        style = CustomTypography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                        color = TextStrong
+                                    )
+                                }
                             }
                         },
                         containerColor = BgMain,

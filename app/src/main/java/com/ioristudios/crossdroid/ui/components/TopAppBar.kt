@@ -76,7 +76,7 @@ fun TopAppBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (showBackButton) {
-                BackIconButton(onClick = { viewModel.navigateTo(Screen.HOME, context) }) {
+                BackIconButton(onClick = { viewModel.navigateBack(context) }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",

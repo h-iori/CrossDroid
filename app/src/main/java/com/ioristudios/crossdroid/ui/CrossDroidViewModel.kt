@@ -36,6 +36,8 @@ class CrossDroidViewModel : ViewModel() {
     private val _currentScreen = MutableStateFlow(Screen.HOME)
     val currentScreen: StateFlow<Screen> = _currentScreen.asStateFlow()
 
+    private val _navigationHistory = MutableStateFlow<List<Screen>>(listOf(Screen.HOME))
+
     // File Selection State (Send Flow)
     private val _selectedFiles = MutableStateFlow<Set<FileItem>>(emptySet())
     val selectedFiles: StateFlow<Set<FileItem>> = _selectedFiles.asStateFlow()
@@ -92,7 +94,22 @@ class CrossDroidViewModel : ViewModel() {
     private var receiveSimulationJob: Job? = null
 
     fun navigateTo(screen: Screen, context: Context? = null) {
-        _currentScreen.value = screen
+        val current = _currentScreen.value
+        if (current != screen) {
+            val history = _navigationHistory.value.toMutableList()
+            if (screen == Screen.HOME) {
+                history.clear()
+                history.add(Screen.HOME)
+            } else if (screen in listOf(Screen.DEVICES, Screen.HISTORY)) {
+                history.clear()
+                history.add(Screen.HOME)
+                history.add(screen)
+            } else {
+                history.add(screen)
+            }
+            _navigationHistory.value = history
+            _currentScreen.value = screen
+        }
         context?.let { HapticHelper.triggerLight(it) }
         
         // Reset code errors when switching pages
@@ -106,6 +123,35 @@ class CrossDroidViewModel : ViewModel() {
             startReceiveSimulation(context)
         } else {
             cancelReceiveSimulation()
+        }
+    }
+
+    fun navigateBack(context: Context, triggerHaptic: Boolean = true) {
+        val history = _navigationHistory.value.toMutableList()
+        if (history.size > 1) {
+            val current = history.last()
+            if (current == Screen.TRANSFER && _isTransferActive.value) {
+                cancelTransfer(context)
+                return
+            }
+            history.removeAt(history.lastIndex)
+            val prevScreen = history.last()
+            _navigationHistory.value = history
+            _currentScreen.value = prevScreen
+            if (triggerHaptic) {
+                HapticHelper.triggerLight(context)
+            }
+            
+            // Clean/simulation logics
+            if (prevScreen != Screen.ENTER_CODE) {
+                _pinCode.value = ""
+                _pinError.value = null
+            }
+            if (prevScreen == Screen.RECEIVE) {
+                startReceiveSimulation(context)
+            } else {
+                cancelReceiveSimulation()
+            }
         }
     }
 

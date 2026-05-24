@@ -12,6 +12,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
 import com.ioristudios.crossdroid.ui.screens.AboutScreen
@@ -31,6 +32,7 @@ fun NavigationHost(
     modifier: Modifier = Modifier
 ) {
     val currentScreen = viewModel.currentScreen.collectAsState().value
+    val context = LocalContext.current
 
     AnimatedContent(
         targetState = currentScreen,
@@ -79,7 +81,7 @@ fun NavigationHost(
             Screen.RADAR -> RadarScreen(viewModel = viewModel)
             Screen.RECEIVE -> ReceiveScreen(viewModel = viewModel)
             Screen.TRANSFER -> TransferScreen(viewModel = viewModel)
-            Screen.ABOUT -> AboutScreen(onBack = { viewModel.navigateTo(Screen.HOME) })
+            Screen.ABOUT -> AboutScreen(onBack = { viewModel.navigateBack(context) })
         }
     }
 }
