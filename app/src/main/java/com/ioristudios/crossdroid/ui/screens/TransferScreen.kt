@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
+import com.ioristudios.crossdroid.ui.Screen
 import com.ioristudios.crossdroid.ui.TransferStatus
 import com.ioristudios.crossdroid.ui.components.ChatBubbleItem
 import com.ioristudios.crossdroid.ui.components.TopAppBar
@@ -190,6 +191,56 @@ fun TransferScreen(
                     onResume = { viewModel.resumeTransferItem(it, context) },
                     onCancel = { viewModel.cancelTransferItem(it, context) }
                 )
+            }
+        }
+
+        // Bottom elegant send bar
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(BgElevated)
+                .border(width = 1.dp, color = BorderSubtle, shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                .padding(Spacing.Medium)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(BgSurface)
+                    .border(1.dp, BorderSubtle, RoundedCornerShape(28.dp))
+                    .clickable { viewModel.navigateTo(Screen.SEND, context) }
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Attach Files",
+                    tint = NeonPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Send files to this device...",
+                    color = TextSecondary,
+                    style = CustomTypography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(NeonPrimary)
+                        .neonGlow(NeonPrimary, borderRadius = 20.dp, glowRadius = 8.dp, opacity = 0.4f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Send",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }

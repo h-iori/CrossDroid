@@ -245,7 +245,10 @@ private fun FileBubbleHeader(
 
         if (canControl) {
             Spacer(modifier = Modifier.width(Spacing.Small))
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 IconButton(
                     onClick = {
                         if (bubble.status == TransferStatus.Paused) {
@@ -264,7 +267,7 @@ private fun FileBubbleHeader(
                         imageVector = if (bubble.status == TransferStatus.Paused) Icons.Default.PlayCircle else Icons.Default.PauseCircle,
                         contentDescription = if (bubble.status == TransferStatus.Paused) "Resume item" else "Pause item",
                         tint = accent,
-                        modifier = Modifier.size(17.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
 
@@ -280,7 +283,7 @@ private fun FileBubbleHeader(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Cancel item",
                         tint = ColorError,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
