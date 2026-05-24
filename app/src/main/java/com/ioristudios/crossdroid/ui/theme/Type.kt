@@ -2,9 +2,22 @@ package com.ioristudios.crossdroid.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.ioristudios.crossdroid.R
+
+val BrandFontFamily = FontFamily(
+    Font(R.font.oxanium, FontWeight.SemiBold),
+    Font(R.font.oxanium, FontWeight.Bold),
+    Font(R.font.oxanium, FontWeight.ExtraBold)
+)
+
+val SubheadingFontFamily = FontFamily(
+    Font(R.font.sora, FontWeight.Medium),
+    Font(R.font.sora, FontWeight.SemiBold)
+)
 
 val CustomTypography = Typography(
     headlineLarge = TextStyle(

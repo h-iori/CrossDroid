@@ -38,13 +38,14 @@ import com.ioristudios.crossdroid.ui.Screen
 import com.ioristudios.crossdroid.ui.theme.AccentBlue
 import com.ioristudios.crossdroid.ui.theme.BgMain
 import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
+import com.ioristudios.crossdroid.ui.theme.BrandFontFamily
 import com.ioristudios.crossdroid.ui.theme.BorderSubtle
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
 import com.ioristudios.crossdroid.ui.theme.HapticHelper
 import com.ioristudios.crossdroid.ui.theme.IconSize
-import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.Radii
 import com.ioristudios.crossdroid.ui.theme.Spacing
+import com.ioristudios.crossdroid.ui.theme.SubheadingFontFamily
 import com.ioristudios.crossdroid.ui.theme.TextBody
 import com.ioristudios.crossdroid.ui.theme.TextMuted
 import com.ioristudios.crossdroid.ui.theme.TextSecondary
@@ -162,18 +163,20 @@ private fun BrandHeader() {
             painter = painterResource(id = R.drawable.transfer_logo),
             contentDescription = null,
             modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .size(46.dp)
+                .clip(RoundedCornerShape(13.dp))
         )
 
-        Box(modifier = Modifier.width(Spacing.Small))
+        Box(modifier = Modifier.width(10.dp))
 
         Column {
             Text(
                 text = "CrossDroid",
                 style = CustomTypography.titleLarge.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 22.sp,
+                    fontFamily = BrandFontFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 23.sp,
+                    lineHeight = 27.sp,
                     letterSpacing = 0.sp
                 ),
                 color = TextStrong
@@ -181,10 +184,13 @@ private fun BrandHeader() {
             Text(
                 text = "by IORI STUDIOS",
                 style = CustomTypography.labelMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.6.sp
+                    fontFamily = SubheadingFontFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 10.sp,
+                    lineHeight = 13.sp,
+                    letterSpacing = 1.0.sp
                 ),
-                color = NeonHighlight
+                color = TextSecondary.copy(alpha = 0.92f)
             )
         }
     }
