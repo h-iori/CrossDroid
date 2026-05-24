@@ -1,12 +1,8 @@
 package com.ioristudios.crossdroid.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -29,28 +26,29 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ioristudios.crossdroid.R
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
-import com.ioristudios.crossdroid.ui.theme.BgElevated
+import com.ioristudios.crossdroid.ui.theme.AccentBlue
 import com.ioristudios.crossdroid.ui.theme.BgMain
+import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
+import com.ioristudios.crossdroid.ui.theme.BorderSubtle
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
 import com.ioristudios.crossdroid.ui.theme.HapticHelper
 import com.ioristudios.crossdroid.ui.theme.IconSize
 import com.ioristudios.crossdroid.ui.theme.NeonHighlight
-import com.ioristudios.crossdroid.ui.theme.NeonPrimary
 import com.ioristudios.crossdroid.ui.theme.Radii
 import com.ioristudios.crossdroid.ui.theme.Spacing
 import com.ioristudios.crossdroid.ui.theme.TextBody
 import com.ioristudios.crossdroid.ui.theme.TextMuted
 import com.ioristudios.crossdroid.ui.theme.TextSecondary
 import com.ioristudios.crossdroid.ui.theme.TextStrong
-import com.ioristudios.crossdroid.ui.theme.neonGlow
 
 @Composable
 fun TopAppBar(
@@ -58,6 +56,7 @@ fun TopAppBar(
     viewModel: CrossDroidViewModel,
     showBackButton: Boolean = false,
     showSearch: Boolean = false,
+    subtitle: String? = null,
     onMenuClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -72,12 +71,12 @@ fun TopAppBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
+                .height(72.dp)
+                .padding(horizontal = Spacing.Medium),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 1. Back button on the left (only if showBackButton is true)
             if (showBackButton) {
-                IconButton(onClick = { viewModel.navigateTo(Screen.HOME, context) }) {
+                BackIconButton(onClick = { viewModel.navigateTo(Screen.HOME, context) }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
@@ -87,7 +86,6 @@ fun TopAppBar(
                 }
             }
 
-            // 2. Title block or Search text input
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -95,73 +93,49 @@ fun TopAppBar(
                 contentAlignment = Alignment.CenterStart
             ) {
                 if (showSearch && searchMode) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                            .clip(RoundedCornerShape(Radii.ButtonSmall))
-                            .background(BgElevated)
-                            .neonGlow(NeonPrimary, borderRadius = Radii.ButtonSmall, glowRadius = 4.dp, opacity = 0.2f)
-                            .padding(horizontal = Spacing.Medium),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = TextSecondary,
-                            modifier = Modifier.size(IconSize.Small)
-                        )
-                        BasicTextField(
-                            value = searchQuery,
-                            onValueChange = { viewModel.setSearchQuery(it) },
-                            textStyle = CustomTypography.bodyMedium.copy(color = TextBody),
-                            cursorBrush = SolidColor(NeonHighlight),
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = Spacing.Small),
-                            singleLine = true,
-                            decorationBox = { innerTextField ->
-                                if (searchQuery.isEmpty()) {
-                                    Text(
-                                        text = "Search files...",
-                                        style = CustomTypography.bodyMedium,
-                                        color = TextMuted
-                                    )
-                                }
-                                innerTextField()
-                            }
-                        )
-                    }
-                } else {
-                    Text(
-                        text = title,
-                        style = CustomTypography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
-                        ),
-                        color = TextStrong
+                    SearchField(
+                        value = searchQuery,
+                        onValueChange = { viewModel.setSearchQuery(it) }
                     )
+                } else if (title == "CrossDroid") {
+                    BrandHeader()
+                } else {
+                    Column {
+                        Text(
+                            text = title,
+                            style = CustomTypography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                            color = TextStrong
+                        )
+                        if (!subtitle.isNullOrBlank()) {
+                            Text(
+                                text = subtitle,
+                                style = CustomTypography.labelSmall,
+                                color = TextSecondary
+                            )
+                        }
+                    }
                 }
             }
 
-            // 3. Search Icon action on the right
             if (showSearch) {
-                IconButton(onClick = { viewModel.toggleSearchMode(context) }) {
+                BackIconButton(onClick = { viewModel.toggleSearchMode(context) }) {
                     Icon(
                         imageVector = if (searchMode) Icons.Default.Close else Icons.Default.Search,
-                        contentDescription = "Search FileToggle",
-                        tint = if (searchMode) NeonPrimary else TextStrong,
+                        contentDescription = if (searchMode) "Close search" else "Search files",
+                        tint = if (searchMode) AccentBlue else TextStrong,
                         modifier = Modifier.size(IconSize.Standard)
                     )
                 }
             }
 
-            // 4. Menu Icon on the right (only if showBackButton is false)
             if (!showBackButton) {
-                IconButton(onClick = { 
-                    HapticHelper.triggerMedium(context)
-                    onMenuClick() 
-                }) {
+                IconButton(
+                    onClick = {
+                        HapticHelper.triggerMedium(context)
+                        onMenuClick()
+                    },
+                    modifier = Modifier.size(44.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Menu,
                         contentDescription = "Menu",
@@ -172,20 +146,107 @@ fun TopAppBar(
             }
         }
 
-        // Cyberpunk Glowing bottom bar line separator
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(2.dp)
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            NeonPrimary,
-                            NeonHighlight,
-                            NeonPrimary.copy(alpha = 0.1f)
-                        )
+                .height(1.dp)
+                .background(BorderSubtle.copy(alpha = 0.70f))
+        )
+    }
+}
+
+@Composable
+private fun BrandHeader() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Image(
+            painter = painterResource(id = R.drawable.transfer_logo),
+            contentDescription = null,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(14.dp))
+        )
+
+        Box(modifier = Modifier.width(Spacing.Small))
+
+        Column {
+            Text(
+                text = "CrossDroid",
+                style = CustomTypography.titleLarge.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp,
+                    letterSpacing = 0.sp
+                ),
+                color = TextStrong
+            )
+            Text(
+                text = "by IORI STUDIOS",
+                style = CustomTypography.labelMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.6.sp
+                ),
+                color = NeonHighlight
+            )
+        }
+    }
+}
+
+@Composable
+private fun BackIconButton(
+    onClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(44.dp)
+            .clip(RoundedCornerShape(100.dp))
+            .background(BgPanelMuted.copy(alpha = 0.65f))
+            .border(1.dp, BorderSubtle, RoundedCornerShape(100.dp))
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun SearchField(
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .clip(RoundedCornerShape(Radii.ButtonSmall))
+            .background(BgPanelMuted)
+            .border(1.dp, BorderSubtle, RoundedCornerShape(Radii.ButtonSmall))
+            .padding(horizontal = Spacing.Medium),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = TextMuted,
+            modifier = Modifier.size(IconSize.Small)
+        )
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            textStyle = CustomTypography.bodyMedium.copy(color = TextBody),
+            cursorBrush = SolidColor(AccentBlue),
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = Spacing.Small),
+            singleLine = true,
+            decorationBox = { innerTextField ->
+                if (value.isEmpty()) {
+                    Text(
+                        text = "Search files...",
+                        style = CustomTypography.bodyMedium,
+                        color = TextMuted
                     )
-                )
+                }
+                innerTextField()
+            }
         )
     }
 }

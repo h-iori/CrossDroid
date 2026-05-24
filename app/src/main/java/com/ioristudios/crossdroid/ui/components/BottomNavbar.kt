@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,11 +22,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.scale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,18 +33,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.ioristudios.crossdroid.R
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
-import com.ioristudios.crossdroid.ui.theme.BgElevated
-import com.ioristudios.crossdroid.ui.theme.BgSurface
+import com.ioristudios.crossdroid.ui.theme.BgPanel
+import com.ioristudios.crossdroid.ui.theme.BorderSubtle
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
-import com.ioristudios.crossdroid.ui.theme.HapticHelper
 import com.ioristudios.crossdroid.ui.theme.IconSize
 import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
@@ -62,151 +60,155 @@ fun BottomNavbar(
 ) {
     val context = LocalContext.current
     val currentScreen by viewModel.currentScreen.collectAsState()
-
-    // Pulse animation for the central button
-    val infiniteTransition = rememberInfiniteTransition(label = "CenterLogoPulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.96f,
-        targetValue = 1.04f,
+    val pulseTransition = rememberInfiniteTransition(label = "BottomNavPulse")
+    val pulseAlpha by pulseTransition.animateFloat(
+        initialValue = 0.20f,
+        targetValue = 0.48f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1400),
+            animation = tween(durationMillis = 1250),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "LogoScale"
-    )
-    val glowIntensity by infiniteTransition.animateFloat(
-        initialValue = 0.25f,
-        targetValue = 0.45f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1400),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "LogoGlowOpacity"
+        label = "BottomNavGlowAlpha"
     )
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(88.dp)
+            .height(108.dp)
             .background(Color.Transparent)
-            .navigationBarsPadding(),
+            .navigationBarsPadding()
+            .padding(horizontal = Spacing.Medium),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Core Navbar Background Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp)
-                .background(BgElevated.copy(alpha = 0.95f))
-                .border(
-                    width = 1.dp,
-                    color = BgSurface,
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                ),
-            horizontalArrangement = Arrangement.SpaceAround,
+                .height(74.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .neonGlow(
+                    color = NeonPrimary,
+                    borderRadius = 24.dp,
+                    glowRadius = 22.dp,
+                    opacity = pulseAlpha,
+                    offsetY = 4.dp
+                )
+                .background(BgPanel.copy(alpha = 0.98f))
+                .border(1.dp, NeonPrimary.copy(alpha = 0.26f + (pulseAlpha * 0.34f)), RoundedCornerShape(24.dp))
+                .padding(horizontal = Spacing.Small),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 1. Devices Tab
-            val isDevices = currentScreen == Screen.DEVICES
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { viewModel.navigateTo(Screen.DEVICES, context) }
-                    .padding(vertical = Spacing.Small),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Devices,
-                    contentDescription = "Devices",
-                    tint = if (isDevices) NeonHighlight else TextMuted,
-                    modifier = Modifier
-                        .size(IconSize.Standard)
-                        .then(
-                            if (isDevices) Modifier.neonGlow(NeonPrimary, borderRadius = 6.dp, glowRadius = 4.dp, opacity = 0.3f)
-                            else Modifier
-                        )
-                )
-                Text(
-                    text = "Devices",
-                    color = if (isDevices) TextStrong else TextMuted,
-                    style = CustomTypography.labelSmall.copy(
-                        fontWeight = if (isDevices) FontWeight.Bold else FontWeight.Medium,
-                        fontSize = 11.sp
+            BottomNavTab(
+                label = "Devices",
+                selected = currentScreen == Screen.DEVICES,
+                pulseAlpha = pulseAlpha,
+                icon = { tint ->
+                    Icon(
+                        imageVector = Icons.Default.Devices,
+                        contentDescription = null,
+                        tint = tint,
+                        modifier = Modifier.size(IconSize.Standard)
                     )
-                )
-            }
+                },
+                onClick = { viewModel.navigateTo(Screen.DEVICES, context) },
+                modifier = Modifier.weight(1f)
+            )
 
-            // Empty spacer in the middle of the Row to accommodate the overlapping Center Button
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(0.92f))
 
-            // 2. History Tab
-            val isHistory = currentScreen == Screen.HISTORY
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { viewModel.navigateTo(Screen.HISTORY, context) }
-                    .padding(vertical = Spacing.Small),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = "History",
-                    tint = if (isHistory) NeonHighlight else TextMuted,
-                    modifier = Modifier
-                        .size(IconSize.Standard)
-                        .then(
-                            if (isHistory) Modifier.neonGlow(NeonPrimary, borderRadius = 6.dp, glowRadius = 4.dp, opacity = 0.3f)
-                            else Modifier
-                        )
-                )
-                Text(
-                    text = "History",
-                    color = if (isHistory) TextStrong else TextMuted,
-                    style = CustomTypography.labelSmall.copy(
-                        fontWeight = if (isHistory) FontWeight.Bold else FontWeight.Medium,
-                        fontSize = 11.sp
+            BottomNavTab(
+                label = "History",
+                selected = currentScreen == Screen.HISTORY,
+                pulseAlpha = pulseAlpha,
+                icon = { tint ->
+                    Icon(
+                        imageVector = Icons.Default.History,
+                        contentDescription = null,
+                        tint = tint,
+                        modifier = Modifier.size(IconSize.Standard)
                     )
-                )
-            }
+                },
+                onClick = { viewModel.navigateTo(Screen.HISTORY, context) },
+                modifier = Modifier.weight(1f)
+            )
         }
 
-        // 3. Central Brand Button (Anchor) - Rendered on top of the navbar row
         val isHome = currentScreen == Screen.HOME
         Box(
             modifier = Modifier
-                .offset(y = (-20).dp)
-                .scale(pulseScale)
-                .size(68.dp)
-                .clip(CircleShape)
-                .neonGlow(
-                    color = NeonPrimary,
-                    borderRadius = 100.dp,
-                    glowRadius = 16.dp,
-                    opacity = glowIntensity
-                )
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(NeonHighlight, NeonPrimary)
+                .offset(y = (-12).dp)
+                .size(if (isHome) 72.dp else 68.dp)
+                .then(
+                    Modifier.neonGlow(
+                        color = NeonPrimary,
+                        borderRadius = 100.dp,
+                        glowRadius = if (isHome) 24.dp else 16.dp,
+                        opacity = if (isHome) pulseAlpha + 0.12f else pulseAlpha * 0.55f
                     )
                 )
-                .border(
-                    width = 2.dp,
-                    color = if (isHome) TextStrong else NeonHighlight.copy(alpha = 0.6f),
-                    shape = CircleShape
-                )
-                .clickable {
-                    viewModel.navigateTo(Screen.HOME, context)
-                },
+                .clip(CircleShape)
+                .clickable { viewModel.navigateTo(Screen.HOME, context) },
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.SwapHoriz,
-                contentDescription = "Transfer Logo Center",
-                tint = TextStrong,
-                modifier = Modifier.size(IconSize.Large)
+            Image(
+                painter = painterResource(id = R.drawable.transfer_logo),
+                contentDescription = "Home",
+                modifier = Modifier
+                    .size(if (isHome) 70.dp else 66.dp)
+                    .clip(CircleShape)
             )
         }
+    }
+}
+
+@Composable
+private fun BottomNavTab(
+    label: String,
+    selected: Boolean,
+    pulseAlpha: Float,
+    icon: @Composable (Color) -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val tint = if (selected) NeonHighlight else TextMuted
+
+    Column(
+        modifier = modifier
+            .height(58.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .then(
+                if (selected) {
+                    Modifier
+                        .neonGlow(
+                            color = NeonPrimary,
+                            borderRadius = 18.dp,
+                            glowRadius = 10.dp,
+                            opacity = pulseAlpha
+                        )
+                        .background(NeonPrimary.copy(alpha = 0.12f + (pulseAlpha * 0.10f)))
+                } else {
+                    Modifier.background(Color.Transparent)
+                }
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = Spacing.Small),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Box(
+            modifier = Modifier
+                .height(3.dp)
+                .fillMaxWidth(if (selected) 0.42f else 0.20f)
+                .clip(RoundedCornerShape(100.dp))
+                .background(if (selected) NeonHighlight else Color.Transparent)
+        )
+        icon(tint)
+        Text(
+            text = label,
+            color = if (selected) TextStrong else TextSecondary,
+            style = CustomTypography.labelSmall.copy(
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+            )
+        )
     }
 }

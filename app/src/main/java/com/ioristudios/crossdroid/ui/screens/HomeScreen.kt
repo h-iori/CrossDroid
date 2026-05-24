@@ -18,21 +18,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,22 +34,19 @@ import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
 import com.ioristudios.crossdroid.ui.components.TopAppBar
-import com.ioristudios.crossdroid.ui.theme.BgElevated
+import com.ioristudios.crossdroid.ui.theme.AccentCyan
 import com.ioristudios.crossdroid.ui.theme.BgMain
-import com.ioristudios.crossdroid.ui.theme.BgSurface
+import com.ioristudios.crossdroid.ui.theme.BgPanel
+import com.ioristudios.crossdroid.ui.theme.BorderSubtle
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
-import com.ioristudios.crossdroid.ui.theme.HapticHelper
 import com.ioristudios.crossdroid.ui.theme.IconSize
 import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
 import com.ioristudios.crossdroid.ui.theme.Radii
 import com.ioristudios.crossdroid.ui.theme.Spacing
-import com.ioristudios.crossdroid.ui.theme.TextBody
-import com.ioristudios.crossdroid.ui.theme.TextMuted
 import com.ioristudios.crossdroid.ui.theme.TextSecondary
 import com.ioristudios.crossdroid.ui.theme.TextStrong
 import com.ioristudios.crossdroid.ui.theme.neonGlow
-import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
@@ -73,168 +64,123 @@ fun HomeScreen(
             title = "CrossDroid",
             viewModel = viewModel,
             showBackButton = false,
-            onMenuClick = {
-                viewModel.setSidebarVisible(true)
-            }
+            onMenuClick = { viewModel.setSidebarVisible(true) }
         )
 
-            // Brand Header Area
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.2f)
-                    .padding(horizontal = Spacing.Large),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // White text glowing neon purple
-                Text(
-                    text = "CrossDroid",
-                    color = TextStrong,
-                    style = CustomTypography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 42.sp,
-                        letterSpacing = 1.sp
-                    ),
-                    modifier = Modifier
-                        .neonGlow(
-                            color = NeonPrimary,
-                            borderRadius = 8.dp,
-                            glowRadius = 24.dp,
-                            opacity = 0.45f
-                        )
-                )
-                
-                Spacer(modifier = Modifier.height(Spacing.Small))
-                
-                Text(
-                    text = "by IORI STUDIOS",
-                    color = TextSecondary,
-                    style = CustomTypography.labelMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 2.sp
-                    )
-                )
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = Spacing.Large),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            NeonActionPanel(
+                title = "SEND",
+                description = "Select files and transfer them instantly to nearby devices.",
+                icon = Icons.Default.FileUpload,
+                accent = NeonPrimary,
+                secondaryAccent = NeonHighlight,
+                onClick = { viewModel.navigateTo(Screen.SEND, context) }
+            )
 
-            // Central Actions Area
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(2f)
-                    .padding(horizontal = Spacing.Large),
-                verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Large Send Button Card
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .clip(RoundedCornerShape(Radii.CardStandard))
-                        .neonGlow(NeonPrimary, borderRadius = Radii.CardStandard, glowRadius = 12.dp, opacity = 0.15f)
-                        .background(BgElevated)
-                        .border(
-                            width = 1.dp,
-                            brush = Brush.horizontalGradient(listOf(NeonPrimary.copy(alpha = 0.4f), Color.Transparent)),
-                            shape = RoundedCornerShape(Radii.CardStandard)
-                        )
-                        .clickable {
-                            viewModel.navigateTo(Screen.SEND, context)
-                        }
-                        .padding(Spacing.Large),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(Radii.ButtonSmall))
-                                .background(NeonPrimary.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FileUpload,
-                                contentDescription = "Send",
-                                tint = NeonHighlight,
-                                modifier = Modifier.size(IconSize.Large)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(Spacing.Medium))
-                        Column {
-                            Text(
-                                text = "SEND",
-                                style = CustomTypography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 1.sp
-                                ),
-                                color = TextStrong
-                            )
-                            Text(
-                                text = "Share files with nearby devices",
-                                style = CustomTypography.bodyMedium,
-                                color = TextSecondary
-                            )
-                        }
-                    }
-                }
+            Spacer(modifier = Modifier.height(Spacing.Large))
 
-                // Large Receive Button Card
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .clip(RoundedCornerShape(Radii.CardStandard))
-                        .neonGlow(Color(0xFF00E5FF), borderRadius = Radii.CardStandard, glowRadius = 12.dp, opacity = 0.15f)
-                        .background(BgElevated)
-                        .border(
-                            width = 1.dp,
-                            brush = Brush.horizontalGradient(listOf(Color(0xFF00E5FF).copy(alpha = 0.4f), Color.Transparent)),
-                            shape = RoundedCornerShape(Radii.CardStandard)
-                        )
-                        .clickable {
-                            viewModel.navigateTo(Screen.RECEIVE, context)
-                        }
-                        .padding(Spacing.Large),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(Radii.ButtonSmall))
-                                .background(Color(0xFF00E5FF).copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FileDownload,
-                                contentDescription = "Receive",
-                                tint = Color(0xFF00E5FF),
-                                modifier = Modifier.size(IconSize.Large)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(Spacing.Medium))
-                        Column {
-                            Text(
-                                text = "RECEIVE",
-                                style = CustomTypography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 1.sp
-                                ),
-                                color = TextStrong
-                            )
-                            Text(
-                                text = "Wait for others to send files",
-                                style = CustomTypography.bodyMedium,
-                                color = TextSecondary
-                            )
-                        }
-                    }
-                }
-            }
+            NeonActionPanel(
+                title = "RECEIVE",
+                description = "Make this device discoverable and accept incoming files.",
+                icon = Icons.Default.FileDownload,
+                accent = AccentCyan,
+                secondaryAccent = Color(0xFF7DF9FF),
+                onClick = { viewModel.navigateTo(Screen.RECEIVE, context) }
+            )
         }
     }
+}
+
+@Composable
+private fun NeonActionPanel(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    accent: Color,
+    secondaryAccent: Color,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(156.dp)
+            .clip(RoundedCornerShape(Radii.OverlaySheet))
+            .neonGlow(
+                color = accent,
+                borderRadius = Radii.OverlaySheet,
+                glowRadius = 22.dp,
+                opacity = 0.34f
+            )
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        accent.copy(alpha = 0.26f),
+                        BgPanel,
+                        secondaryAccent.copy(alpha = 0.16f)
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        secondaryAccent.copy(alpha = 0.90f),
+                        accent.copy(alpha = 0.35f),
+                        BorderSubtle
+                    )
+                ),
+                shape = RoundedCornerShape(Radii.OverlaySheet)
+            )
+            .clickable(onClick = onClick)
+            .padding(Spacing.Large),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(RoundedCornerShape(22.dp))
+                .neonGlow(
+                    color = accent,
+                    borderRadius = 22.dp,
+                    glowRadius = 14.dp,
+                    opacity = 0.42f
+                )
+                .background(accent.copy(alpha = 0.20f))
+                .border(1.dp, secondaryAccent.copy(alpha = 0.72f), RoundedCornerShape(22.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = secondaryAccent,
+                modifier = Modifier.size(IconSize.Huge)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(Spacing.Large))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = CustomTypography.headlineMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 28.sp,
+                    letterSpacing = 1.2.sp
+                ),
+                color = TextStrong
+            )
+            Spacer(modifier = Modifier.height(Spacing.Small))
+            Text(
+                text = description,
+                style = CustomTypography.bodyMedium,
+                color = TextSecondary
+            )
+        }
+    }
+}
