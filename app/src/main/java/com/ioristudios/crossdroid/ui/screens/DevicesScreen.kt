@@ -22,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.SignalWifi4Bar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,10 +44,8 @@ import com.ioristudios.crossdroid.ui.theme.BgMain
 import com.ioristudios.crossdroid.ui.theme.BgPanel
 import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
 import com.ioristudios.crossdroid.ui.theme.BorderSubtle
-import com.ioristudios.crossdroid.ui.theme.ColorSuccess
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
 import com.ioristudios.crossdroid.ui.theme.IconSize
-import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
 import com.ioristudios.crossdroid.ui.theme.Radii
 import com.ioristudios.crossdroid.ui.theme.Spacing
@@ -64,10 +61,11 @@ fun DevicesScreen(
 ) {
     val devices = MockData.deviceNodes
     val groupedDevices = listOf(
-        "Connected" to devices.filter { it.status == "Connected" },
-        "Paired" to devices.filter { it.status == "Paired" },
-        "Nearby" to devices.filter { it.status == "Nearby" }
+        "Previously Connected" to devices.filter { it.status == "Connected" },
+        "Paired & Saved" to devices.filter { it.status == "Paired" }
     ).filter { it.second.isNotEmpty() }
+
+    val savedDevicesCount = devices.count { it.status == "Connected" || it.status == "Paired" }
 
     Column(
         modifier = modifier
@@ -76,7 +74,7 @@ fun DevicesScreen(
     ) {
         TopAppBar(
             title = "Device directory",
-            subtitle = "${devices.size} trusted and discoverable endpoints",
+            subtitle = "$savedDevicesCount saved and trusted devices",
             viewModel = viewModel,
             onMenuClick = { viewModel.setSidebarVisible(true) }
         )
@@ -96,8 +94,7 @@ fun DevicesScreen(
             item {
                 DeviceOverview(
                     connected = devices.count { it.status == "Connected" },
-                    paired = devices.count { it.status == "Paired" },
-                    nearby = devices.count { it.status == "Nearby" }
+                    paired = devices.count { it.status == "Paired" }
                 )
             }
 
@@ -122,8 +119,7 @@ fun DevicesScreen(
 @Composable
 private fun DeviceOverview(
     connected: Int,
-    paired: Int,
-    nearby: Int
+    paired: Int
 ) {
     Row(
         modifier = Modifier
@@ -168,7 +164,7 @@ private fun DeviceOverview(
             Icon(
                 imageVector = Icons.Default.Devices,
                 contentDescription = null,
-                tint = NeonHighlight,
+                tint = NeonPrimary,
                 modifier = Modifier.size(IconSize.Standard)
             )
         }
@@ -182,7 +178,7 @@ private fun DeviceOverview(
                 color = TextStrong
             )
             Text(
-                text = "$connected connected / $paired paired / $nearby nearby",
+                text = "$connected connected / $paired paired & saved",
                 style = CustomTypography.labelMedium,
                 color = TextSecondary
             )
@@ -221,11 +217,7 @@ private fun SectionHeader(
 @Composable
 private fun DeviceDirectoryRow(device: DeviceNode) {
     val isConnected = device.status == "Connected"
-    val deviceColor = when {
-        isConnected -> ColorSuccess
-        device.osType == "android" -> AccentCyan
-        else -> NeonHighlight
-    }
+    val deviceColor = if (isConnected) NeonPrimary else AccentCyan
 
     Row(
         modifier = Modifier
@@ -272,7 +264,7 @@ private fun DeviceDirectoryRow(device: DeviceNode) {
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "${device.lastSeen} - signal ${device.signalStrength}/5",
+                text = device.lastSeen,
                 style = CustomTypography.labelSmall.copy(letterSpacing = 0.sp),
                 color = TextSecondary,
                 maxLines = 1,
@@ -282,17 +274,10 @@ private fun DeviceDirectoryRow(device: DeviceNode) {
 
         Spacer(modifier = Modifier.width(Spacing.Small))
 
-        Column(horizontalAlignment = Alignment.End) {
-            StatusChip(
-                label = device.status,
-                color = deviceColor
-            )
-            Spacer(modifier = Modifier.height(Spacing.Small))
-            SignalMeter(
-                strength = device.signalStrength,
-                color = deviceColor
-            )
-        }
+        StatusChip(
+            label = device.status,
+            color = deviceColor
+        )
     }
 }
 
@@ -325,30 +310,5 @@ private fun StatusChip(
             ),
             color = color
         )
-    }
-}
-
-@Composable
-private fun SignalMeter(
-    strength: Int,
-    color: Color
-) {
-    Row(verticalAlignment = Alignment.Bottom) {
-        Icon(
-            imageVector = Icons.Default.SignalWifi4Bar,
-            contentDescription = "Signal strength $strength of 5",
-            tint = TextMuted,
-            modifier = Modifier.size(14.dp)
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        repeat(5) { index ->
-            Box(
-                modifier = Modifier
-                    .padding(start = 2.dp)
-                    .size(width = 3.dp, height = (7 + index * 2).dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(if (index < strength) color.copy(alpha = 0.78f) else BorderSubtle)
-            )
-        }
     }
 }
