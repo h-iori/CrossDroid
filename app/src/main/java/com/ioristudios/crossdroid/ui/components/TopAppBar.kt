@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.R
@@ -82,7 +83,7 @@ fun TopAppBar(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = TextStrong,
-                        modifier = Modifier.size(IconSize.Standard)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -91,7 +92,7 @@ fun TopAppBar(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = Spacing.Small),
-                contentAlignment = Alignment.CenterStart
+                contentAlignment = Alignment.Center
             ) {
                 if (showSearch && searchMode) {
                     SearchField(
@@ -101,17 +102,22 @@ fun TopAppBar(
                 } else if (title == "CrossDroid") {
                     BrandHeader()
                 } else {
-                    Column {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(
                             text = title,
                             style = CustomTypography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                            color = TextStrong
+                            color = TextStrong,
+                            textAlign = TextAlign.Center
                         )
                         if (!subtitle.isNullOrBlank()) {
                             Text(
                                 text = subtitle,
                                 style = CustomTypography.labelSmall,
-                                color = TextSecondary
+                                color = TextSecondary,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }

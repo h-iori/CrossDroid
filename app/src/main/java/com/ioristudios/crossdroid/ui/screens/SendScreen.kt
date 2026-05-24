@@ -11,7 +11,11 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.HorizontalPager
+import kotlin.OptIn
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -59,6 +63,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
@@ -95,7 +100,9 @@ import com.ioristudios.crossdroid.ui.theme.TextMuted
 import com.ioristudios.crossdroid.ui.theme.TextSecondary
 import com.ioristudios.crossdroid.ui.theme.TextStrong
 import com.ioristudios.crossdroid.ui.theme.neonGlow
+import kotlin.math.absoluteValue
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SendScreen(
     viewModel: CrossDroidViewModel,
@@ -124,18 +131,32 @@ fun SendScreen(
         }
     }
 
-    val visibleEntries = remember(entries, activeFilter, searchQuery) {
-        val filtered = entries.filter { entry ->
-            val matchesSearch = searchQuery.isBlank() || entry.name.contains(searchQuery, ignoreCase = true)
-            val matchesType = activeFilter == FileType.ALL ||
-                (entry.kind == FileKind.FILE && entry.type == activeFilter)
-            matchesSearch && matchesType
+    val fileTypes = remember {
+        listOf(
+            FileType.ALL,
+            FileType.VIDEO,
+            FileType.IMAGE,
+            FileType.MUSIC,
+            FileType.DOCUMENT
+        )
+    }
+    val pagerState = rememberPagerState(
+        initialPage = fileTypes.indexOf(activeFilter)
+    ) { fileTypes.size }
+
+    // Sync activeFilter -> pagerState
+    LaunchedEffect(activeFilter) {
+        val page = fileTypes.indexOf(activeFilter)
+        if (page >= 0 && pagerState.currentPage != page) {
+            pagerState.animateScrollToPage(page)
         }
-        if (activeFilter != FileType.ALL) {
-            val dummyItems = MockData.filesList.filter { it.type == activeFilter && (searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true)) }
-            filtered + dummyItems
-        } else {
-            filtered
+    }
+
+    // Sync pagerState -> activeFilter
+    LaunchedEffect(pagerState.currentPage) {
+        val targetFilter = fileTypes[pagerState.currentPage]
+        if (activeFilter != targetFilter) {
+            viewModel.setFilter(targetFilter, context)
         }
     }
 
@@ -178,8 +199,8 @@ fun SendScreen(
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            when {
-                !hasAllFilesAccess -> PermissionGate(
+            if (!hasAllFilesAccess) {
+                PermissionGate(
                     onGrantClick = {
                         allFilesSettingsLauncher.launch(
                             Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
@@ -187,38 +208,78 @@ fun SendScreen(
                     },
                     modifier = Modifier.fillMaxSize()
                 )
-
-                isLoading -> LoadingState(modifier = Modifier.fillMaxSize())
-
-                error != null -> ErrorState(
-                    message = error ?: "Unable to load this folder.",
-                    onRetry = { viewModel.loadCurrentDirectory() },
+            } else {
+                HorizontalPager(
+                    state = pagerState,
                     modifier = Modifier.fillMaxSize()
-                )
+                ) { page ->
+                    val pageFilter = fileTypes[page]
+                    val pageEntries = remember(entries, pageFilter, searchQuery) {
+                        val filtered = entries.filter { entry ->
+                            val matchesSearch = searchQuery.isBlank() || entry.name.contains(searchQuery, ignoreCase = true)
+                            val matchesType = pageFilter == FileType.ALL ||
+                                (entry.kind == FileKind.FILE && entry.type == pageFilter)
+                            matchesSearch && matchesType
+                        }
+                        if (pageFilter != FileType.ALL) {
+                            val dummyItems = MockData.filesList.filter {
+                                it.type == pageFilter && (searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true))
+                            }
+                            filtered + dummyItems
+                        } else {
+                            filtered
+                        }
+                    }
 
-                visibleEntries.isEmpty() -> EmptyState(
-                    activeFilter = activeFilter,
-                    query = searchQuery,
-                    modifier = Modifier.fillMaxSize()
-                )
+                    // Slide transition scale & alpha animation
+                    val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+                    val pageScale = 0.93f + (1.0f - 0.93f) * (1f - pageOffset.coerceIn(0f, 1f))
+                    val pageAlpha = 0.5f + (1.0f - 0.5f) * (1f - pageOffset.coerceIn(0f, 1f))
 
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = Spacing.Medium,
-                        end = Spacing.Medium,
-                        top = Spacing.Small,
-                        bottom = if (selectedFiles.isEmpty()) Spacing.Large else 104.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.Small)
-                ) {
-                    items(visibleEntries, key = { it.id }) { file ->
-                        SelectableFileCard(
-                            file = file,
-                            isSelected = selectedFiles.any { it.id == file.id },
-                            viewModel = viewModel,
-                            onOpenFolder = { viewModel.openDirectory(it, context) }
-                        )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = pageScale
+                                scaleY = pageScale
+                                alpha = pageAlpha
+                            }
+                    ) {
+                        when {
+                            isLoading && pageFilter == FileType.ALL -> LoadingState(modifier = Modifier.fillMaxSize())
+
+                            error != null && pageFilter == FileType.ALL -> ErrorState(
+                                message = error ?: "Unable to load this folder.",
+                                onRetry = { viewModel.loadCurrentDirectory() },
+                                modifier = Modifier.fillMaxSize()
+                            )
+
+                            pageEntries.isEmpty() -> EmptyState(
+                                activeFilter = pageFilter,
+                                query = searchQuery,
+                                modifier = Modifier.fillMaxSize()
+                            )
+
+                            else -> LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    start = Spacing.Medium,
+                                    end = Spacing.Medium,
+                                    top = Spacing.Small,
+                                    bottom = if (selectedFiles.isEmpty()) Spacing.Large else 104.dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+                            ) {
+                                items(pageEntries, key = { it.id }) { file ->
+                                    SelectableFileCard(
+                                        file = file,
+                                        isSelected = selectedFiles.any { it.id == file.id },
+                                        viewModel = viewModel,
+                                        onOpenFolder = { viewModel.openDirectory(it, context) }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
