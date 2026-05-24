@@ -35,14 +35,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.data.FileType
 import com.ioristudios.crossdroid.ui.TransferBubble
+import com.ioristudios.crossdroid.ui.theme.AccentCyan
 import com.ioristudios.crossdroid.ui.theme.BgElevated
+import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
 import com.ioristudios.crossdroid.ui.theme.BgSurface
+import com.ioristudios.crossdroid.ui.theme.BorderSubtle
 import com.ioristudios.crossdroid.ui.theme.ColorError
 import com.ioristudios.crossdroid.ui.theme.ColorSuccess
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
@@ -51,7 +53,6 @@ import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
 import com.ioristudios.crossdroid.ui.theme.Radii
 import com.ioristudios.crossdroid.ui.theme.Spacing
-import com.ioristudios.crossdroid.ui.theme.TextBody
 import com.ioristudios.crossdroid.ui.theme.TextMuted
 import com.ioristudios.crossdroid.ui.theme.TextSecondary
 import com.ioristudios.crossdroid.ui.theme.TextStrong
@@ -60,53 +61,23 @@ import com.ioristudios.crossdroid.ui.theme.neonGlow
 @Composable
 fun ChatBubbleItem(
     bubble: TransferBubble,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    readOnly: Boolean = false
 ) {
     val isOutgoing = !bubble.isIncoming
-    
-    // Bubble shapes based on alignment
-    val bubbleShape = if (isOutgoing) {
-        RoundedCornerShape(
-            topStart = Radii.CardStandard,
-            topEnd = Radii.CardStandard,
-            bottomStart = Radii.CardStandard,
-            bottomEnd = 4.dp
-        )
-    } else {
-        RoundedCornerShape(
-            topStart = Radii.CardStandard,
-            topEnd = Radii.CardStandard,
-            bottomStart = 4.dp,
-            bottomEnd = Radii.CardStandard
-        )
-    }
-
-    val fileIcon = when (bubble.file.type) {
-        FileType.VIDEO -> Icons.Default.PlayCircle
-        FileType.IMAGE -> Icons.Default.Image
-        FileType.MUSIC -> Icons.Default.Audiotrack
-        else -> Icons.Default.Description
-    }
-
-    val iconColor = when (bubble.file.type) {
-        FileType.VIDEO -> NeonHighlight
-        FileType.IMAGE -> Color(0xFF00E5FF)
-        FileType.MUSIC -> ColorSuccess
-        else -> Color(0xFFFFD600)
-    }
-
-    val statusIcon = when (bubble.status) {
-        "Completed" -> Icons.Default.CheckCircle
-        "Failed" -> Icons.Default.Error
-        "Paused" -> Icons.Default.PauseCircle
-        else -> null
-    }
-
-    val statusIconColor = when (bubble.status) {
+    val accent = if (isOutgoing) NeonHighlight else AccentCyan
+    val isActive = bubble.status == "Sending" || bubble.status == "Receiving" || bubble.status == "Paused"
+    val statusColor = when (bubble.status) {
         "Completed" -> ColorSuccess
         "Failed" -> ColorError
         "Paused" -> NeonHighlight
-        else -> TextSecondary
+        else -> accent
+    }
+
+    val bubbleShape = if (isOutgoing) {
+        RoundedCornerShape(18.dp, 18.dp, 6.dp, 18.dp)
+    } else {
+        RoundedCornerShape(18.dp, 18.dp, 18.dp, 6.dp)
     }
 
     Row(
@@ -117,122 +88,196 @@ fun ChatBubbleItem(
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 280.dp)
+                .widthIn(max = 316.dp)
                 .clip(bubbleShape)
                 .then(
-                    if (bubble.status == "Sending" || bubble.status == "Receiving") {
+                    if (isActive && !readOnly) {
                         Modifier.neonGlow(
-                            color = NeonPrimary,
+                            color = accent,
                             borderRadius = Radii.CardStandard,
-                            glowRadius = 6.dp,
-                            opacity = 0.15f
+                            glowRadius = 7.dp,
+                            opacity = 0.12f
                         )
-                    } else Modifier
+                    } else {
+                        Modifier
+                    }
                 )
-                .background(if (isOutgoing) BgSurface else BgElevated)
+                .background(
+                    brush = if (isOutgoing) {
+                        Brush.linearGradient(
+                            listOf(
+                                NeonPrimary.copy(alpha = 0.22f),
+                                BgSurface.copy(alpha = 0.96f)
+                            )
+                        )
+                    } else {
+                        Brush.linearGradient(
+                            listOf(
+                                BgElevated.copy(alpha = 0.98f),
+                                BgPanelMuted.copy(alpha = 0.78f)
+                            )
+                        )
+                    }
+                )
                 .border(
                     width = 1.dp,
-                    color = if (isOutgoing) NeonPrimary.copy(alpha = 0.4f) else BgSurface,
+                    color = if (isOutgoing) accent.copy(alpha = 0.34f) else BorderSubtle.copy(alpha = 0.9f),
                     shape = bubbleShape
                 )
                 .padding(Spacing.Medium)
         ) {
-            // Header: Name and icon
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(iconColor.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = fileIcon,
-                        contentDescription = "File Type",
-                        tint = iconColor,
-                        modifier = Modifier.size(IconSize.Small)
-                    )
-                }
-                
-                Spacer(modifier = Modifier.width(Spacing.Small))
-                
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = bubble.file.name,
-                        style = CustomTypography.labelLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        ),
-                        color = TextStrong,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = bubble.file.size,
-                        style = CustomTypography.labelSmall,
-                        color = TextSecondary
-                    )
-                }
-
-                if (statusIcon != null) {
-                    Icon(
-                        imageVector = statusIcon,
-                        contentDescription = bubble.status,
-                        tint = statusIconColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(Spacing.Medium))
-
-            // Progress Bar
-            CyberpunkProgressBar(
-                progress = bubble.progress,
-                modifier = Modifier.fillMaxWidth()
+            FileBubbleHeader(
+                bubble = bubble,
+                accent = accent,
+                statusColor = statusColor
             )
+
+            if (!readOnly || isActive) {
+                Spacer(modifier = Modifier.height(Spacing.Medium))
+                CyberpunkProgressBar(
+                    progress = bubble.progress,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Spacer(modifier = Modifier.height(Spacing.Small))
 
-            // Footer status + speed info
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = when (bubble.status) {
-                        "Sending" -> "Sending (${(bubble.progress * 100).toInt()}%)"
-                        "Receiving" -> "Receiving (${(bubble.progress * 100).toInt()}%)"
-                        "Completed" -> "Completed"
-                        "Paused" -> "Paused"
-                        "Failed" -> "Failed"
-                        else -> "Pending"
-                    },
-                    style = CustomTypography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = if (bubble.status == "Completed") ColorSuccess else if (bubble.status == "Failed") ColorError else TextSecondary
-                    )
-                )
+            FileBubbleFooter(
+                bubble = bubble,
+                statusColor = statusColor,
+                readOnly = readOnly
+            )
+        }
+    }
+}
 
-                AnimatedVisibility(
-                    visible = bubble.status in listOf("Sending", "Receiving"),
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    Text(
-                        text = bubble.speed,
-                        style = CustomTypography.labelSmall.copy(
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 10.sp,
-                            color = NeonHighlight
-                        ),
-                        textAlign = TextAlign.End
-                    )
-                }
+@Composable
+private fun FileBubbleHeader(
+    bubble: TransferBubble,
+    accent: Color,
+    statusColor: Color
+) {
+    val fileIcon = when (bubble.file.type) {
+        FileType.VIDEO -> Icons.Default.PlayCircle
+        FileType.IMAGE -> Icons.Default.Image
+        FileType.MUSIC -> Icons.Default.Audiotrack
+        else -> Icons.Default.Description
+    }
+
+    val statusIcon = when (bubble.status) {
+        "Completed" -> Icons.Default.CheckCircle
+        "Failed" -> Icons.Default.Error
+        "Paused" -> Icons.Default.PauseCircle
+        else -> null
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(accent.copy(alpha = 0.12f))
+                .border(1.dp, accent.copy(alpha = 0.25f), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = fileIcon,
+                contentDescription = "File type",
+                tint = accent,
+                modifier = Modifier.size(IconSize.Small)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(Spacing.Small))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = bubble.file.name,
+                style = CustomTypography.labelLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    letterSpacing = 0.sp
+                ),
+                color = TextStrong,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = bubble.file.size,
+                style = CustomTypography.labelSmall.copy(letterSpacing = 0.sp),
+                color = TextSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        if (statusIcon != null) {
+            Spacer(modifier = Modifier.width(Spacing.Small))
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(CircleShape)
+                    .background(statusColor.copy(alpha = 0.11f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = statusIcon,
+                    contentDescription = bubble.status,
+                    tint = statusColor,
+                    modifier = Modifier.size(15.dp)
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun FileBubbleFooter(
+    bubble: TransferBubble,
+    statusColor: Color,
+    readOnly: Boolean
+) {
+    val statusText = when (bubble.status) {
+        "Sending" -> "Sending ${(bubble.progress * 100).toInt()}%"
+        "Receiving" -> "Receiving ${(bubble.progress * 100).toInt()}%"
+        "Completed" -> if (readOnly) "Recorded complete" else "Completed"
+        "Paused" -> "Paused"
+        "Failed" -> "Recorded failed"
+        else -> "Pending"
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = statusText,
+            style = CustomTypography.labelSmall.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 10.sp,
+                letterSpacing = 0.sp
+            ),
+            color = statusColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        AnimatedVisibility(
+            visible = !readOnly && bubble.status in listOf("Sending", "Receiving"),
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Text(
+                text = bubble.speed,
+                style = CustomTypography.labelSmall.copy(
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 10.sp,
+                    letterSpacing = 0.sp
+                ),
+                color = TextMuted
+            )
         }
     }
 }

@@ -19,6 +19,7 @@ import com.ioristudios.crossdroid.ui.screens.AboutScreen
 import com.ioristudios.crossdroid.ui.screens.HomeScreen
 import com.ioristudios.crossdroid.ui.screens.DevicesScreen
 import com.ioristudios.crossdroid.ui.screens.HistoryScreen
+import com.ioristudios.crossdroid.ui.screens.HistoryDetailScreen
 import com.ioristudios.crossdroid.ui.screens.SendScreen
 import com.ioristudios.crossdroid.ui.screens.QrScanScreen
 import com.ioristudios.crossdroid.ui.screens.EnterCodeScreen
@@ -40,10 +41,10 @@ fun NavigationHost(
         transitionSpec = {
             // Check slide transition criteria
             val isEnteringSubflow = targetState in listOf(
-                Screen.SEND, Screen.QR_SCAN, Screen.ENTER_CODE, Screen.RADAR, Screen.TRANSFER, Screen.RECEIVE
+                Screen.SEND, Screen.QR_SCAN, Screen.ENTER_CODE, Screen.RADAR, Screen.TRANSFER, Screen.RECEIVE, Screen.HISTORY_DETAIL
             )
             val isExitingSubflow = initialState in listOf(
-                Screen.SEND, Screen.QR_SCAN, Screen.ENTER_CODE, Screen.RADAR, Screen.TRANSFER, Screen.RECEIVE
+                Screen.SEND, Screen.QR_SCAN, Screen.ENTER_CODE, Screen.RADAR, Screen.TRANSFER, Screen.RECEIVE, Screen.HISTORY_DETAIL
             )
 
             if (isEnteringSubflow && !isExitingSubflow) {
@@ -75,6 +76,7 @@ fun NavigationHost(
             Screen.HOME -> HomeScreen(viewModel = viewModel)
             Screen.DEVICES -> DevicesScreen(viewModel = viewModel)
             Screen.HISTORY -> HistoryScreen(viewModel = viewModel)
+            Screen.HISTORY_DETAIL -> HistoryDetailScreen(viewModel = viewModel)
             Screen.SEND -> SendScreen(viewModel = viewModel)
             Screen.QR_SCAN -> QrScanScreen(viewModel = viewModel)
             Screen.ENTER_CODE -> EnterCodeScreen(viewModel = viewModel)

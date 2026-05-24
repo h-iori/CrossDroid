@@ -20,24 +20,31 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.SignalWifi4Bar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ioristudios.crossdroid.data.DeviceNode
 import com.ioristudios.crossdroid.data.MockData
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.components.TopAppBar
+import com.ioristudios.crossdroid.ui.theme.AccentCyan
 import com.ioristudios.crossdroid.ui.theme.BgElevated
 import com.ioristudios.crossdroid.ui.theme.BgMain
-import com.ioristudios.crossdroid.ui.theme.BgSurface
+import com.ioristudios.crossdroid.ui.theme.BgPanel
+import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
+import com.ioristudios.crossdroid.ui.theme.BorderSubtle
 import com.ioristudios.crossdroid.ui.theme.ColorSuccess
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
 import com.ioristudios.crossdroid.ui.theme.IconSize
@@ -45,7 +52,6 @@ import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
 import com.ioristudios.crossdroid.ui.theme.Radii
 import com.ioristudios.crossdroid.ui.theme.Spacing
-import com.ioristudios.crossdroid.ui.theme.TextBody
 import com.ioristudios.crossdroid.ui.theme.TextMuted
 import com.ioristudios.crossdroid.ui.theme.TextSecondary
 import com.ioristudios.crossdroid.ui.theme.TextStrong
@@ -57,6 +63,11 @@ fun DevicesScreen(
     modifier: Modifier = Modifier
 ) {
     val devices = MockData.deviceNodes
+    val groupedDevices = listOf(
+        "Connected" to devices.filter { it.status == "Connected" },
+        "Paired" to devices.filter { it.status == "Paired" },
+        "Nearby" to devices.filter { it.status == "Nearby" }
+    ).filter { it.second.isNotEmpty() }
 
     Column(
         modifier = modifier
@@ -64,7 +75,8 @@ fun DevicesScreen(
             .background(BgMain)
     ) {
         TopAppBar(
-            title = "Devices Pairing Hub",
+            title = "Device directory",
+            subtitle = "${devices.size} trusted and discoverable endpoints",
             viewModel = viewModel,
             onMenuClick = { viewModel.setSidebarVisible(true) }
         )
@@ -73,104 +85,270 @@ fun DevicesScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            contentPadding = PaddingValues(Spacing.Medium),
+            contentPadding = PaddingValues(
+                start = Spacing.Medium,
+                top = Spacing.Medium,
+                end = Spacing.Medium,
+                bottom = Spacing.Huge
+            ),
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
         ) {
             item {
-                Text(
-                    text = "Active & Paired Nodes",
-                    style = CustomTypography.titleLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
-                    color = TextStrong,
-                    modifier = Modifier.padding(bottom = Spacing.Small)
+                DeviceOverview(
+                    connected = devices.count { it.status == "Connected" },
+                    paired = devices.count { it.status == "Paired" },
+                    nearby = devices.count { it.status == "Nearby" }
                 )
             }
 
-            items(devices) { device ->
-                val isConnected = device.status == "Connected"
-                val deviceColor = if (device.osType == "android") ColorSuccess else Color(0xFF00E5FF)
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(Radii.CardStandard))
-                        .background(BgElevated)
-                        .border(
-                            width = 1.dp,
-                            color = if (isConnected) NeonPrimary.copy(alpha = 0.5f) else BgSurface,
-                            shape = RoundedCornerShape(Radii.CardStandard)
-                        )
-                        .padding(Spacing.Medium),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Device OS Icon
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(deviceColor.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (device.osType == "android") Icons.Default.PhoneAndroid else Icons.Default.Computer,
-                            contentDescription = "Device OS Type",
-                            tint = deviceColor,
-                            modifier = Modifier.size(IconSize.Standard)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(Spacing.Medium))
-
-                    // Name and last seen status
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = device.name,
-                            style = CustomTypography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 14.sp),
-                            color = TextStrong
-                        )
-                        Text(
-                            text = "${device.status} • ${device.lastSeen}",
-                            style = CustomTypography.labelMedium,
-                            color = TextSecondary
-                        )
-                    }
-
-                    // Status Indicator Dot or Signal Info
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (isConnected) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(ColorSuccess)
-                                    .neonGlow(ColorSuccess, borderRadius = 4.dp, glowRadius = 4.dp, opacity = 0.8f)
-                            )
-                            Spacer(modifier = Modifier.width(Spacing.Small))
-                            Text(
-                                text = "Connected",
-                                style = CustomTypography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                color = ColorSuccess
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Wifi,
-                                contentDescription = "Signal Strength",
-                                tint = TextMuted,
-                                modifier = Modifier.size(IconSize.Small)
-                            )
-                            Spacer(modifier = Modifier.width(Spacing.Tiny))
-                            Text(
-                                text = "${device.signalStrength}/5",
-                                style = CustomTypography.labelMedium,
-                                color = TextMuted
-                            )
-                        }
-                    }
+            groupedDevices.forEach { (sectionTitle, sectionDevices) ->
+                item(key = "section-$sectionTitle") {
+                    SectionHeader(
+                        title = sectionTitle,
+                        count = sectionDevices.size
+                    )
+                }
+                items(
+                    items = sectionDevices,
+                    key = { it.id }
+                ) { device ->
+                    DeviceDirectoryRow(device = device)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DeviceOverview(
+    connected: Int,
+    paired: Int,
+    nearby: Int
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radii.CardStandard))
+            .neonGlow(
+                color = NeonPrimary,
+                borderRadius = Radii.CardStandard,
+                glowRadius = 12.dp,
+                opacity = 0.12f
+            )
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        BgPanel,
+                        BgPanelMuted.copy(alpha = 0.98f),
+                        NeonPrimary.copy(alpha = 0.10f)
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                brush = Brush.horizontalGradient(
+                    listOf(
+                        NeonPrimary.copy(alpha = 0.38f),
+                        AccentCyan.copy(alpha = 0.22f),
+                        BorderSubtle
+                    )
+                ),
+                shape = RoundedCornerShape(Radii.CardStandard)
+            )
+            .padding(Spacing.Medium),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(NeonPrimary.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Devices,
+                contentDescription = null,
+                tint = NeonHighlight,
+                modifier = Modifier.size(IconSize.Standard)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(Spacing.Medium))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Pairing health",
+                style = CustomTypography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = TextStrong
+            )
+            Text(
+                text = "$connected connected / $paired paired / $nearby nearby",
+                style = CustomTypography.labelMedium,
+                color = TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(
+    title: String,
+    count: Int
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = Spacing.Small),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = CustomTypography.labelLarge.copy(
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.sp
+            ),
+            color = TextStrong
+        )
+        Spacer(modifier = Modifier.width(Spacing.Small))
+        Text(
+            text = "$count",
+            style = CustomTypography.labelMedium,
+            color = TextMuted
+        )
+    }
+}
+
+@Composable
+private fun DeviceDirectoryRow(device: DeviceNode) {
+    val isConnected = device.status == "Connected"
+    val deviceColor = when {
+        isConnected -> ColorSuccess
+        device.osType == "android" -> AccentCyan
+        else -> NeonHighlight
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(BgElevated.copy(alpha = 0.92f))
+            .border(
+                width = 1.dp,
+                color = if (isConnected) deviceColor.copy(alpha = 0.34f) else BorderSubtle.copy(alpha = 0.82f),
+                shape = RoundedCornerShape(14.dp)
+            )
+            .padding(horizontal = Spacing.Medium, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(deviceColor.copy(alpha = 0.12f))
+                .border(1.dp, deviceColor.copy(alpha = 0.28f), RoundedCornerShape(14.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (device.osType == "android") Icons.Default.PhoneAndroid else Icons.Default.Computer,
+                contentDescription = "${device.osType} device",
+                tint = deviceColor,
+                modifier = Modifier.size(IconSize.Standard)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(Spacing.Medium))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = device.name,
+                style = CustomTypography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    lineHeight = 19.sp
+                ),
+                color = TextStrong,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "${device.lastSeen} - signal ${device.signalStrength}/5",
+                style = CustomTypography.labelSmall.copy(letterSpacing = 0.sp),
+                color = TextSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Spacer(modifier = Modifier.width(Spacing.Small))
+
+        Column(horizontalAlignment = Alignment.End) {
+            StatusChip(
+                label = device.status,
+                color = deviceColor
+            )
+            Spacer(modifier = Modifier.height(Spacing.Small))
+            SignalMeter(
+                strength = device.signalStrength,
+                color = deviceColor
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusChip(
+    label: String,
+    color: Color
+) {
+    Row(
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(color.copy(alpha = 0.10f))
+            .border(1.dp, color.copy(alpha = 0.24f), CircleShape)
+            .padding(horizontal = 9.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = label,
+            style = CustomTypography.labelSmall.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 10.sp,
+                letterSpacing = 0.sp
+            ),
+            color = color
+        )
+    }
+}
+
+@Composable
+private fun SignalMeter(
+    strength: Int,
+    color: Color
+) {
+    Row(verticalAlignment = Alignment.Bottom) {
+        Icon(
+            imageVector = Icons.Default.SignalWifi4Bar,
+            contentDescription = "Signal strength $strength of 5",
+            tint = TextMuted,
+            modifier = Modifier.size(14.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        repeat(5) { index ->
+            Box(
+                modifier = Modifier
+                    .padding(start = 2.dp)
+                    .size(width = 3.dp, height = (7 + index * 2).dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(if (index < strength) color.copy(alpha = 0.78f) else BorderSubtle)
+            )
         }
     }
 }

@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 enum class Screen {
-    HOME, DEVICES, HISTORY, SEND, QR_SCAN, ENTER_CODE, RADAR, TRANSFER, RECEIVE, ABOUT
+    HOME, DEVICES, HISTORY, HISTORY_DETAIL, SEND, QR_SCAN, ENTER_CODE, RADAR, TRANSFER, RECEIVE, ABOUT
 }
 
 data class TransferBubble(
@@ -28,6 +28,15 @@ data class TransferBubble(
     val speed: String,
     val status: String, // "Pending", "Sending", "Receiving", "Paused", "Failed", "Completed"
     val isIncoming: Boolean
+)
+
+data class HistorySession(
+    val id: String,
+    val deviceName: String,
+    val date: String,
+    val isIncoming: Boolean,
+    val isSuccess: Boolean,
+    val records: List<HistoryItem>
 )
 
 class CrossDroidViewModel : ViewModel() {
@@ -82,6 +91,9 @@ class CrossDroidViewModel : ViewModel() {
     private val _historyRecords = MutableStateFlow(MockData.historyItems)
     val historyRecords: StateFlow<List<HistoryItem>> = _historyRecords.asStateFlow()
 
+    private val _selectedHistorySession = MutableStateFlow<HistorySession?>(null)
+    val selectedHistorySession: StateFlow<HistorySession?> = _selectedHistorySession.asStateFlow()
+
     // Sidebar State
     private val _isSidebarVisible = MutableStateFlow(false)
     val isSidebarVisible: StateFlow<Boolean> = _isSidebarVisible.asStateFlow()
@@ -124,6 +136,27 @@ class CrossDroidViewModel : ViewModel() {
         } else {
             cancelReceiveSimulation()
         }
+    }
+
+    fun historySessions(): List<HistorySession> = buildHistorySessions(_historyRecords.value)
+
+    fun openHistorySession(session: HistorySession, context: Context) {
+        _selectedHistorySession.value = session
+        navigateTo(Screen.HISTORY_DETAIL, context)
+    }
+
+    fun openHistorySession(record: HistoryItem, context: Context) {
+        val session = buildHistorySessions(_historyRecords.value).firstOrNull { candidate ->
+            candidate.records.any { it.id == record.id }
+        } ?: HistorySession(
+            id = historySessionId(record.deviceName, record.date, record.isIncoming, record.isSuccess),
+            deviceName = record.deviceName,
+            date = record.date,
+            isIncoming = record.isIncoming,
+            isSuccess = record.isSuccess,
+            records = listOf(record)
+        )
+        openHistorySession(session, context)
     }
 
     fun navigateBack(context: Context, triggerHaptic: Boolean = true) {
@@ -371,4 +404,29 @@ class CrossDroidViewModel : ViewModel() {
         HapticHelper.triggerError(context)
         navigateTo(Screen.HOME, context)
     }
+}
+
+fun buildHistorySessions(records: List<HistoryItem>): List<HistorySession> {
+    return records
+        .groupBy { historySessionId(it.deviceName, it.date, it.isIncoming, it.isSuccess) }
+        .map { (id, groupedRecords) ->
+            val first = groupedRecords.first()
+            HistorySession(
+                id = id,
+                deviceName = first.deviceName,
+                date = first.date,
+                isIncoming = first.isIncoming,
+                isSuccess = first.isSuccess,
+                records = groupedRecords
+            )
+        }
+}
+
+private fun historySessionId(
+    deviceName: String,
+    date: String,
+    isIncoming: Boolean,
+    isSuccess: Boolean
+): String {
+    return listOf(deviceName, date, isIncoming.toString(), isSuccess.toString()).joinToString("|")
 }
