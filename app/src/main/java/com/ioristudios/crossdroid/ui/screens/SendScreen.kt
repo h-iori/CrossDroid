@@ -5,12 +5,15 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +34,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
@@ -53,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -71,6 +76,7 @@ import com.ioristudios.crossdroid.ui.components.FilterTabs
 import com.ioristudios.crossdroid.ui.components.GlowingButton
 import com.ioristudios.crossdroid.ui.components.SelectableFileCard
 import com.ioristudios.crossdroid.ui.components.TopAppBar
+import com.ioristudios.crossdroid.ui.theme.AccentBlue
 import com.ioristudios.crossdroid.ui.theme.AccentCyan
 import com.ioristudios.crossdroid.ui.theme.BgElevated
 import com.ioristudios.crossdroid.ui.theme.BgMain
@@ -78,6 +84,7 @@ import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
 import com.ioristudios.crossdroid.ui.theme.BgSurface
 import com.ioristudios.crossdroid.ui.theme.BorderSubtle
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
+import com.ioristudios.crossdroid.ui.theme.HapticHelper
 import com.ioristudios.crossdroid.ui.theme.IconSize
 import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
@@ -460,6 +467,14 @@ private fun SendCommandBar(
     onClear: () -> Unit,
     onNext: () -> Unit
 ) {
+    val context = LocalContext.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed = interactionSource.collectIsPressedAsState().value
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1.0f,
+        label = "SendButtonPressScale"
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -514,26 +529,37 @@ private fun SendCommandBar(
 
         Box(
             modifier = Modifier
-                .heightIn(min = 48.dp)
-                .clip(RoundedCornerShape(Radii.ButtonSmall))
-                .neonGlow(NeonPrimary, borderRadius = Radii.ButtonSmall, glowRadius = 12.dp, opacity = 0.24f)
-                .background(Brush.horizontalGradient(listOf(NeonPrimary, NeonHighlight)))
-                .border(1.dp, NeonHighlight.copy(alpha = 0.72f), RoundedCornerShape(Radii.ButtonSmall))
-                .clickable(onClick = onNext)
-                .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
+                .height(48.dp)
+                .scale(scale)
+                .clip(CircleShape)
+                .neonGlow(NeonPrimary, borderRadius = 24.dp, glowRadius = 12.dp, opacity = if (isPressed) 0.38f else 0.22f)
+                .background(Brush.horizontalGradient(listOf(NeonPrimary, AccentBlue)))
+                .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = {
+                        HapticHelper.triggerMedium(context)
+                        onNext()
+                    }
+                )
+                .padding(horizontal = Spacing.Large, vertical = Spacing.Small),
             contentAlignment = Alignment.Center
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.QrCodeScanner,
+                    imageVector = Icons.AutoMirrored.Filled.Send,
                     contentDescription = null,
                     tint = Color.White,
                     modifier = Modifier.size(IconSize.Small)
                 )
-                Spacer(modifier = Modifier.width(Spacing.Small))
+                Spacer(modifier = Modifier.width(Spacing.Small + 2.dp))
                 Text(
                     text = "SEND",
-                    style = CustomTypography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+                    style = CustomTypography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp
+                    ),
                     color = Color.White
                 )
             }
