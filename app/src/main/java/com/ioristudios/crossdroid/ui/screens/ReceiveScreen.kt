@@ -33,10 +33,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,29 +74,85 @@ fun ReceiveScreen(
     val context = LocalContext.current
     val showPopup by viewModel.showReceivePopup.collectAsState()
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(BgMain)
     ) {
-        TopAppBar(
-            title = "Receive Console",
-            subtitle = "Secure local intake",
-            viewModel = viewModel,
-            showBackButton = true
-        )
+        // Decorative background grid & radial glow
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val width = size.width
+            val height = size.height
+            
+            // Center-top cyan ambient glow
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(AccentCyan.copy(alpha = 0.08f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(width / 2f, height * 0.35f),
+                    radius = width * 0.8f
+                )
+            )
+            
+            // Center-bottom purple ambient glow
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(NeonPrimary.copy(alpha = 0.05f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(width / 2f, height * 0.65f),
+                    radius = width * 0.8f
+                )
+            )
+
+            // Dotted/dashed tech grid line drawing
+            val gridSize = 40.dp.toPx()
+            val gridPathEffect = PathEffect.dashPathEffect(floatArrayOf(2f, 8f), 0f)
+            
+            var x = 0f
+            while (x < width) {
+                drawLine(
+                    color = BorderSubtle.copy(alpha = 0.15f),
+                    start = androidx.compose.ui.geometry.Offset(x, 0f),
+                    end = androidx.compose.ui.geometry.Offset(x, height),
+                    strokeWidth = 1.dp.toPx(),
+                    pathEffect = gridPathEffect
+                )
+                x += gridSize
+            }
+            
+            var y = 0f
+            while (y < height) {
+                drawLine(
+                    color = BorderSubtle.copy(alpha = 0.15f),
+                    start = androidx.compose.ui.geometry.Offset(0f, y),
+                    end = androidx.compose.ui.geometry.Offset(width, y),
+                    strokeWidth = 1.dp.toPx(),
+                    pathEffect = gridPathEffect
+                )
+                y += gridSize
+            }
+        }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(Spacing.Medium),
-            verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
+            modifier = Modifier.fillMaxSize()
         ) {
-            Spacer(modifier = Modifier.weight(1f))
-            ReceiveStatusBand()
-            ReceiverHeroCard()
-            ConnectionPinCard()
-            Spacer(modifier = Modifier.weight(1f))
+            TopAppBar(
+                title = "Receive Console",
+                subtitle = "Secure local intake",
+                viewModel = viewModel,
+                showBackButton = true
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(Spacing.Medium),
+                verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
+                ReceiveStatusBand()
+                ReceiverHeroCard()
+                ConnectionPinCard()
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
     }
 
@@ -102,6 +162,7 @@ fun ReceiveScreen(
         filesCount = 2,
         totalSize = "16.6 MB",
         fileNames = listOf("Neon_Vibes_Chill.mp3", "IORI_Studios_Logo.png"),
+
         onAccept = { viewModel.acceptIncomingTransfer(context) },
         onDecline = { viewModel.declineIncomingTransfer(context) }
     )
@@ -113,8 +174,17 @@ private fun ReceiveStatusBand() {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(BgElevated.copy(alpha = 0.92f))
-            .border(1.dp, BorderSubtle.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
+            .background(BgElevated.copy(alpha = 0.65f))
+            .border(
+                1.dp,
+                Brush.horizontalGradient(
+                    listOf(
+                        AccentCyan.copy(alpha = 0.42f),
+                        BorderSubtle.copy(alpha = 0.72f)
+                    )
+                ),
+                RoundedCornerShape(16.dp)
+            )
             .padding(Spacing.Medium),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -148,6 +218,28 @@ private fun ReceiveStatusBand() {
 
 @Composable
 private fun ReceiverHeroCard() {
+    val transition = rememberInfiniteTransition(label = "HeroCardBorder")
+    val gradientShift by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(5000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "BorderGradientShift"
+    )
+
+    val borderBrush = Brush.linearGradient(
+        colors = listOf(
+            AccentCyan.copy(alpha = 0.6f),
+            NeonPrimary.copy(alpha = 0.35f),
+            BorderSubtle.copy(alpha = 0.5f),
+            AccentCyan.copy(alpha = 0.6f)
+        ),
+        start = androidx.compose.ui.geometry.Offset(gradientShift, 0f),
+        end = androidx.compose.ui.geometry.Offset(gradientShift + 400f, 400f)
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -157,22 +249,16 @@ private fun ReceiverHeroCard() {
             .background(
                 Brush.linearGradient(
                     listOf(
-                        BgPanel,
-                        BgPanelMuted.copy(alpha = 0.98f),
-                        AccentCyan.copy(alpha = 0.12f),
-                        NeonPrimary.copy(alpha = 0.10f)
+                        BgPanel.copy(alpha = 0.85f),
+                        BgPanelMuted.copy(alpha = 0.95f),
+                        AccentCyan.copy(alpha = 0.08f),
+                        NeonPrimary.copy(alpha = 0.06f)
                     )
                 )
             )
             .border(
                 width = 1.dp,
-                brush = Brush.horizontalGradient(
-                    listOf(
-                        AccentCyan.copy(alpha = 0.48f),
-                        NeonPrimary.copy(alpha = 0.32f),
-                        BorderSubtle
-                    )
-                ),
+                brush = borderBrush,
                 shape = RoundedCornerShape(22.dp)
             )
             .padding(Spacing.Large),
@@ -212,23 +298,35 @@ private fun ReceiverHeroCard() {
 @Composable
 private fun BroadcastNode() {
     val transition = rememberInfiniteTransition(label = "ReceiverPulse")
-    val scale by transition.animateFloat(
-        initialValue = 0.72f,
-        targetValue = 1.55f,
+    
+    val progress by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = LinearEasing),
+            animation = tween(2200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "ReceiverPulseScale"
+        label = "PulseProgress"
     )
-    val alpha by transition.animateFloat(
-        initialValue = 0.48f,
-        targetValue = 0.0f,
+
+    val sweepAngle by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = LinearEasing),
+            animation = tween(3500, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "ReceiverPulseAlpha"
+        label = "RadarSweepAngle"
+    )
+
+    val floatOffset by transition.animateFloat(
+        initialValue = -3f,
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "FloatingNode"
     )
 
     Box(
@@ -236,23 +334,91 @@ private fun BroadcastNode() {
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
+            val center = this.center
+            
+            // Draw static dashed grid circles
+            val dotPathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 8f), 0f)
             drawCircle(
-                color = AccentCyan.copy(alpha = alpha),
-                radius = 30.dp.toPx() * scale,
-                style = Stroke(width = 1.5.dp.toPx())
+                color = BorderSubtle.copy(alpha = 0.35f),
+                radius = 22.dp.toPx(),
+                style = Stroke(width = 1.dp.toPx(), pathEffect = dotPathEffect)
             )
             drawCircle(
-                color = NeonPrimary.copy(alpha = alpha * 0.72f),
-                radius = 22.dp.toPx() * scale,
-                style = Stroke(width = 1.dp.toPx())
+                color = BorderSubtle.copy(alpha = 0.25f),
+                radius = 34.dp.toPx(),
+                style = Stroke(width = 1.dp.toPx(), pathEffect = dotPathEffect)
             )
+            drawCircle(
+                color = BorderSubtle.copy(alpha = 0.15f),
+                radius = 46.dp.toPx(),
+                style = Stroke(width = 1.dp.toPx(), pathEffect = dotPathEffect)
+            )
+
+            // Draw rotating radar sweep gradient
+            drawArc(
+                brush = Brush.sweepGradient(
+                    colors = listOf(
+                        AccentCyan.copy(alpha = 0.18f),
+                        Color.Transparent
+                    ),
+                    center = center
+                ),
+                startAngle = sweepAngle - 60f,
+                sweepAngle = 60f,
+                useCenter = true
+            )
+
+            // Draw leading radar sweep line
+            val sweepRad = Math.toRadians(sweepAngle.toDouble())
+            val lineLength = 46.dp.toPx()
+            val endX = center.x + lineLength * Math.cos(sweepRad).toFloat()
+            val endY = center.y + lineLength * Math.sin(sweepRad).toFloat()
+            drawLine(
+                color = AccentCyan.copy(alpha = 0.45f),
+                start = center,
+                end = androidx.compose.ui.geometry.Offset(endX, endY),
+                strokeWidth = 1.5.dp.toPx()
+            )
+
+            // 3 Concentric Ripple Waves
+            val waves = listOf(
+                progress,
+                (progress + 0.33f) % 1.0f,
+                (progress + 0.66f) % 1.0f
+            )
+
+            waves.forEach { waveProgress ->
+                val scale = 0.6f + waveProgress * 1.0f
+                val alpha = (1.0f - waveProgress) * 0.45f
+                
+                drawCircle(
+                    color = AccentCyan.copy(alpha = alpha),
+                    radius = 28.dp.toPx() * scale,
+                    style = Stroke(width = 1.5.dp.toPx())
+                )
+                drawCircle(
+                    color = NeonPrimary.copy(alpha = alpha * 0.5f),
+                    radius = 20.dp.toPx() * scale,
+                    style = Stroke(width = 1.dp.toPx())
+                )
+            }
         }
+
         Box(
             modifier = Modifier
+                .graphicsLayer { translationY = floatOffset.dp.toPx() }
                 .size(58.dp)
                 .clip(CircleShape)
-                .background(AccentCyan.copy(alpha = 0.14f))
-                .border(1.dp, AccentCyan.copy(alpha = 0.52f), CircleShape),
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            AccentCyan.copy(alpha = 0.22f),
+                            AccentCyan.copy(alpha = 0.05f)
+                        )
+                    )
+                )
+                .neonGlow(AccentCyan, borderRadius = 29.dp, glowRadius = 12.dp, opacity = 0.25f)
+                .border(1.dp, AccentCyan.copy(alpha = 0.6f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -271,8 +437,17 @@ private fun ConnectionPinCard() {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(Radii.CardStandard))
-            .background(BgElevated)
-            .border(1.dp, BorderSubtle.copy(alpha = 0.86f), RoundedCornerShape(Radii.CardStandard))
+            .background(BgElevated.copy(alpha = 0.65f))
+            .border(
+                1.dp,
+                Brush.horizontalGradient(
+                    listOf(
+                        BorderSubtle.copy(alpha = 0.72f),
+                        AccentCyan.copy(alpha = 0.22f)
+                    )
+                ),
+                RoundedCornerShape(Radii.CardStandard)
+            )
             .padding(Spacing.Medium),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -297,27 +472,66 @@ private fun ConnectionPinCard() {
 
         Spacer(modifier = Modifier.width(Spacing.Medium))
 
-        Text(
-            text = "1 2 3 4",
-            style = CustomTypography.headlineLarge.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 30.sp,
-                lineHeight = 34.sp,
-                letterSpacing = 3.sp
-            ),
-            color = NeonHighlight
-        )
+        val pinDigits = listOf("1", "2", "3", "4")
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            pinDigits.forEach { digit ->
+                Box(
+                    modifier = Modifier
+                        .size(width = 32.dp, height = 42.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(BgPanelMuted.copy(alpha = 0.85f))
+                        .border(1.dp, AccentCyan.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
+                        .neonGlow(AccentCyan, borderRadius = 8.dp, glowRadius = 4.dp, opacity = 0.12f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = digit,
+                        style = CustomTypography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp,
+                            lineHeight = 28.sp,
+                            fontFamily = FontFamily.Monospace
+                        ),
+                        color = NeonHighlight
+                    )
+                }
+            }
+        }
     }
 }
 
 
 @Composable
 private fun StatusDot() {
+    val transition = rememberInfiniteTransition(label = "StatusDotPulse")
+    val scale by transition.animateFloat(
+        initialValue = 0.82f,
+        targetValue = 1.22f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "StatusDotScale"
+    )
+    val glowOpacity by transition.animateFloat(
+        initialValue = 0.22f,
+        targetValue = 0.58f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "StatusDotGlowOpacity"
+    )
+
     Box(
         modifier = Modifier
-            .size(12.dp)
+            .scale(scale)
+            .size(10.dp)
             .clip(CircleShape)
             .background(AccentCyan)
-            .neonGlow(AccentCyan, borderRadius = 6.dp, glowRadius = 8.dp, opacity = 0.32f)
+            .neonGlow(AccentCyan, borderRadius = 5.dp, glowRadius = 8.dp, opacity = glowOpacity)
     )
 }
