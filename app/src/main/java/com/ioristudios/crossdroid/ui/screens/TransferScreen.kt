@@ -25,9 +25,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
@@ -52,6 +54,7 @@ import com.ioristudios.crossdroid.ui.components.TopAppBar
 import com.ioristudios.crossdroid.ui.theme.BgElevated
 import com.ioristudios.crossdroid.ui.theme.BgMain
 import com.ioristudios.crossdroid.ui.theme.BgSurface
+import com.ioristudios.crossdroid.ui.theme.BorderSubtle
 import com.ioristudios.crossdroid.ui.theme.ColorError
 import com.ioristudios.crossdroid.ui.theme.ColorSuccess
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
@@ -184,16 +187,60 @@ fun TransferScreen(
                     modifier = Modifier.padding(vertical = Spacing.Small)
                 )
                 
+                Spacer(modifier = Modifier.height(Spacing.Large))
+                
+                // Elegant Chat-style Send Button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(BgSurface)
+                        .border(1.dp, BorderSubtle, RoundedCornerShape(28.dp))
+                        .clickable { viewModel.navigateTo(Screen.SEND, context) }
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Attach Files",
+                        tint = NeonPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Send more files...",
+                        color = TextSecondary,
+                        style = CustomTypography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(NeonPrimary)
+                            .neonGlow(NeonPrimary, borderRadius = 20.dp, glowRadius = 8.dp, opacity = 0.4f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Send",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+                
                 Spacer(modifier = Modifier.height(Spacing.Medium))
                 
-                GlowingButton(
+                // Secondary View History Button
+                Text(
                     text = "VIEW HISTORY LOG",
-                    onClick = {
-                        viewModel.navigateTo(Screen.HISTORY, context)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    glowColor = ColorSuccess,
-                    hapticIntensity = "strong"
+                    color = ColorSuccess,
+                    style = CustomTypography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                    modifier = Modifier
+                        .clickable { viewModel.navigateTo(Screen.HISTORY, context) }
+                        .padding(vertical = Spacing.Small)
                 )
             }
         }
