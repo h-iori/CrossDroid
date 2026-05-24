@@ -5,6 +5,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,27 +28,34 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ioristudios.crossdroid.ui.theme.AccentCyan
 import com.ioristudios.crossdroid.ui.theme.BgElevated
+import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
 import com.ioristudios.crossdroid.ui.theme.BgSurface
+import com.ioristudios.crossdroid.ui.theme.BorderSubtle
 import com.ioristudios.crossdroid.ui.theme.ColorError
 import com.ioristudios.crossdroid.ui.theme.ColorSuccess
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
 import com.ioristudios.crossdroid.ui.theme.HapticHelper
+import com.ioristudios.crossdroid.ui.theme.IconSize
 import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
 import com.ioristudios.crossdroid.ui.theme.Radii
 import com.ioristudios.crossdroid.ui.theme.Spacing
-import com.ioristudios.crossdroid.ui.theme.TextBody
 import com.ioristudios.crossdroid.ui.theme.TextMuted
+import com.ioristudios.crossdroid.ui.theme.TextSecondary
 import com.ioristudios.crossdroid.ui.theme.TextStrong
 import com.ioristudios.crossdroid.ui.theme.neonGlow
 
@@ -61,97 +69,116 @@ fun PinDisplayCard(
     modifier: Modifier = Modifier
 ) {
     val maxLen = 4
+    val canConfirm = pinCode.length == maxLen
+    val panelScale by animateFloatAsState(
+        targetValue = if (errorMessage != null) 0.985f else 1f,
+        label = "PinPanelErrorPulse"
+    )
 
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-        val keySize = if (maxHeight < 400.dp) 48.dp else if (maxHeight < 500.dp) 54.dp else 64.dp
-        val pinBoxSize = if (maxHeight < 400.dp) 42.dp else if (maxHeight < 500.dp) 48.dp else 54.dp
-        val spacerHeight = if (maxHeight < 450.dp) Spacing.Small else Spacing.Medium
+        val keySize = ((maxWidth - 112.dp) / 3).coerceIn(52.dp, 68.dp)
+        val pinBoxSize = ((maxWidth - 104.dp) / 4).coerceIn(48.dp, 62.dp)
 
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .scale(panelScale)
+                .clip(RoundedCornerShape(22.dp))
+                .neonGlow(
+                    color = if (errorMessage == null) NeonPrimary else ColorError,
+                    borderRadius = 22.dp,
+                    glowRadius = 18.dp,
+                    opacity = if (errorMessage == null) 0.12f else 0.18f
+                )
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            BgElevated.copy(alpha = 0.98f),
+                            BgSurface.copy(alpha = 0.86f)
+                        )
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        listOf(
+                            if (errorMessage == null) NeonPrimary.copy(alpha = 0.45f) else ColorError.copy(alpha = 0.7f),
+                            BorderSubtle
+                        )
+                    ),
+                    shape = RoundedCornerShape(22.dp)
+                )
+                .padding(Spacing.Medium),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // PIN Display slots (4 boxes)
+            SecurityStatusRow()
+
+            Spacer(modifier = Modifier.height(Spacing.Medium))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                for (i in 0 until maxLen) {
-                    val hasChar = i < pinCode.length
-                    val char = if (hasChar) pinCode[i].toString() else ""
-                    val isFocused = i == pinCode.length && errorMessage == null
-
-                    val boxBorderColor = when {
+                for (index in 0 until maxLen) {
+                    val hasChar = index < pinCode.length
+                    val isFocused = index == pinCode.length && errorMessage == null
+                    val borderColor = when {
                         errorMessage != null -> ColorError
-                        isFocused -> NeonHighlight
-                        hasChar -> NeonPrimary
-                        else -> BgSurface
+                        isFocused -> AccentCyan
+                        hasChar -> NeonHighlight
+                        else -> BorderSubtle
                     }
 
                     Box(
                         modifier = Modifier
-                            .padding(horizontal = Spacing.Small)
+                            .padding(horizontal = Spacing.Tiny)
                             .size(pinBoxSize)
-                            .then(
-                                if (isFocused) {
-                                    Modifier.neonGlow(
-                                        color = NeonPrimary,
-                                        borderRadius = Radii.ButtonSmall,
-                                        glowRadius = 8.dp,
-                                        opacity = 0.25f
-                                    )
-                                } else Modifier
-                            )
-                            .background(BgElevated)
-                            .border(
-                                width = 1.5.dp,
-                                color = boxBorderColor,
-                                shape = RoundedCornerShape(Radii.ButtonSmall)
-                            ),
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(BgPanelMuted)
+                            .border(1.5.dp, borderColor, RoundedCornerShape(15.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = char,
+                            text = if (hasChar) pinCode[index].toString() else "",
                             color = TextStrong,
                             style = CustomTypography.headlineMedium.copy(
-                                fontSize = if (pinBoxSize < 48.dp) 18.sp else 22.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.sp
                             )
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(spacerHeight))
-
-            // Error message text block
             AnimatedVisibility(
                 visible = errorMessage != null,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
                 Text(
-                    text = errorMessage ?: "",
+                    text = errorMessage.orEmpty(),
                     color = ColorError,
-                    style = CustomTypography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    style = CustomTypography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.sp
+                    ),
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Spacing.Large)
+                        .padding(top = Spacing.Medium)
                 )
             }
 
-            Spacer(modifier = Modifier.height(spacerHeight))
+            Spacer(modifier = Modifier.height(Spacing.Medium))
 
-            // Keyboard grid (10 buttons + backspace + confirm)
             val keys = listOf(
                 listOf('1', '2', '3'),
                 listOf('4', '5', '6'),
                 listOf('7', '8', '9'),
-                listOf('B', '0', 'C') // B = Backspace, C = Confirm
+                listOf('B', '0', 'C')
             )
 
             Column(
@@ -164,68 +191,131 @@ fun PinDisplayCard(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         rowKeys.forEach { key ->
-                            val isSpecial = key == 'B' || key == 'C'
-                            val keyBg = if (isSpecial) {
-                                if (key == 'C') NeonPrimary.copy(alpha = 0.15f) else ColorError.copy(alpha = 0.1f)
-                            } else {
-                                BgElevated
-                            }
-
-                            val keyBorder = if (isSpecial) {
-                                if (key == 'C') NeonPrimary else ColorError
-                            } else {
-                                BgSurface
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .padding(horizontal = Spacing.Small)
-                                    .size(keySize)
-                                    .clip(CircleShape)
-                                    .background(keyBg)
-                                    .border(width = 1.dp, color = keyBorder, shape = CircleShape)
-                                    .clickable {
-                                        when (key) {
-                                            'B' -> onBackspace()
-                                            'C' -> onConfirm()
-                                            else -> onKeyTap(key)
-                                        }
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                when (key) {
-                                    'B' -> {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.Backspace,
-                                            contentDescription = "Backspace",
-                                            tint = ColorError,
-                                            modifier = Modifier.size(if (keySize < 54.dp) 16.dp else 20.dp)
-                                        )
-                                    }
-                                    'C' -> {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = "Confirm",
-                                            tint = ColorSuccess,
-                                            modifier = Modifier.size(if (keySize < 54.dp) 18.dp else 22.dp)
-                                        )
-                                    }
-                                    else -> {
-                                        Text(
-                                            text = key.toString(),
-                                            color = TextStrong,
-                                            style = CustomTypography.titleLarge.copy(
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = if (keySize < 54.dp) 16.sp else 20.sp
-                                            )
-                                        )
-                                    }
-                                }
-                            }
+                            PinKey(
+                                key = key,
+                                keySize = keySize,
+                                confirmEnabled = canConfirm,
+                                onKeyTap = onKeyTap,
+                                onBackspace = onBackspace,
+                                onConfirm = onConfirm
+                            )
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SecurityStatusRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CircleShape)
+            .background(BgPanelMuted)
+            .border(1.dp, BorderSubtle, CircleShape)
+            .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(ColorSuccess)
+        )
+        Spacer(modifier = Modifier.width(Spacing.Small))
+        Text(
+            text = "ENCRYPTED LOCAL PAIRING",
+            style = CustomTypography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.7.sp
+            ),
+            color = AccentCyan
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = "RECEIVER PIN",
+            style = CustomTypography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.7.sp
+            ),
+            color = TextMuted
+        )
+    }
+}
+
+@Composable
+private fun PinKey(
+    key: Char,
+    keySize: androidx.compose.ui.unit.Dp,
+    confirmEnabled: Boolean,
+    onKeyTap: (Char) -> Unit,
+    onBackspace: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val context = LocalContext.current
+    val isConfirm = key == 'C'
+    val isBackspace = key == 'B'
+    val enabled = !isConfirm || confirmEnabled
+    val accent = when {
+        isConfirm -> ColorSuccess
+        isBackspace -> ColorError
+        else -> AccentCyan
+    }
+
+    val background = when {
+        isConfirm && enabled -> Brush.linearGradient(listOf(NeonPrimary.copy(alpha = 0.88f), AccentCyan.copy(alpha = 0.82f)))
+        isConfirm -> Brush.linearGradient(listOf(BgPanelMuted, BgPanelMuted))
+        isBackspace -> Brush.linearGradient(listOf(ColorError.copy(alpha = 0.12f), BgPanelMuted))
+        else -> Brush.linearGradient(listOf(BgPanelMuted, BgSurface))
+    }
+
+    Box(
+        modifier = Modifier
+            .padding(horizontal = Spacing.Small)
+            .size(keySize)
+            .clip(CircleShape)
+            .background(background)
+            .border(
+                width = 1.dp,
+                color = if (enabled) accent.copy(alpha = 0.45f) else BorderSubtle,
+                shape = CircleShape
+            )
+            .clickable(enabled = enabled) {
+                when (key) {
+                    'B' -> onBackspace()
+                    'C' -> {
+                        HapticHelper.triggerMedium(context)
+                        onConfirm()
+                    }
+                    else -> onKeyTap(key)
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        when (key) {
+            'B' -> Icon(
+                imageVector = Icons.AutoMirrored.Filled.Backspace,
+                contentDescription = "Backspace",
+                tint = ColorError,
+                modifier = Modifier.size(IconSize.Small)
+            )
+            'C' -> Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Confirm PIN",
+                tint = if (enabled) Color.White else TextSecondary.copy(alpha = 0.45f),
+                modifier = Modifier.size(IconSize.Standard)
+            )
+            else -> Text(
+                text = key.toString(),
+                color = TextStrong,
+                style = CustomTypography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    letterSpacing = 0.sp
+                )
+            )
         }
     }
 }

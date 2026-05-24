@@ -374,7 +374,7 @@ class CrossDroidViewModel : ViewModel() {
             startTransferFlow(defaultDevice, _selectedFiles.value.toList(), isIncoming = false, context = context)
         } else {
             HapticHelper.triggerError(context)
-            _pinError.value = "Invalid connection code. Try '1234'"
+            _pinError.value = "Invalid connection code"
         }
     }
 

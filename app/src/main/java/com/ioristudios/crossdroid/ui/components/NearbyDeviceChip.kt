@@ -34,14 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.data.DeviceNode
 import com.ioristudios.crossdroid.ui.theme.BgElevated
-import com.ioristudios.crossdroid.ui.theme.BgSurface
 import com.ioristudios.crossdroid.ui.theme.ColorSuccess
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
 import com.ioristudios.crossdroid.ui.theme.HapticHelper
-import com.ioristudios.crossdroid.ui.theme.IconSize
-import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
-import com.ioristudios.crossdroid.ui.theme.Radii
 import com.ioristudios.crossdroid.ui.theme.Spacing
 import com.ioristudios.crossdroid.ui.theme.TextStrong
 import com.ioristudios.crossdroid.ui.theme.neonGlow
@@ -81,32 +77,32 @@ fun NearbyDeviceChip(
     Row(
         modifier = modifier
             .scale(pulseScale)
-            .clip(RoundedCornerShape(Radii.ButtonSmall))
+            .clip(RoundedCornerShape(999.dp))
             .neonGlow(
                 color = deviceColor,
-                borderRadius = Radii.ButtonSmall,
+                borderRadius = 22.dp,
                 glowRadius = 10.dp,
                 opacity = glowOpacity
             )
-            .background(BgElevated)
+            .background(BgElevated.copy(alpha = 0.94f))
             .border(
                 width = 1.dp,
                 brush = Brush.horizontalGradient(
                     colors = listOf(deviceColor.copy(alpha = 0.7f), NeonPrimary.copy(alpha = 0.3f))
                 ),
-                shape = RoundedCornerShape(Radii.ButtonSmall)
+                shape = RoundedCornerShape(999.dp)
             )
             .clickable {
                 HapticHelper.triggerMedium(context)
                 onClick()
             }
-            .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
+            .padding(horizontal = Spacing.Small, vertical = Spacing.Small),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(24.dp)
-                .clip(RoundedCornerShape(6.dp))
+                .size(26.dp)
+                .clip(RoundedCornerShape(999.dp))
                 .background(deviceColor.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {
@@ -114,19 +110,19 @@ fun NearbyDeviceChip(
                 imageVector = deviceIcon,
                 contentDescription = "Device OS",
                 tint = deviceColor,
-                modifier = Modifier.size(IconSize.Small)
+                modifier = Modifier.size(16.dp)
             )
         }
         
         Spacer(modifier = Modifier.width(Spacing.Small))
         
         Text(
-            text = device.name,
+            text = device.name.take(16),
             color = TextStrong,
             style = CustomTypography.labelMedium.copy(
                 fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
-                letterSpacing = 0.2.sp
+                fontSize = 11.sp,
+                letterSpacing = 0.sp
             )
         )
     }
