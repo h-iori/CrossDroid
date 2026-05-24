@@ -65,7 +65,8 @@ fun DevicesScreen(
     ) {
         TopAppBar(
             title = "Devices Pairing Hub",
-            viewModel = viewModel
+            viewModel = viewModel,
+            onMenuClick = { viewModel.setSidebarVisible(true) }
         )
 
         LazyColumn(
@@ -171,7 +172,5 @@ fun DevicesScreen(
                 }
             }
         }
-        
-        Spacer(modifier = Modifier.height(72.dp)) // bottom navbar buffer
     }
 }

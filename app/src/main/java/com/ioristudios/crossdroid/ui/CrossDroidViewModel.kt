@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 enum class Screen {
-    HOME, DEVICES, HISTORY, SEND, QR_SCAN, ENTER_CODE, RADAR, TRANSFER, RECEIVE
+    HOME, DEVICES, HISTORY, SEND, QR_SCAN, ENTER_CODE, RADAR, TRANSFER, RECEIVE, ABOUT
 }
 
 data class TransferBubble(
@@ -79,6 +79,14 @@ class CrossDroidViewModel : ViewModel() {
     // Dynamic History list that appends simulated finishes
     private val _historyRecords = MutableStateFlow(MockData.historyItems)
     val historyRecords: StateFlow<List<HistoryItem>> = _historyRecords.asStateFlow()
+
+    // Sidebar State
+    private val _isSidebarVisible = MutableStateFlow(false)
+    val isSidebarVisible: StateFlow<Boolean> = _isSidebarVisible.asStateFlow()
+
+    fun setSidebarVisible(visible: Boolean) {
+        _isSidebarVisible.value = visible
+    }
 
     private var transferJob: Job? = null
     private var receiveSimulationJob: Job? = null

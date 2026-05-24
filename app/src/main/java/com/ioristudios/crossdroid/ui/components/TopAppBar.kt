@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
@@ -75,30 +75,19 @@ fun TopAppBar(
                 .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 1. Back button on the left (only if showBackButton is true)
             if (showBackButton) {
                 IconButton(onClick = { viewModel.navigateTo(Screen.HOME, context) }) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = TextStrong,
-                        modifier = Modifier.size(IconSize.Standard)
-                    )
-                }
-            } else {
-                IconButton(onClick = { 
-                    HapticHelper.triggerMedium(context)
-                    onMenuClick() 
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = "Menu",
                         tint = TextStrong,
                         modifier = Modifier.size(IconSize.Standard)
                     )
                 }
             }
 
-            // Title block or Search text input
+            // 2. Title block or Search text input
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -155,13 +144,28 @@ fun TopAppBar(
                 }
             }
 
-            // Search Icon actions
+            // 3. Search Icon action on the right
             if (showSearch) {
                 IconButton(onClick = { viewModel.toggleSearchMode(context) }) {
                     Icon(
                         imageVector = if (searchMode) Icons.Default.Close else Icons.Default.Search,
                         contentDescription = "Search FileToggle",
                         tint = if (searchMode) NeonPrimary else TextStrong,
+                        modifier = Modifier.size(IconSize.Standard)
+                    )
+                }
+            }
+
+            // 4. Menu Icon on the right (only if showBackButton is false)
+            if (!showBackButton) {
+                IconButton(onClick = { 
+                    HapticHelper.triggerMedium(context)
+                    onMenuClick() 
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Menu",
+                        tint = TextStrong,
                         modifier = Modifier.size(IconSize.Standard)
                     )
                 }

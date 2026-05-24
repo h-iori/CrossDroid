@@ -65,7 +65,8 @@ fun HistoryScreen(
     ) {
         TopAppBar(
             title = "Transfer Log History",
-            viewModel = viewModel
+            viewModel = viewModel,
+            onMenuClick = { viewModel.setSidebarVisible(true) }
         )
 
         if (historyItems.isEmpty()) {
@@ -168,7 +169,5 @@ fun HistoryScreen(
                 }
             }
         }
-        
-        Spacer(modifier = Modifier.height(72.dp)) // navbar buffer
     }
 }

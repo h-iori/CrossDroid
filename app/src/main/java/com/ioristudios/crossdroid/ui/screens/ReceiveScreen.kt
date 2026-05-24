@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -127,44 +128,52 @@ fun ReceiveScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 // Ripple Canvas Viewport
-                Box(
-                    modifier = Modifier.size(240.dp),
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1.2f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val center = size.width / 2
-                        val baseRadius = 50.dp.toPx()
-                        
-                        // Ripple 1
-                        drawCircle(
-                            color = NeonPrimary.copy(alpha = rippleAlpha1),
-                            radius = baseRadius * rippleScale1,
-                            style = Stroke(width = 1.5.dp.toPx())
-                        )
-                        // Ripple 2
-                        drawCircle(
-                            color = Color(0xFF00E5FF).copy(alpha = rippleAlpha2),
-                            radius = baseRadius * rippleScale2,
-                            style = Stroke(width = 1.5.dp.toPx())
-                        )
-                    }
-
-                    // Discoverability Center Base Node
+                    val sizeDp = minOf(maxWidth, maxHeight) * 0.7f
                     Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .neonGlow(NeonPrimary, borderRadius = 50.dp, glowRadius = 18.dp, opacity = 0.4f)
-                            .background(BgElevated)
-                            .border(width = 1.5.dp, color = NeonHighlight, shape = CircleShape),
+                        modifier = Modifier.size(sizeDp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CellTower,
-                            contentDescription = "Broadcasting Node",
-                            tint = NeonHighlight,
-                            modifier = Modifier.size(IconSize.Large)
-                        )
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val baseRadius = (sizeDp / 5.2f).toPx()
+                            
+                            // Ripple 1
+                            drawCircle(
+                                color = NeonPrimary.copy(alpha = rippleAlpha1),
+                                radius = baseRadius * rippleScale1,
+                                style = Stroke(width = 1.5.dp.toPx())
+                            )
+                            // Ripple 2
+                            drawCircle(
+                                color = Color(0xFF00E5FF).copy(alpha = rippleAlpha2),
+                                radius = baseRadius * rippleScale2,
+                                style = Stroke(width = 1.5.dp.toPx())
+                            )
+                        }
+
+                        // Discoverability Center Base Node
+                        val centerNodeSize = sizeDp * 0.42f
+                        Box(
+                            modifier = Modifier
+                                .size(centerNodeSize)
+                                .clip(CircleShape)
+                                .neonGlow(NeonPrimary, borderRadius = centerNodeSize / 2, glowRadius = centerNodeSize * 0.18f, opacity = 0.4f)
+                                .background(BgElevated)
+                                .border(width = 1.5.dp, color = NeonHighlight, shape = CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CellTower,
+                                contentDescription = "Broadcasting Node",
+                                tint = NeonHighlight,
+                                modifier = Modifier.size((centerNodeSize * 0.48f).coerceAtLeast(24.dp))
+                            )
+                        }
                     }
                 }
 

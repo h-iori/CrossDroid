@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -75,48 +76,55 @@ fun RadarScreen(
         )
 
         // 1. Radar animation viewport
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1.3f),
             contentAlignment = Alignment.Center
         ) {
+            val sizeDp = minOf(maxWidth, maxHeight) * 0.8f
+            val radiusDp = sizeDp / 2
+
             // Spinning canvas sweep
             RadarWidget(
-                modifier = Modifier.size(280.dp)
+                modifier = Modifier.size(sizeDp)
             )
 
             // Orbiting Device Nodes positioned dynamically
-            if (radarDevices.size >= 2) {
+            if (radarDevices.isNotEmpty()) {
+                val angle0 = Math.toRadians(-60.0)
+                val dx0 = radiusDp * 0.7f * kotlin.math.cos(angle0).toFloat()
+                val dy0 = radiusDp * 0.7f * kotlin.math.sin(angle0).toFloat()
                 NearbyDeviceChip(
                     device = radarDevices[0],
                     onClick = {
                         viewModel.startTransferFlow(radarDevices[0], chosenFiles, isIncoming = false, context = context)
                     },
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .offset(x = 40.dp, y = 30.dp)
+                    modifier = Modifier.offset(x = dx0, y = dy0)
                 )
-
+            }
+            if (radarDevices.size >= 2) {
+                val angle1 = Math.toRadians(150.0)
+                val dx1 = radiusDp * 0.8f * kotlin.math.cos(angle1).toFloat()
+                val dy1 = radiusDp * 0.8f * kotlin.math.sin(angle1).toFloat()
                 NearbyDeviceChip(
                     device = radarDevices[1],
                     onClick = {
                         viewModel.startTransferFlow(radarDevices[1], chosenFiles, isIncoming = false, context = context)
                     },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = (-30).dp, y = (-40).dp)
+                    modifier = Modifier.offset(x = dx1, y = dy1)
                 )
             }
             if (radarDevices.size >= 3) {
+                val angle2 = Math.toRadians(45.0)
+                val dx2 = radiusDp * 0.55f * kotlin.math.cos(angle2).toFloat()
+                val dy2 = radiusDp * 0.55f * kotlin.math.sin(angle2).toFloat()
                 NearbyDeviceChip(
                     device = radarDevices[2],
                     onClick = {
                         viewModel.startTransferFlow(radarDevices[2], chosenFiles, isIncoming = false, context = context)
                     },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-20).dp, y = 50.dp)
+                    modifier = Modifier.offset(x = dx2, y = dy2)
                 )
             }
         }

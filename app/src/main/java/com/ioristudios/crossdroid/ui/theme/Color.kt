@@ -25,3 +25,14 @@ val ColorSuccess = Color(0xFF00FF88)
 // Translucent states
 val TranslucentPurple = Color(0x33BF00FF)
 val TranslucentBg = Color(0x990A0A0F)
+
+// About Screen & Sidebar Theme Colors
+val NeonPurpleAbout = Color(0xFFA855F7)
+val NeonPurpleGlow = Color(0xFF7C3AED)
+val NeonPurpleLight = Color(0xFFC084FC)
+val NeonPurpleSubtle = Color(0xFF1A1030)
+val SuccessGreenAbout = Color(0xFF00FF88)
+val SurfaceDark = Color(0xFF0A0A0F)
+val SurfaceDarkElevated = Color(0xFF12121A)
+val SurfaceDarkCard = Color(0xFF161622)
+val TextPrimary = Color(0xFFEEEEFF)

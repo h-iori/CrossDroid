@@ -14,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
+import com.ioristudios.crossdroid.ui.screens.AboutScreen
 import com.ioristudios.crossdroid.ui.screens.HomeScreen
 import com.ioristudios.crossdroid.ui.screens.DevicesScreen
 import com.ioristudios.crossdroid.ui.screens.HistoryScreen
@@ -78,6 +79,7 @@ fun NavigationHost(
             Screen.RADAR -> RadarScreen(viewModel = viewModel)
             Screen.RECEIVE -> ReceiveScreen(viewModel = viewModel)
             Screen.TRANSFER -> TransferScreen(viewModel = viewModel)
+            Screen.ABOUT -> AboutScreen(onBack = { viewModel.navigateTo(Screen.HOME) })
         }
     }
 }

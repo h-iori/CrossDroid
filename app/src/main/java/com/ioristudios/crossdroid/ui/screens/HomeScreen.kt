@@ -63,61 +63,20 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet(
-                drawerContainerColor = BgElevated,
-                modifier = Modifier.width(280.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(BgElevated)
-                        .padding(Spacing.Large)
-                ) {
-                    Text(
-                        text = "CrossDroid Menu",
-                        style = CustomTypography.headlineMedium.copy(fontSize = 18.sp),
-                        color = TextStrong
-                    )
-                    Spacer(modifier = Modifier.height(Spacing.Large))
-                    
-                    Text(
-                        text = "IORI STUDIOS v1.0.0",
-                        style = CustomTypography.labelSmall,
-                        color = TextMuted
-                    )
-                    Spacer(modifier = Modifier.height(Spacing.Medium))
-                    
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(BgSurface)
-                    )
-                }
-            }
-        }
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(BgMain)
     ) {
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .background(BgMain)
-        ) {
-            TopAppBar(
-                title = "CrossDroid",
-                viewModel = viewModel,
-                showBackButton = false,
-                onMenuClick = {
-                    scope.launch {
-                        if (drawerState.isClosed) drawerState.open() else drawerState.close()
-                    }
-                }
-            )
+        TopAppBar(
+            title = "CrossDroid",
+            viewModel = viewModel,
+            showBackButton = false,
+            onMenuClick = {
+                viewModel.setSidebarVisible(true)
+            }
+        )
 
             // Brand Header Area
             Column(
@@ -277,8 +236,5 @@ fun HomeScreen(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(72.dp)) // Offset BottomNav overlapping area
         }
     }
-}

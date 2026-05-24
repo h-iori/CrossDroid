@@ -12,6 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -114,62 +115,70 @@ fun QrScanScreen(
             Spacer(modifier = Modifier.height(Spacing.Large))
 
             // Simulated Viewfinder Frame
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
-                    .size(260.dp)
-                    .clip(RoundedCornerShape(Radii.CardStandard))
-                    .neonGlow(NeonPrimary, borderRadius = Radii.CardStandard, glowRadius = 16.dp, opacity = 0.2f)
-                    .background(Color(0xFF07070B))
-                    .border(width = 1.dp, color = BgSurface, shape = RoundedCornerShape(Radii.CardStandard))
-                    .clickable {
-                        // Simulate successful QR detection
-                        val defaultDevice = MockData.deviceNodes.first { it.osType == "windows" }
-                        val filesToSend = viewModel.selectedFiles.value.toList()
-                        HapticHelper.triggerSuccess(context)
-                        viewModel.startTransferFlow(defaultDevice, filesToSend, isIncoming = false, context = context)
-                    },
+                    .fillMaxWidth()
+                    .weight(1.2f),
                 contentAlignment = Alignment.Center
             ) {
-                // Outer corners glow brackets drawn on canvas
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val stroke = 3.dp.toPx()
-                    val len = 24.dp.toPx()
-                    
-                    // Top Left Bracket
-                    drawLine(NeonPrimary, Offset(0f, 0f), Offset(len, 0f), stroke)
-                    drawLine(NeonPrimary, Offset(0f, 0f), Offset(0f, len), stroke)
-                    
-                    // Top Right Bracket
-                    drawLine(NeonPrimary, Offset(size.width, 0f), Offset(size.width - len, 0f), stroke)
-                    drawLine(NeonPrimary, Offset(size.width, 0f), Offset(size.width, len), stroke)
-                    
-                    // Bottom Left Bracket
-                    drawLine(NeonPrimary, Offset(0f, size.height), Offset(len, size.height), stroke)
-                    drawLine(NeonPrimary, Offset(0f, size.height), Offset(0f, size.height - len), stroke)
-                    
-                    // Bottom Right Bracket
-                    drawLine(NeonPrimary, Offset(size.width, size.height), Offset(size.width - len, size.height), stroke)
-                    drawLine(NeonPrimary, Offset(size.width, size.height), Offset(size.width, size.height - len), stroke)
-                    
-                    // Laser sliding scan line
-                    val laserY = size.height * laserPosition
-                    drawLine(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(Color.Transparent, NeonHighlight, NeonHighlight, Color.Transparent)
-                        ),
-                        start = Offset(0f, laserY),
-                        end = Offset(size.width, laserY),
-                        strokeWidth = 2.dp.toPx()
+                val sizeDp = minOf(maxWidth * 0.75f, maxHeight * 0.9f)
+                Box(
+                    modifier = Modifier
+                        .size(sizeDp)
+                        .clip(RoundedCornerShape(Radii.CardStandard))
+                        .neonGlow(NeonPrimary, borderRadius = Radii.CardStandard, glowRadius = 16.dp, opacity = 0.2f)
+                        .background(Color(0xFF07070B))
+                        .border(width = 1.dp, color = BgSurface, shape = RoundedCornerShape(Radii.CardStandard))
+                        .clickable {
+                            // Simulate successful QR detection
+                            val defaultDevice = MockData.deviceNodes.first { it.osType == "windows" }
+                            val filesToSend = viewModel.selectedFiles.value.toList()
+                            HapticHelper.triggerSuccess(context)
+                            viewModel.startTransferFlow(defaultDevice, filesToSend, isIncoming = false, context = context)
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Outer corners glow brackets drawn on canvas
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val stroke = 3.dp.toPx()
+                        val len = 24.dp.toPx()
+                        
+                        // Top Left Bracket
+                        drawLine(NeonPrimary, Offset(0f, 0f), Offset(len, 0f), stroke)
+                        drawLine(NeonPrimary, Offset(0f, 0f), Offset(0f, len), stroke)
+                        
+                        // Top Right Bracket
+                        drawLine(NeonPrimary, Offset(size.width, 0f), Offset(size.width - len, 0f), stroke)
+                        drawLine(NeonPrimary, Offset(size.width, 0f), Offset(size.width, len), stroke)
+                        
+                        // Bottom Left Bracket
+                        drawLine(NeonPrimary, Offset(0f, size.height), Offset(len, size.height), stroke)
+                        drawLine(NeonPrimary, Offset(0f, size.height), Offset(0f, size.height - len), stroke)
+                        
+                        // Bottom Right Bracket
+                        drawLine(NeonPrimary, Offset(size.width, size.height), Offset(size.width - len, size.height), stroke)
+                        drawLine(NeonPrimary, Offset(size.width, size.height), Offset(size.width, size.height - len), stroke)
+                        
+                        // Laser sliding scan line
+                        val laserY = size.height * laserPosition
+                        drawLine(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(Color.Transparent, NeonHighlight, NeonHighlight, Color.Transparent)
+                            ),
+                            start = Offset(0f, laserY),
+                            end = Offset(size.width, laserY),
+                            strokeWidth = 2.dp.toPx()
+                        )
+                    }
+
+                    // Cyberpunk icon inside
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = "Scanner",
+                        tint = NeonHighlight.copy(alpha = 0.25f),
+                        modifier = Modifier.size((sizeDp * 0.35f).coerceAtLeast(32.dp))
                     )
                 }
-
-                // Cyberpunk icon inside
-                Icon(
-                    imageVector = Icons.Default.QrCodeScanner,
-                    contentDescription = "Scanner",
-                    tint = NeonHighlight.copy(alpha = 0.25f),
-                    modifier = Modifier.size(IconSize.Huge)
-                )
             }
 
             Spacer(modifier = Modifier.height(Spacing.Large))

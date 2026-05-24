@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
+import com.ioristudios.crossdroid.ui.components.AppSidebar
 import com.ioristudios.crossdroid.ui.components.BottomNavbar
 import com.ioristudios.crossdroid.ui.navigation.NavigationHost
 import com.ioristudios.crossdroid.ui.theme.BgMain
@@ -32,25 +33,37 @@ class MainActivity : ComponentActivity() {
         setContent {
             CrossDroidTheme {
                 val currentScreen by viewModel.currentScreen.collectAsState()
+                val isSidebarVisible by viewModel.isSidebarVisible.collectAsState()
                 
-                Scaffold(
-                    bottomBar = {
-                        // Persistent navbar only on the three primary hubs
-                        if (currentScreen in listOf(Screen.HOME, Screen.DEVICES, Screen.HISTORY)) {
-                            BottomNavbar(viewModel = viewModel)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Scaffold(
+                        bottomBar = {
+                            // Persistent navbar only on the three primary hubs
+                            if (currentScreen in listOf(Screen.HOME, Screen.DEVICES, Screen.HISTORY)) {
+                                BottomNavbar(viewModel = viewModel)
+                            }
+                        },
+                        containerColor = BgMain,
+                        modifier = Modifier.fillMaxSize()
+                    ) { innerPadding ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(BgMain)
+                                .padding(innerPadding)
+                        ) {
+                            NavigationHost(viewModel = viewModel)
                         }
-                    },
-                    containerColor = BgMain,
-                    modifier = Modifier.fillMaxSize()
-                ) { innerPadding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(BgMain)
-                            .padding(innerPadding)
-                    ) {
-                        NavigationHost(viewModel = viewModel)
                     }
+
+                    AppSidebar(
+                        isVisible = isSidebarVisible,
+                        onDismiss = { viewModel.setSidebarVisible(false) },
+                        onAboutClick = {
+                            viewModel.setSidebarVisible(false)
+                            viewModel.navigateTo(Screen.ABOUT)
+                        }
+                    )
                 }
             }
         }

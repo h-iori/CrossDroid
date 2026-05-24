@@ -10,6 +10,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Backspace
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -59,161 +60,166 @@ fun PinDisplayCard(
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val maxLen = 4
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = Spacing.Medium),
-        horizontalAlignment = Alignment.CenterHorizontally
+    BoxWithConstraints(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
     ) {
-        // PIN Display slots (4 boxes)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            for (i in 0 until maxLen) {
-                val hasChar = i < pinCode.length
-                val char = if (hasChar) pinCode[i].toString() else ""
-                val isFocused = i == pinCode.length && errorMessage == null
-
-                val boxBorderColor = when {
-                    errorMessage != null -> ColorError
-                    isFocused -> NeonHighlight
-                    hasChar -> NeonPrimary
-                    else -> BgSurface
-                }
-
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = Spacing.Small)
-                        .size(54.dp)
-                        .clip(RoundedCornerShape(Radii.ButtonSmall))
-                        .then(
-                            if (isFocused) {
-                                Modifier.neonGlow(
-                                    color = NeonPrimary,
-                                    borderRadius = Radii.ButtonSmall,
-                                    glowRadius = 8.dp,
-                                    opacity = 0.25f
-                                )
-                            } else Modifier
-                        )
-                        .background(BgElevated)
-                        .border(
-                            width = 1.5.dp,
-                            color = boxBorderColor,
-                            shape = RoundedCornerShape(Radii.ButtonSmall)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = char,
-                        color = TextStrong,
-                        style = CustomTypography.headlineMedium.copy(
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(Spacing.Medium))
-
-        // Error message text block
-        AnimatedVisibility(
-            visible = errorMessage != null,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            Text(
-                text = errorMessage ?: "",
-                color = ColorError,
-                style = CustomTypography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.Large)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(Spacing.Medium))
-
-        // Keyboard grid (10 buttons + backspace + confirm)
-        val keys = listOf(
-            listOf('1', '2', '3'),
-            listOf('4', '5', '6'),
-            listOf('7', '8', '9'),
-            listOf('B', '0', 'C') // B = Backspace, C = Confirm
-        )
+        val keySize = if (maxHeight < 400.dp) 48.dp else if (maxHeight < 500.dp) 54.dp else 64.dp
+        val pinBoxSize = if (maxHeight < 400.dp) 42.dp else if (maxHeight < 500.dp) 48.dp else 54.dp
+        val spacerHeight = if (maxHeight < 450.dp) Spacing.Small else Spacing.Medium
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            keys.forEach { rowKeys ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    rowKeys.forEach { key ->
-                        val isSpecial = key == 'B' || key == 'C'
-                        val keyBg = if (isSpecial) {
-                            if (key == 'C') NeonPrimary.copy(alpha = 0.15f) else ColorError.copy(alpha = 0.1f)
-                        } else {
-                            BgElevated
-                        }
+            // PIN Display slots (4 boxes)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                for (i in 0 until maxLen) {
+                    val hasChar = i < pinCode.length
+                    val char = if (hasChar) pinCode[i].toString() else ""
+                    val isFocused = i == pinCode.length && errorMessage == null
 
-                        val keyBorder = if (isSpecial) {
-                            if (key == 'C') NeonPrimary else ColorError
-                        } else {
-                            BgSurface
-                        }
+                    val boxBorderColor = when {
+                        errorMessage != null -> ColorError
+                        isFocused -> NeonHighlight
+                        hasChar -> NeonPrimary
+                        else -> BgSurface
+                    }
 
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = Spacing.Small)
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(keyBg)
-                                .border(width = 1.dp, color = keyBorder, shape = CircleShape)
-                                .clickable {
-                                    when (key) {
-                                        'B' -> onBackspace()
-                                        'C' -> onConfirm()
-                                        else -> onKeyTap(key)
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            when (key) {
-                                'B' -> {
-                                    Icon(
-                                        imageVector = Icons.Default.Backspace,
-                                        contentDescription = "Backspace",
-                                        tint = ColorError,
-                                        modifier = Modifier.size(20.dp)
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = Spacing.Small)
+                            .size(pinBoxSize)
+                            .then(
+                                if (isFocused) {
+                                    Modifier.neonGlow(
+                                        color = NeonPrimary,
+                                        borderRadius = Radii.ButtonSmall,
+                                        glowRadius = 8.dp,
+                                        opacity = 0.25f
                                     )
-                                }
-                                'C' -> {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Confirm",
-                                        tint = ColorSuccess,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                                else -> {
-                                    Text(
-                                        text = key.toString(),
-                                        color = TextStrong,
-                                        style = CustomTypography.titleLarge.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 20.sp
+                                } else Modifier
+                            )
+                            .background(BgElevated)
+                            .border(
+                                width = 1.5.dp,
+                                color = boxBorderColor,
+                                shape = RoundedCornerShape(Radii.ButtonSmall)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = char,
+                            color = TextStrong,
+                            style = CustomTypography.headlineMedium.copy(
+                                fontSize = if (pinBoxSize < 48.dp) 18.sp else 22.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(spacerHeight))
+
+            // Error message text block
+            AnimatedVisibility(
+                visible = errorMessage != null,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Text(
+                    text = errorMessage ?: "",
+                    color = ColorError,
+                    style = CustomTypography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.Large)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(spacerHeight))
+
+            // Keyboard grid (10 buttons + backspace + confirm)
+            val keys = listOf(
+                listOf('1', '2', '3'),
+                listOf('4', '5', '6'),
+                listOf('7', '8', '9'),
+                listOf('B', '0', 'C') // B = Backspace, C = Confirm
+            )
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+            ) {
+                keys.forEach { rowKeys ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        rowKeys.forEach { key ->
+                            val isSpecial = key == 'B' || key == 'C'
+                            val keyBg = if (isSpecial) {
+                                if (key == 'C') NeonPrimary.copy(alpha = 0.15f) else ColorError.copy(alpha = 0.1f)
+                            } else {
+                                BgElevated
+                            }
+
+                            val keyBorder = if (isSpecial) {
+                                if (key == 'C') NeonPrimary else ColorError
+                            } else {
+                                BgSurface
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = Spacing.Small)
+                                    .size(keySize)
+                                    .clip(CircleShape)
+                                    .background(keyBg)
+                                    .border(width = 1.dp, color = keyBorder, shape = CircleShape)
+                                    .clickable {
+                                        when (key) {
+                                            'B' -> onBackspace()
+                                            'C' -> onConfirm()
+                                            else -> onKeyTap(key)
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                when (key) {
+                                    'B' -> {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.Backspace,
+                                            contentDescription = "Backspace",
+                                            tint = ColorError,
+                                            modifier = Modifier.size(if (keySize < 54.dp) 16.dp else 20.dp)
                                         )
-                                    )
+                                    }
+                                    'C' -> {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Confirm",
+                                            tint = ColorSuccess,
+                                            modifier = Modifier.size(if (keySize < 54.dp) 18.dp else 22.dp)
+                                        )
+                                    }
+                                    else -> {
+                                        Text(
+                                            text = key.toString(),
+                                            color = TextStrong,
+                                            style = CustomTypography.titleLarge.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = if (keySize < 54.dp) 16.sp else 20.sp
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
