@@ -27,7 +27,9 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import com.ioristudios.crossdroid.data.FileKind
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.data.FileType
 import com.ioristudios.crossdroid.ui.TransferBubble
+import com.ioristudios.crossdroid.ui.TransferStatus
 import com.ioristudios.crossdroid.ui.theme.AccentCyan
 import com.ioristudios.crossdroid.ui.theme.BgElevated
 import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
@@ -64,15 +67,24 @@ import com.ioristudios.crossdroid.ui.theme.neonGlow
 fun ChatBubbleItem(
     bubble: TransferBubble,
     modifier: Modifier = Modifier,
-    readOnly: Boolean = false
+    readOnly: Boolean = false,
+    onPause: ((String) -> Unit)? = null,
+    onResume: ((String) -> Unit)? = null,
+    onCancel: ((String) -> Unit)? = null
 ) {
     val isOutgoing = !bubble.isIncoming
     val accent = if (isOutgoing) NeonHighlight else AccentCyan
-    val isActive = bubble.status == "Sending" || bubble.status == "Receiving" || bubble.status == "Paused"
+    val isActive = bubble.status in listOf(
+        TransferStatus.Pending,
+        TransferStatus.Sending,
+        TransferStatus.Receiving,
+        TransferStatus.Paused
+    )
     val statusColor = when (bubble.status) {
-        "Completed" -> ColorSuccess
-        "Failed" -> ColorError
-        "Paused" -> NeonHighlight
+        TransferStatus.Completed -> ColorSuccess
+        TransferStatus.Failed,
+        TransferStatus.Canceled -> ColorError
+        TransferStatus.Paused -> NeonHighlight
         else -> accent
     }
 
@@ -131,7 +143,11 @@ fun ChatBubbleItem(
             FileBubbleHeader(
                 bubble = bubble,
                 accent = accent,
-                statusColor = statusColor
+                statusColor = statusColor,
+                readOnly = readOnly,
+                onPause = onPause,
+                onResume = onResume,
+                onCancel = onCancel
             )
 
             if (!readOnly || isActive) {
@@ -157,7 +173,11 @@ fun ChatBubbleItem(
 private fun FileBubbleHeader(
     bubble: TransferBubble,
     accent: Color,
-    statusColor: Color
+    statusColor: Color,
+    readOnly: Boolean,
+    onPause: ((String) -> Unit)?,
+    onResume: ((String) -> Unit)?,
+    onCancel: ((String) -> Unit)?
 ) {
     val fileIcon = when (bubble.file.type) {
         FileType.ALL -> Icons.Default.Description
@@ -169,11 +189,18 @@ private fun FileBubbleHeader(
     val resolvedFileIcon = if (bubble.file.kind == FileKind.FOLDER) Icons.Default.Folder else fileIcon
 
     val statusIcon = when (bubble.status) {
-        "Completed" -> Icons.Default.CheckCircle
-        "Failed" -> Icons.Default.Error
-        "Paused" -> Icons.Default.PauseCircle
+        TransferStatus.Completed -> Icons.Default.CheckCircle
+        TransferStatus.Failed,
+        TransferStatus.Canceled -> Icons.Default.Error
+        TransferStatus.Paused -> Icons.Default.PauseCircle
         else -> null
     }
+    val canControl = !readOnly && bubble.status in listOf(
+        TransferStatus.Pending,
+        TransferStatus.Sending,
+        TransferStatus.Receiving,
+        TransferStatus.Paused
+    )
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
@@ -216,7 +243,48 @@ private fun FileBubbleHeader(
             )
         }
 
-        if (statusIcon != null) {
+        if (canControl) {
+            Spacer(modifier = Modifier.width(Spacing.Small))
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                IconButton(
+                    onClick = {
+                        if (bubble.status == TransferStatus.Paused) {
+                            onResume?.invoke(bubble.id)
+                        } else {
+                            onPause?.invoke(bubble.id)
+                        }
+                    },
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(accent.copy(alpha = 0.11f))
+                        .border(1.dp, accent.copy(alpha = 0.24f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (bubble.status == TransferStatus.Paused) Icons.Default.PlayCircle else Icons.Default.PauseCircle,
+                        contentDescription = if (bubble.status == TransferStatus.Paused) "Resume item" else "Pause item",
+                        tint = accent,
+                        modifier = Modifier.size(17.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = { onCancel?.invoke(bubble.id) },
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(ColorError.copy(alpha = 0.11f))
+                        .border(1.dp, ColorError.copy(alpha = 0.24f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cancel item",
+                        tint = ColorError,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        } else if (statusIcon != null) {
             Spacer(modifier = Modifier.width(Spacing.Small))
             Box(
                 modifier = Modifier
@@ -227,7 +295,7 @@ private fun FileBubbleHeader(
             ) {
                 Icon(
                     imageVector = statusIcon,
-                    contentDescription = bubble.status,
+                    contentDescription = bubble.status.name,
                     tint = statusColor,
                     modifier = Modifier.size(15.dp)
                 )
@@ -243,11 +311,12 @@ private fun FileBubbleFooter(
     readOnly: Boolean
 ) {
     val statusText = when (bubble.status) {
-        "Sending" -> "Sending ${(bubble.progress * 100).toInt()}%"
-        "Receiving" -> "Receiving ${(bubble.progress * 100).toInt()}%"
-        "Completed" -> if (readOnly) "Recorded complete" else "Completed"
-        "Paused" -> "Paused"
-        "Failed" -> "Recorded failed"
+        TransferStatus.Sending -> "Sending ${(bubble.progress * 100).toInt()}%"
+        TransferStatus.Receiving -> "Receiving ${(bubble.progress * 100).toInt()}%"
+        TransferStatus.Completed -> if (readOnly) "Recorded complete" else "Completed"
+        TransferStatus.Paused -> "Paused"
+        TransferStatus.Canceled -> if (readOnly) "Recorded canceled" else "Canceled"
+        TransferStatus.Failed -> "Recorded failed"
         else -> "Pending"
     }
 
@@ -269,7 +338,7 @@ private fun FileBubbleFooter(
         )
 
         AnimatedVisibility(
-            visible = !readOnly && bubble.status in listOf("Sending", "Receiving"),
+            visible = !readOnly && bubble.status in listOf(TransferStatus.Sending, TransferStatus.Receiving),
             enter = fadeIn(),
             exit = fadeOut()
         ) {

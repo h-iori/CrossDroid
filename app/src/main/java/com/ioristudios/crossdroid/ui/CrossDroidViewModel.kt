@@ -36,9 +36,19 @@ data class TransferBubble(
     val file: FileItem,
     val progress: Float,
     val speed: String,
-    val status: String, // "Pending", "Sending", "Receiving", "Paused", "Failed", "Completed"
+    val status: TransferStatus,
     val isIncoming: Boolean
 )
+
+enum class TransferStatus {
+    Pending,
+    Sending,
+    Receiving,
+    Paused,
+    Canceled,
+    Failed,
+    Completed
+}
 
 data class HistorySession(
     val id: String,
@@ -431,7 +441,7 @@ class CrossDroidViewModel : ViewModel() {
                 file = file,
                 progress = 0f,
                 speed = "0 MB/s",
-                status = "Pending",
+                status = TransferStatus.Pending,
                 isIncoming = isIncoming
             )
         }
@@ -439,92 +449,209 @@ class CrossDroidViewModel : ViewModel() {
         navigateTo(Screen.TRANSFER, context)
 
         transferJob = viewModelScope.launch {
-            val updatedBubbles = initialBubbles.toMutableList()
-            for (i in updatedBubbles.indices) {
-                // Simulate active sending/receiving
-                updatedBubbles[i] = updatedBubbles[i].copy(status = if (isIncoming) "Receiving" else "Sending")
-                _transferBubbles.value = updatedBubbles.toList()
+            val orderedIds = initialBubbles.map { it.id }
+            val activeStatus = if (isIncoming) TransferStatus.Receiving else TransferStatus.Sending
 
-                var currentProgress = 0f
-                while (currentProgress < 1.0f) {
-                    if (_isTransferPaused.value) {
+            for (bubbleId in orderedIds) {
+                if (bubbleById(bubbleId)?.status == TransferStatus.Canceled) continue
+
+                updateTransferBubble(bubbleId) { current ->
+                    if (current.status == TransferStatus.Pending) {
+                        current.copy(status = activeStatus, speed = "0 MB/s")
+                    } else {
+                        current
+                    }
+                }
+
+                while (true) {
+                    val current = bubbleById(bubbleId) ?: break
+
+                    when (current.status) {
+                        TransferStatus.Canceled,
+                        TransferStatus.Failed,
+                        TransferStatus.Completed -> break
+                        TransferStatus.Paused -> {
+                            delay(250)
+                            continue
+                        }
+                        TransferStatus.Pending -> {
+                            updateTransferBubble(bubbleId) { it.copy(status = activeStatus) }
+                            continue
+                        }
+                        TransferStatus.Sending,
+                        TransferStatus.Receiving -> Unit
+                    }
+
+                    if (current.progress >= 1.0f) {
+                        updateTransferBubble(bubbleId) {
+                            it.copy(progress = 1.0f, speed = "0 MB/s", status = TransferStatus.Completed)
+                        }
+                        break
+                    }
+
+                    delay(120)
+
+                    val latest = bubbleById(bubbleId) ?: break
+                    if (latest.status != TransferStatus.Sending && latest.status != TransferStatus.Receiving) {
                         delay(250)
                         continue
                     }
-                    delay(120) // Fast progress increments
-                    currentProgress += 0.08f + (Math.random() * 0.12).toFloat()
-                    if (currentProgress >= 1.0f) {
-                        currentProgress = 1.0f
-                    }
+
+                    val nextProgress = (latest.progress + 0.08f + (Math.random() * 0.12).toFloat()).coerceAtMost(1.0f)
                     val randomSpeed = (20 + (Math.random() * 35).toInt())
-                    updatedBubbles[i] = updatedBubbles[i].copy(
-                        progress = currentProgress,
-                        speed = "$randomSpeed MB/s",
-                        status = if (currentProgress >= 1.0f) "Completed" else (if (isIncoming) "Receiving" else "Sending")
-                    )
-                    _transferBubbles.value = updatedBubbles.toList()
+                    updateTransferBubble(bubbleId) {
+                        it.copy(
+                            progress = nextProgress,
+                            speed = if (nextProgress >= 1.0f) "0 MB/s" else "$randomSpeed MB/s",
+                            status = if (nextProgress >= 1.0f) TransferStatus.Completed else activeStatus
+                        )
+                    }
+
+                    if (nextProgress >= 1.0f) {
+                        HapticHelper.triggerLight(context)
+                        delay(200)
+                        break
+                    }
                 }
-                
-                // Finished one file: trigger quick selection pulse
-                context.let { HapticHelper.triggerLight(it) }
-                delay(200)
+
+                if (_transferBubbles.value.all { it.status == TransferStatus.Completed || it.status == TransferStatus.Canceled }) {
+                    break
+                }
             }
 
-            // Transfer completed successfully
+            _transferBubbles.value = _transferBubbles.value.map { bubble ->
+                if (bubble.status == TransferStatus.Pending || bubble.status == TransferStatus.Paused) {
+                    bubble.copy(status = TransferStatus.Canceled, speed = "0 MB/s")
+                } else {
+                    bubble
+                }
+            }
+
             _isTransferActive.value = false
             _isTransferComplete.value = true
+            _isTransferPaused.value = false
             context.let { HapticHelper.triggerSuccess(it) }
 
-            // Log details in our active history records
-            val dateStr = "May 23, 17:50" // Current mock date
-            val historyRecordsCopy = _historyRecords.value.toMutableList()
-            files.forEach { file ->
-                historyRecordsCopy.add(
-                    0, // add to top
-                    HistoryItem(
-                        fileName = file.name,
-                        size = file.size,
-                        date = dateStr,
-                        isIncoming = isIncoming,
-                        isSuccess = true,
-                        deviceName = device.name
-                    )
-                )
-            }
-            _historyRecords.value = historyRecordsCopy
-            
-            // Clean selection
+            logTransferResults(device, _transferBubbles.value)
             _selectedFiles.value = emptySet()
         }
     }
 
-    fun toggleTransferPause(context: Context) {
-        _isTransferPaused.value = !_isTransferPaused.value
-        val updated = _transferBubbles.value.map {
-            if (it.status == "Sending" || it.status == "Receiving") {
-                it.copy(status = "Paused")
-            } else if (it.status == "Paused") {
-                it.copy(status = if (it.isIncoming) "Receiving" else "Sending")
-            } else {
-                it
+    fun pauseTransferItem(id: String, context: Context) {
+        updateTransferBubble(id) { bubble ->
+            when (bubble.status) {
+                TransferStatus.Pending,
+                TransferStatus.Sending,
+                TransferStatus.Receiving -> bubble.copy(status = TransferStatus.Paused, speed = "0 MB/s")
+                else -> bubble
             }
         }
-        _transferBubbles.value = updated
+        HapticHelper.triggerMedium(context)
+    }
+
+    fun resumeTransferItem(id: String, context: Context) {
+        updateTransferBubble(id) { bubble ->
+            if (bubble.status == TransferStatus.Paused) {
+                val resumedStatus = when {
+                    bubble.progress <= 0f -> TransferStatus.Pending
+                    bubble.isIncoming -> TransferStatus.Receiving
+                    else -> TransferStatus.Sending
+                }
+                bubble.copy(status = resumedStatus)
+            } else {
+                bubble
+            }
+        }
+        HapticHelper.triggerMedium(context)
+    }
+
+    fun cancelTransferItem(id: String, context: Context) {
+        updateTransferBubble(id) { bubble ->
+            if (bubble.status == TransferStatus.Completed || bubble.status == TransferStatus.Failed || bubble.status == TransferStatus.Canceled) {
+                bubble
+            } else {
+                bubble.copy(status = TransferStatus.Canceled, speed = "0 MB/s")
+            }
+        }
+
+        if (_transferBubbles.value.all { it.status == TransferStatus.Completed || it.status == TransferStatus.Canceled || it.status == TransferStatus.Failed }) {
+            transferJob?.cancel()
+            _isTransferActive.value = false
+            _isTransferPaused.value = false
+            _isTransferComplete.value = true
+            _transferDevice.value?.let { logTransferResults(it, _transferBubbles.value) }
+            _selectedFiles.value = emptySet()
+        }
+
+        HapticHelper.triggerError(context)
+    }
+
+    fun totalTransferSpeedLabel(): String {
+        val total = _transferBubbles.value
+            .filter { it.status == TransferStatus.Sending || it.status == TransferStatus.Receiving }
+            .sumOf { it.speed.substringBefore(" ").toDoubleOrNull() ?: 0.0 }
+
+        return if (total <= 0.0) {
+            "0 MB/s"
+        } else {
+            String.format(Locale.getDefault(), "%.0f MB/s", total)
+        }
+    }
+
+    fun toggleTransferPause(context: Context) {
+        val shouldPause = _transferBubbles.value.any {
+            it.status == TransferStatus.Sending || it.status == TransferStatus.Receiving || it.status == TransferStatus.Pending
+        }
+        _isTransferPaused.value = shouldPause
+        _transferBubbles.value = _transferBubbles.value.map { bubble ->
+            when {
+                shouldPause && bubble.status in listOf(TransferStatus.Pending, TransferStatus.Sending, TransferStatus.Receiving) ->
+                    bubble.copy(status = TransferStatus.Paused, speed = "0 MB/s")
+                !shouldPause && bubble.status == TransferStatus.Paused ->
+                    bubble.copy(status = if (bubble.progress <= 0f) TransferStatus.Pending else if (bubble.isIncoming) TransferStatus.Receiving else TransferStatus.Sending)
+                else -> bubble
+            }
+        }
         HapticHelper.triggerMedium(context)
     }
 
     fun cancelTransfer(context: Context) {
         transferJob?.cancel()
+        _transferBubbles.value = _transferBubbles.value.map { bubble ->
+            if (bubble.progress < 1.0f && bubble.status != TransferStatus.Canceled) {
+                bubble.copy(status = TransferStatus.Canceled, speed = "0 MB/s")
+            } else {
+                bubble
+            }
+        }
         _isTransferActive.value = false
         _isTransferComplete.value = false
         _isTransferPaused.value = false
-        
-        // Mark remaining incomplete items as Failed in logs
-        val incomplete = _transferBubbles.value.filter { it.progress < 1.0f }
-        if (incomplete.isNotEmpty()) {
-            val dateStr = "May 23, 17:50"
-            val historyRecordsCopy = _historyRecords.value.toMutableList()
-            incomplete.forEach { item ->
+
+        _transferDevice.value?.let { logTransferResults(it, _transferBubbles.value) }
+
+        HapticHelper.triggerError(context)
+        navigateTo(Screen.HOME, context)
+    }
+
+    private fun bubbleById(id: String): TransferBubble? {
+        return _transferBubbles.value.firstOrNull { it.id == id }
+    }
+
+    private fun updateTransferBubble(id: String, transform: (TransferBubble) -> TransferBubble) {
+        _transferBubbles.value = _transferBubbles.value.map { bubble ->
+            if (bubble.id == id) transform(bubble) else bubble
+        }
+    }
+
+    private fun logTransferResults(device: DeviceNode, bubbles: List<TransferBubble>) {
+        if (bubbles.isEmpty()) return
+
+        val dateStr = "May 23, 17:50"
+        val historyRecordsCopy = _historyRecords.value.toMutableList()
+        bubbles
+            .filter { it.status == TransferStatus.Completed || it.status == TransferStatus.Canceled || it.status == TransferStatus.Failed }
+            .forEach { item ->
                 historyRecordsCopy.add(
                     0,
                     HistoryItem(
@@ -532,16 +659,12 @@ class CrossDroidViewModel : ViewModel() {
                         size = item.file.size,
                         date = dateStr,
                         isIncoming = item.isIncoming,
-                        isSuccess = false,
-                        deviceName = _transferDevice.value?.name ?: "Unknown"
+                        isSuccess = item.status == TransferStatus.Completed,
+                        deviceName = device.name
                     )
                 )
             }
-            _historyRecords.value = historyRecordsCopy
-        }
-        
-        HapticHelper.triggerError(context)
-        navigateTo(Screen.HOME, context)
+        _historyRecords.value = historyRecordsCopy
     }
 }
 

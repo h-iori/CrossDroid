@@ -47,9 +47,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
-import com.ioristudios.crossdroid.ui.Screen
+import com.ioristudios.crossdroid.ui.TransferStatus
 import com.ioristudios.crossdroid.ui.components.ChatBubbleItem
-import com.ioristudios.crossdroid.ui.components.GlowingButton
 import com.ioristudios.crossdroid.ui.components.TopAppBar
 import com.ioristudios.crossdroid.ui.theme.BgElevated
 import com.ioristudios.crossdroid.ui.theme.BgMain
@@ -78,12 +77,19 @@ fun TransferScreen(
     val context = LocalContext.current
     val device by viewModel.transferDevice.collectAsState()
     val bubbles by viewModel.transferBubbles.collectAsState()
-    val isPaused by viewModel.isTransferPaused.collectAsState()
     val isComplete by viewModel.isTransferComplete.collectAsState()
     val isActive by viewModel.isTransferActive.collectAsState()
 
     val totalFiles = bubbles.size
-    val completedFiles = bubbles.count { it.status == "Completed" }
+    val completedFiles = bubbles.count { it.status == TransferStatus.Completed }
+    val canceledFiles = bubbles.count { it.status == TransferStatus.Canceled || it.status == TransferStatus.Failed }
+    val totalSpeed = viewModel.totalTransferSpeedLabel()
+    val statusLine = when {
+        isActive -> "Transferring $completedFiles of $totalFiles files"
+        isComplete && canceledFiles > 0 -> "$completedFiles complete / $canceledFiles canceled"
+        isComplete -> "All $completedFiles files complete"
+        else -> "$completedFiles of $totalFiles files processed"
+    }
 
     Column(
         modifier = modifier
@@ -93,7 +99,8 @@ fun TransferScreen(
         TopAppBar(
             title = "Active Transfer Stream",
             viewModel = viewModel,
-            showBackButton = false
+            showBackButton = false,
+            showMenuButton = false
         )
 
         // Peer Terminal info header
@@ -122,17 +129,49 @@ fun TransferScreen(
             
             Spacer(modifier = Modifier.width(Spacing.Small))
             
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = device?.name ?: "Unknown Terminal",
                     style = CustomTypography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 13.sp),
                     color = TextStrong
                 )
                 Text(
-                    text = "Transferring $completedFiles of $totalFiles files",
+                    text = statusLine,
                     style = CustomTypography.labelSmall,
                     color = TextSecondary
                 )
+            }
+
+            if (isActive) {
+                Spacer(modifier = Modifier.width(Spacing.Small))
+                Column(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(NeonPrimary.copy(alpha = 0.11f))
+                        .border(1.dp, NeonHighlight.copy(alpha = 0.26f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = Spacing.Small, vertical = 6.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = totalSpeed,
+                        style = CustomTypography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            letterSpacing = 0.sp
+                        ),
+                        color = NeonHighlight,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "TOTAL SPEED",
+                        style = CustomTypography.labelSmall.copy(
+                            fontSize = 8.sp,
+                            letterSpacing = 0.6.sp
+                        ),
+                        color = TextMuted,
+                        maxLines = 1
+                    )
+                }
             }
         }
 
@@ -145,177 +184,12 @@ fun TransferScreen(
             verticalArrangement = Arrangement.Top
         ) {
             items(bubbles) { bubble ->
-                ChatBubbleItem(bubble = bubble)
-            }
-        }
-
-        // Complete Success panel overlay
-        AnimatedVisibility(
-            visible = isComplete,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = Radii.OverlaySheet, topEnd = Radii.OverlaySheet))
-                    .neonGlow(ColorSuccess, borderRadius = Radii.OverlaySheet, glowRadius = 14.dp, opacity = 0.2f)
-                    .background(BgElevated)
-                    .border(width = 1.dp, color = ColorSuccess.copy(alpha = 0.3f), shape = RoundedCornerShape(topStart = Radii.OverlaySheet, topEnd = Radii.OverlaySheet))
-                    .padding(Spacing.Large),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "Success",
-                    tint = ColorSuccess,
-                    modifier = Modifier.size(IconSize.Huge)
+                ChatBubbleItem(
+                    bubble = bubble,
+                    onPause = { viewModel.pauseTransferItem(it, context) },
+                    onResume = { viewModel.resumeTransferItem(it, context) },
+                    onCancel = { viewModel.cancelTransferItem(it, context) }
                 )
-                
-                Spacer(modifier = Modifier.height(Spacing.Small))
-                
-                Text(
-                    text = "TRANSFER COMPLETE",
-                    style = CustomTypography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = TextStrong
-                )
-                Text(
-                    text = "All files successfully saved to peer terminal logs.",
-                    style = CustomTypography.bodyMedium,
-                    color = TextSecondary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = Spacing.Small)
-                )
-                
-                Spacer(modifier = Modifier.height(Spacing.Large))
-                
-                // Elegant Chat-style Send Button
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(BgSurface)
-                        .border(1.dp, BorderSubtle, RoundedCornerShape(28.dp))
-                        .clickable { viewModel.navigateTo(Screen.SEND, context) }
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Attach Files",
-                        tint = NeonPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Send more files...",
-                        color = TextSecondary,
-                        style = CustomTypography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(NeonPrimary)
-                            .neonGlow(NeonPrimary, borderRadius = 20.dp, glowRadius = 8.dp, opacity = 0.4f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(Spacing.Medium))
-                
-                // Secondary View History Button
-                Text(
-                    text = "VIEW HISTORY LOG",
-                    color = ColorSuccess,
-                    style = CustomTypography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                    modifier = Modifier
-                        .clickable { viewModel.navigateTo(Screen.HISTORY, context) }
-                        .padding(vertical = Spacing.Small)
-                )
-            }
-        }
-
-        // Controller Actions (Pause/Resume/Cancel) - Visible only while active
-        AnimatedVisibility(
-            visible = isActive && !isComplete,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(BgElevated)
-                    .border(width = 1.dp, color = BgSurface, shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                    .padding(Spacing.Medium),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)
-            ) {
-                // Pause button
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp)
-                        .clip(RoundedCornerShape(Radii.ButtonSmall))
-                        .background(if (isPaused) NeonPrimary.copy(alpha = 0.15f) else BgSurface)
-                        .border(
-                            width = 1.dp,
-                            color = if (isPaused) NeonHighlight else BgSurface,
-                            shape = RoundedCornerShape(Radii.ButtonSmall)
-                        )
-                        .clickable { viewModel.toggleTransferPause(context) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                            contentDescription = "Pause Toggle",
-                            tint = if (isPaused) NeonHighlight else TextStrong,
-                            modifier = Modifier.size(IconSize.Small)
-                        )
-                        Spacer(modifier = Modifier.width(Spacing.Small))
-                        Text(
-                            text = if (isPaused) "RESUME" else "PAUSE",
-                            color = if (isPaused) NeonHighlight else TextStrong,
-                            style = CustomTypography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
-                }
-
-                // Cancel button
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp)
-                        .clip(RoundedCornerShape(Radii.ButtonSmall))
-                        .background(ColorError.copy(alpha = 0.10f))
-                        .border(width = 1.dp, color = ColorError.copy(alpha = 0.3f), shape = RoundedCornerShape(Radii.ButtonSmall))
-                        .clickable { viewModel.cancelTransfer(context) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Cancel",
-                            tint = ColorError,
-                            modifier = Modifier.size(IconSize.Small)
-                        )
-                        Spacer(modifier = Modifier.width(Spacing.Small))
-                        Text(
-                            text = "CANCEL",
-                            color = ColorError,
-                            style = CustomTypography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
-                }
             }
         }
     }

@@ -58,6 +58,7 @@ fun TopAppBar(
     viewModel: CrossDroidViewModel,
     showBackButton: Boolean = false,
     showSearch: Boolean = false,
+    showMenuButton: Boolean = true,
     subtitle: String? = null,
     onMenuClick: () -> Unit = {}
 ) {
@@ -77,14 +78,19 @@ fun TopAppBar(
                 .padding(horizontal = Spacing.Medium),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (showBackButton) {
-                BackIconButton(onClick = { viewModel.navigateBack(context) }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = TextStrong,
-                        modifier = Modifier.size(20.dp)
-                    )
+            Box(
+                modifier = Modifier.size(44.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (showBackButton) {
+                    BackIconButton(onClick = { viewModel.navigateBack(context) }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextStrong,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 
@@ -124,34 +130,38 @@ fun TopAppBar(
                 }
             }
 
-            if (showSearch) {
-                BackIconButton(onClick = { viewModel.toggleSearchMode(context) }) {
-                    Icon(
-                        imageVector = if (searchMode) Icons.Default.Close else Icons.Default.Search,
-                        contentDescription = if (searchMode) "Close search" else "Search files",
-                        tint = if (searchMode) AccentBlue else TextStrong,
-                        modifier = Modifier.size(IconSize.Standard)
-                    )
+            Box(
+                modifier = Modifier.size(44.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    showSearch -> {
+                        BackIconButton(onClick = { viewModel.toggleSearchMode(context) }) {
+                            Icon(
+                                imageVector = if (searchMode) Icons.Default.Close else Icons.Default.Search,
+                                contentDescription = if (searchMode) "Close search" else "Search files",
+                                tint = if (searchMode) AccentBlue else TextStrong,
+                                modifier = Modifier.size(IconSize.Standard)
+                            )
+                        }
+                    }
+                    !showBackButton && showMenuButton -> {
+                        IconButton(
+                            onClick = {
+                                HapticHelper.triggerMedium(context)
+                                onMenuClick()
+                            },
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = TextStrong,
+                                modifier = Modifier.size(IconSize.Standard)
+                            )
+                        }
+                    }
                 }
-            }
-
-            if (!showBackButton) {
-                IconButton(
-                    onClick = {
-                        HapticHelper.triggerMedium(context)
-                        onMenuClick()
-                    },
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = "Menu",
-                        tint = TextStrong,
-                        modifier = Modifier.size(IconSize.Standard)
-                    )
-                }
-            } else if (!showSearch) {
-                Box(modifier = Modifier.size(44.dp))
             }
         }
 

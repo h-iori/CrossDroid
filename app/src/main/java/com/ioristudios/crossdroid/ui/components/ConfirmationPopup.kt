@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.Icon
@@ -34,13 +35,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ioristudios.crossdroid.ui.theme.AccentCyan
 import com.ioristudios.crossdroid.ui.theme.BgElevated
 import com.ioristudios.crossdroid.ui.theme.BgMain
+import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
 import com.ioristudios.crossdroid.ui.theme.BgSurface
 import com.ioristudios.crossdroid.ui.theme.ColorError
-import com.ioristudios.crossdroid.ui.theme.ColorSuccess
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
 import com.ioristudios.crossdroid.ui.theme.IconSize
 import com.ioristudios.crossdroid.ui.theme.NeonHighlight
@@ -59,6 +62,7 @@ fun ConfirmationPopup(
     deviceName: String,
     filesCount: Int,
     totalSize: String,
+    fileNames: List<String> = emptyList(),
     onAccept: () -> Unit,
     onDecline: () -> Unit
 ) {
@@ -80,41 +84,49 @@ fun ConfirmationPopup(
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
-                // Glassmorphic Dialog Container
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(topStart = Radii.OverlaySheet, topEnd = Radii.OverlaySheet))
                         .neonGlow(
-                            color = NeonPrimary,
+                            color = AccentCyan,
                             borderRadius = Radii.OverlaySheet,
                             glowRadius = 18.dp,
-                            opacity = 0.3f
+                            opacity = 0.22f
                         )
                         .background(BgElevated)
                         .border(
                             width = 1.dp,
                             brush = Brush.verticalGradient(
-                                colors = listOf(NeonHighlight.copy(alpha = 0.4f), BgSurface)
+                                colors = listOf(AccentCyan.copy(alpha = 0.42f), NeonPrimary.copy(alpha = 0.22f), BgSurface)
                             ),
                             shape = RoundedCornerShape(topStart = Radii.OverlaySheet, topEnd = Radii.OverlaySheet)
                         )
                         .padding(Spacing.Large),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Pulsing Header Icon
                     Box(
                         modifier = Modifier
-                            .size(60.dp)
+                            .width(48.dp)
+                            .height(4.dp)
                             .clip(CircleShape)
-                            .background(NeonPrimary.copy(alpha = 0.15f))
-                            .border(width = 1.dp, color = NeonPrimary.copy(alpha = 0.3f), shape = CircleShape),
+                            .background(BgSurface)
+                    )
+
+                    Spacer(modifier = Modifier.height(Spacing.Large))
+
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(AccentCyan.copy(alpha = 0.14f))
+                            .border(width = 1.dp, color = AccentCyan.copy(alpha = 0.36f), shape = CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.FileDownload,
                             contentDescription = "Incoming Transfer",
-                            tint = NeonHighlight,
+                            tint = AccentCyan,
                             modifier = Modifier.size(IconSize.Large)
                         )
                     }
@@ -122,11 +134,11 @@ fun ConfirmationPopup(
                     Spacer(modifier = Modifier.height(Spacing.Medium))
 
                     Text(
-                        text = "Incoming Transfer Request",
+                        text = "Incoming transfer request",
                         style = CustomTypography.headlineMedium.copy(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
+                            letterSpacing = 0.sp
                         ),
                         color = TextStrong,
                         textAlign = TextAlign.Center
@@ -134,40 +146,79 @@ fun ConfirmationPopup(
 
                     Spacer(modifier = Modifier.height(Spacing.Small))
 
-                    // Peer details
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(Radii.ButtonSmall))
-                            .background(BgSurface)
-                            .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(Radii.CardStandard))
+                            .background(BgPanelMuted)
+                            .border(1.dp, BgSurface, RoundedCornerShape(Radii.CardStandard))
+                            .padding(Spacing.Medium),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PhoneAndroid,
-                            contentDescription = "Sender",
-                            tint = ColorSuccess,
-                            modifier = Modifier.size(IconSize.Small)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(13.dp))
+                                .background(NeonPrimary.copy(alpha = 0.13f))
+                                .border(1.dp, NeonHighlight.copy(alpha = 0.26f), RoundedCornerShape(13.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PhoneAndroid,
+                                contentDescription = "Sender",
+                                tint = NeonHighlight,
+                                modifier = Modifier.size(IconSize.Small)
+                            )
+                        }
                         Spacer(modifier = Modifier.width(Spacing.Small))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = deviceName,
+                                style = CustomTypography.labelLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.sp
+                                ),
+                                color = TextStrong,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "Wants to send $filesCount files to this device",
+                                style = CustomTypography.labelSmall.copy(letterSpacing = 0.sp),
+                                color = TextSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                         Text(
-                            text = deviceName,
-                            style = CustomTypography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = TextStrong
+                            text = totalSize,
+                            style = CustomTypography.labelLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.sp
+                            ),
+                            color = AccentCyan
                         )
                     }
 
                     Spacer(modifier = Modifier.height(Spacing.Medium))
 
-                    Text(
-                        text = "Wants to share $filesCount files ($totalSize) with you.",
-                        style = CustomTypography.bodyMedium,
-                        color = TextBody,
-                        textAlign = TextAlign.Center
-                    )
+                    if (fileNames.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(BgSurface.copy(alpha = 0.72f))
+                                .border(1.dp, BgSurface, RoundedCornerShape(14.dp))
+                                .padding(Spacing.Small)
+                        ) {
+                            fileNames.take(3).forEach { fileName ->
+                                FilePreviewRow(fileName = fileName)
+                            }
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(Spacing.Large))
 
-                    // Action buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)
@@ -186,7 +237,7 @@ fun ConfirmationPopup(
                             Text(
                                 text = "Decline",
                                 color = ColorError,
-                                style = CustomTypography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                style = CustomTypography.titleMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
                             )
                         }
 
@@ -198,16 +249,16 @@ fun ConfirmationPopup(
                                 .clip(RoundedCornerShape(Radii.ButtonSmall))
                                 .background(
                                     brush = Brush.horizontalGradient(
-                                        colors = listOf(ColorSuccess, Color(0xFF00FFC4))
+                                        colors = listOf(AccentCyan, Color(0xFF00FFC4))
                                     )
                                 )
                                 .neonGlow(
-                                    color = ColorSuccess,
+                                    color = AccentCyan,
                                     borderRadius = Radii.ButtonSmall,
                                     glowRadius = 8.dp,
                                     opacity = 0.25f
                                 )
-                                .border(width = 1.dp, color = ColorSuccess, shape = RoundedCornerShape(Radii.ButtonSmall))
+                                .border(width = 1.dp, color = AccentCyan, shape = RoundedCornerShape(Radii.ButtonSmall))
                                 .clickable { onAccept() },
                             contentAlignment = Alignment.Center
                         ) {
@@ -216,6 +267,7 @@ fun ConfirmationPopup(
                                 color = BgMain,
                                 style = CustomTypography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.sp,
                                     color = BgMain
                                 )
                             )
@@ -224,5 +276,39 @@ fun ConfirmationPopup(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FilePreviewRow(fileName: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.Small, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(AccentCyan.copy(alpha = 0.10f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Description,
+                contentDescription = null,
+                tint = AccentCyan,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(Spacing.Small))
+        Text(
+            text = fileName,
+            style = CustomTypography.labelMedium.copy(letterSpacing = 0.sp),
+            color = TextBody,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
     }
 }

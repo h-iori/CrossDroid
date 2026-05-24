@@ -48,6 +48,7 @@ import com.ioristudios.crossdroid.data.HistoryItem
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
 import com.ioristudios.crossdroid.ui.TransferBubble
+import com.ioristudios.crossdroid.ui.TransferStatus
 import com.ioristudios.crossdroid.ui.components.ChatBubbleItem
 import com.ioristudios.crossdroid.ui.components.TopAppBar
 import com.ioristudios.crossdroid.ui.theme.AccentCyan
@@ -441,7 +442,7 @@ private fun HistoryItem.toTransferBubble(): TransferBubble {
         ),
         progress = if (isSuccess) 1f else 0f,
         speed = "",
-        status = if (isSuccess) "Completed" else "Failed",
+        status = if (isSuccess) TransferStatus.Completed else TransferStatus.Failed,
         isIncoming = isIncoming
     )
 }
