@@ -1,0 +1,320 @@
+package com.ioristudios.crossdroid.ui
+
+import android.content.Context
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.ioristudios.crossdroid.data.DeviceNode
+import com.ioristudios.crossdroid.data.FileItem
+import com.ioristudios.crossdroid.data.HistoryItem
+import com.ioristudios.crossdroid.data.MockData
+import com.ioristudios.crossdroid.data.FileType
+import com.ioristudios.crossdroid.ui.theme.HapticHelper
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.util.UUID
+
+enum class Screen {
+    HOME, DEVICES, HISTORY, SEND, QR_SCAN, ENTER_CODE, RADAR, TRANSFER, RECEIVE
+}
+
+data class TransferBubble(
+    val id: String = UUID.randomUUID().toString(),
+    val file: FileItem,
+    val progress: Float,
+    val speed: String,
+    val status: String, // "Pending", "Sending", "Receiving", "Paused", "Failed", "Completed"
+    val isIncoming: Boolean
+)
+
+class CrossDroidViewModel : ViewModel() {
+
+    // Navigation State
+    private val _currentScreen = MutableStateFlow(Screen.HOME)
+    val currentScreen: StateFlow<Screen> = _currentScreen.asStateFlow()
+
+    // File Selection State (Send Flow)
+    private val _selectedFiles = MutableStateFlow<Set<FileItem>>(emptySet())
+    val selectedFiles: StateFlow<Set<FileItem>> = _selectedFiles.asStateFlow()
+
+    private val _activeFilter = MutableStateFlow(FileType.ALL)
+    val activeFilter: StateFlow<FileType> = _activeFilter.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _searchMode = MutableStateFlow(false)
+    val searchMode: StateFlow<Boolean> = _searchMode.asStateFlow()
+
+    // Enter Code PIN Input
+    private val _pinCode = MutableStateFlow("")
+    val pinCode: StateFlow<String> = _pinCode.asStateFlow()
+
+    private val _pinError = MutableStateFlow<String?>(null)
+    val pinError: StateFlow<String?> = _pinError.asStateFlow()
+
+    // Receive Screen discoverable simulation
+    private val _showReceivePopup = MutableStateFlow(false)
+    val showReceivePopup: StateFlow<Boolean> = _showReceivePopup.asStateFlow()
+
+    // Transfer Activity States
+    private val _transferDevice = MutableStateFlow<DeviceNode?>(null)
+    val transferDevice: StateFlow<DeviceNode?> = _transferDevice.asStateFlow()
+
+    private val _transferBubbles = MutableStateFlow<List<TransferBubble>>(emptyList())
+    val transferBubbles: StateFlow<List<TransferBubble>> = _transferBubbles.asStateFlow()
+
+    private val _isTransferActive = MutableStateFlow(false)
+    val isTransferActive: StateFlow<Boolean> = _isTransferActive.asStateFlow()
+
+    private val _isTransferPaused = MutableStateFlow(false)
+    val isTransferPaused: StateFlow<Boolean> = _isTransferPaused.asStateFlow()
+
+    private val _isTransferComplete = MutableStateFlow(false)
+    val isTransferComplete: StateFlow<Boolean> = _isTransferComplete.asStateFlow()
+
+    // Dynamic History list that appends simulated finishes
+    private val _historyRecords = MutableStateFlow(MockData.historyItems)
+    val historyRecords: StateFlow<List<HistoryItem>> = _historyRecords.asStateFlow()
+
+    private var transferJob: Job? = null
+    private var receiveSimulationJob: Job? = null
+
+    fun navigateTo(screen: Screen, context: Context? = null) {
+        _currentScreen.value = screen
+        context?.let { HapticHelper.triggerLight(it) }
+        
+        // Reset code errors when switching pages
+        if (screen != Screen.ENTER_CODE) {
+            _pinCode.value = ""
+            _pinError.value = null
+        }
+        
+        // Start or cancel receiver simulations based on screen
+        if (screen == Screen.RECEIVE) {
+            startReceiveSimulation(context)
+        } else {
+            cancelReceiveSimulation()
+        }
+    }
+
+    // --- Send Selection Logics ---
+    fun toggleFileSelected(file: FileItem, context: Context) {
+        val current = _selectedFiles.value.toMutableSet()
+        if (current.contains(file)) {
+            current.remove(file)
+        } else {
+            current.add(file)
+        }
+        _selectedFiles.value = current
+        HapticHelper.triggerLight(context)
+    }
+
+    fun setFilter(filter: FileType, context: Context) {
+        _activeFilter.value = filter
+        HapticHelper.triggerLight(context)
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun toggleSearchMode(context: Context) {
+        _searchMode.value = !_searchMode.value
+        if (!_searchMode.value) _searchQuery.value = ""
+        HapticHelper.triggerLight(context)
+    }
+
+    // --- PIN Entry Logics ---
+    fun appendPinChar(char: Char, context: Context) {
+        if (_pinCode.value.length < 4) {
+            _pinCode.value += char
+            _pinError.value = null
+            HapticHelper.triggerLight(context)
+        }
+    }
+
+    fun deletePinLast(context: Context) {
+        if (_pinCode.value.isNotEmpty()) {
+            _pinCode.value = _pinCode.value.dropLast(1)
+            _pinError.value = null
+            HapticHelper.triggerLight(context)
+        }
+    }
+
+    fun verifyPinCode(context: Context) {
+        if (_pinCode.value == "1234") {
+            HapticHelper.triggerSuccess(context)
+            _pinError.value = null
+            // Trigger transfer with chosen files
+            val defaultDevice = MockData.deviceNodes.first { it.osType == "android" }
+            startTransferFlow(defaultDevice, _selectedFiles.value.toList(), isIncoming = false, context = context)
+        } else {
+            HapticHelper.triggerError(context)
+            _pinError.value = "Invalid connection code. Try '1234'"
+        }
+    }
+
+    // --- Receive Page Simulation ---
+    private fun startReceiveSimulation(context: Context?) {
+        cancelReceiveSimulation()
+        receiveSimulationJob = viewModelScope.launch {
+            // Wait 4 seconds, then show confirmation popup
+            delay(4000)
+            context?.let { HapticHelper.triggerStrong(it) }
+            _showReceivePopup.value = true
+        }
+    }
+
+    private fun cancelReceiveSimulation() {
+        receiveSimulationJob?.cancel()
+        _showReceivePopup.value = false
+    }
+
+    fun acceptIncomingTransfer(context: Context) {
+        _showReceivePopup.value = false
+        val incomingDevice = MockData.deviceNodes.first { it.name == "STUDIO-WORKSTATION" }
+        // Receive 2 mock files
+        val incomingFiles = listOf(
+            MockData.filesList[1], // Neon_Vibes_Chill.mp3
+            MockData.filesList[2]  // IORI_Studios_Logo.png
+        )
+        HapticHelper.triggerSuccess(context)
+        startTransferFlow(incomingDevice, incomingFiles, isIncoming = true, context = context)
+    }
+
+    fun declineIncomingTransfer(context: Context) {
+        _showReceivePopup.value = false
+        HapticHelper.triggerError(context)
+        navigateTo(Screen.HOME, context)
+    }
+
+    // --- Active Transfer Simulation ---
+    fun startTransferFlow(device: DeviceNode, files: List<FileItem>, isIncoming: Boolean, context: Context) {
+        transferJob?.cancel()
+        _transferDevice.value = device
+        _isTransferActive.value = true
+        _isTransferComplete.value = false
+        _isTransferPaused.value = false
+
+        val initialBubbles = files.map { file ->
+            TransferBubble(
+                file = file,
+                progress = 0f,
+                speed = "0 MB/s",
+                status = "Pending",
+                isIncoming = isIncoming
+            )
+        }
+        _transferBubbles.value = initialBubbles
+        navigateTo(Screen.TRANSFER, context)
+
+        transferJob = viewModelScope.launch {
+            val updatedBubbles = initialBubbles.toMutableList()
+            for (i in updatedBubbles.indices) {
+                // Simulate active sending/receiving
+                updatedBubbles[i] = updatedBubbles[i].copy(status = if (isIncoming) "Receiving" else "Sending")
+                _transferBubbles.value = updatedBubbles.toList()
+
+                var currentProgress = 0f
+                while (currentProgress < 1.0f) {
+                    if (_isTransferPaused.value) {
+                        delay(250)
+                        continue
+                    }
+                    delay(120) // Fast progress increments
+                    currentProgress += 0.08f + (Math.random() * 0.12).toFloat()
+                    if (currentProgress >= 1.0f) {
+                        currentProgress = 1.0f
+                    }
+                    val randomSpeed = (20 + (Math.random() * 35).toInt())
+                    updatedBubbles[i] = updatedBubbles[i].copy(
+                        progress = currentProgress,
+                        speed = "$randomSpeed MB/s",
+                        status = if (currentProgress >= 1.0f) "Completed" else (if (isIncoming) "Receiving" else "Sending")
+                    )
+                    _transferBubbles.value = updatedBubbles.toList()
+                }
+                
+                // Finished one file: trigger quick selection pulse
+                context.let { HapticHelper.triggerLight(it) }
+                delay(200)
+            }
+
+            // Transfer completed successfully
+            _isTransferActive.value = false
+            _isTransferComplete.value = true
+            context.let { HapticHelper.triggerSuccess(it) }
+
+            // Log details in our active history records
+            val dateStr = "May 23, 17:50" // Current mock date
+            val historyRecordsCopy = _historyRecords.value.toMutableList()
+            files.forEach { file ->
+                historyRecordsCopy.add(
+                    0, // add to top
+                    HistoryItem(
+                        fileName = file.name,
+                        size = file.size,
+                        date = dateStr,
+                        isIncoming = isIncoming,
+                        isSuccess = true,
+                        deviceName = device.name
+                    )
+                )
+            }
+            _historyRecords.value = historyRecordsCopy
+            
+            // Clean selection
+            _selectedFiles.value = emptySet()
+        }
+    }
+
+    fun toggleTransferPause(context: Context) {
+        _isTransferPaused.value = !_isTransferPaused.value
+        val updated = _transferBubbles.value.map {
+            if (it.status == "Sending" || it.status == "Receiving") {
+                it.copy(status = "Paused")
+            } else if (it.status == "Paused") {
+                it.copy(status = if (it.isIncoming) "Receiving" else "Sending")
+            } else {
+                it
+            }
+        }
+        _transferBubbles.value = updated
+        HapticHelper.triggerMedium(context)
+    }
+
+    fun cancelTransfer(context: Context) {
+        transferJob?.cancel()
+        _isTransferActive.value = false
+        _isTransferComplete.value = false
+        _isTransferPaused.value = false
+        
+        // Mark remaining incomplete items as Failed in logs
+        val incomplete = _transferBubbles.value.filter { it.progress < 1.0f }
+        if (incomplete.isNotEmpty()) {
+            val dateStr = "May 23, 17:50"
+            val historyRecordsCopy = _historyRecords.value.toMutableList()
+            incomplete.forEach { item ->
+                historyRecordsCopy.add(
+                    0,
+                    HistoryItem(
+                        fileName = item.file.name,
+                        size = item.file.size,
+                        date = dateStr,
+                        isIncoming = item.isIncoming,
+                        isSuccess = false,
+                        deviceName = _transferDevice.value?.name ?: "Unknown"
+                    )
+                )
+            }
+            _historyRecords.value = historyRecordsCopy
+        }
+        
+        HapticHelper.triggerError(context)
+        navigateTo(Screen.HOME, context)
+    }
+}
