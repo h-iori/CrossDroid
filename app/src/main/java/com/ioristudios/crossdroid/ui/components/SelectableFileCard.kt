@@ -2,8 +2,6 @@ package com.ioristudios.crossdroid.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
@@ -14,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,8 +22,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,26 +32,30 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.data.FileItem
+import com.ioristudios.crossdroid.data.FileKind
 import com.ioristudios.crossdroid.data.FileType
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
+import com.ioristudios.crossdroid.ui.theme.AccentAmber
+import com.ioristudios.crossdroid.ui.theme.AccentCyan
+import com.ioristudios.crossdroid.ui.theme.AccentGreen
 import com.ioristudios.crossdroid.ui.theme.BgElevated
+import com.ioristudios.crossdroid.ui.theme.BgPanelMuted
 import com.ioristudios.crossdroid.ui.theme.BgSurface
-import com.ioristudios.crossdroid.ui.theme.ColorSuccess
+import com.ioristudios.crossdroid.ui.theme.BorderSubtle
 import com.ioristudios.crossdroid.ui.theme.CustomTypography
 import com.ioristudios.crossdroid.ui.theme.IconSize
 import com.ioristudios.crossdroid.ui.theme.NeonHighlight
 import com.ioristudios.crossdroid.ui.theme.NeonPrimary
 import com.ioristudios.crossdroid.ui.theme.Radii
 import com.ioristudios.crossdroid.ui.theme.Spacing
-import com.ioristudios.crossdroid.ui.theme.TextBody
 import com.ioristudios.crossdroid.ui.theme.TextMuted
 import com.ioristudios.crossdroid.ui.theme.TextSecondary
 import com.ioristudios.crossdroid.ui.theme.TextStrong
@@ -62,105 +66,91 @@ fun SelectableFileCard(
     file: FileItem,
     isSelected: Boolean,
     viewModel: CrossDroidViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenFolder: ((FileItem) -> Unit)? = null
 ) {
     val context = LocalContext.current
-    
-    val cardScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.02f else 1.0f,
-        animationSpec = tween(200),
-        label = "FileCardScale"
-    )
 
+    val iconSpec = file.iconSpec()
     val cardBgColor by animateColorAsState(
-        targetValue = if (isSelected) BgSurface else BgElevated,
-        animationSpec = tween(200),
-        label = "FileCardBg"
+        targetValue = if (isSelected) BgSurface.copy(alpha = 0.98f) else BgElevated,
+        label = "FileRowBg"
     )
-
     val borderColor by animateColorAsState(
-        targetValue = if (isSelected) NeonPrimary else Color.Transparent,
-        animationSpec = tween(200),
-        label = "FileCardBorder"
+        targetValue = if (isSelected) NeonPrimary.copy(alpha = 0.86f) else BorderSubtle.copy(alpha = 0.72f),
+        label = "FileRowBorder"
     )
-
-    val fileIcon = when (file.type) {
-        FileType.VIDEO -> Icons.Default.PlayCircle
-        FileType.IMAGE -> Icons.Default.Image
-        FileType.MUSIC -> Icons.Default.Audiotrack
-        else -> Icons.Default.Description
-    }
-
-    val iconColor = when (file.type) {
-        FileType.VIDEO -> NeonHighlight
-        FileType.IMAGE -> Color(0xFF00E5FF)
-        FileType.MUSIC -> ColorSuccess
-        else -> Color(0xFFFFD600)
-    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .scale(cardScale)
-            .clip(RoundedCornerShape(Radii.CardStandard))
+            .heightIn(min = 72.dp)
+            .clip(RoundedCornerShape(Radii.ButtonSmall))
             .then(
                 if (isSelected) {
                     Modifier.neonGlow(
                         color = NeonPrimary,
-                        borderRadius = Radii.CardStandard,
+                        borderRadius = Radii.ButtonSmall,
                         glowRadius = 8.dp,
-                        opacity = 0.2f
+                        opacity = 0.12f
                     )
-                } else Modifier
+                } else {
+                    Modifier
+                }
             )
             .background(cardBgColor)
-            .border(
-                width = 1.dp,
-                color = if (isSelected) borderColor else BgSurface,
-                shape = RoundedCornerShape(Radii.CardStandard)
-            )
+            .border(1.dp, borderColor, RoundedCornerShape(Radii.ButtonSmall))
             .clickable {
-                viewModel.toggleFileSelected(file, context)
+                if (file.kind == FileKind.FOLDER && onOpenFolder != null) {
+                    onOpenFolder(file)
+                } else {
+                    viewModel.toggleFileSelected(file, context)
+                }
             }
-            .padding(Spacing.Medium),
+            .padding(horizontal = Spacing.Medium, vertical = Spacing.Small + 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Thumbnail Circle Icon
         Box(
             modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(iconColor.copy(alpha = 0.15f))
-                .border(width = 1.dp, color = iconColor.copy(alpha = 0.3f), shape = CircleShape),
+                .size(46.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(iconSpec.tint.copy(alpha = if (file.kind == FileKind.FOLDER) 0.18f else 0.12f))
+                .border(1.dp, iconSpec.tint.copy(alpha = 0.34f), RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = fileIcon,
-                contentDescription = "File Type Icon",
-                tint = iconColor,
+                imageVector = iconSpec.icon,
+                contentDescription = iconSpec.description,
+                tint = iconSpec.tint,
                 modifier = Modifier.size(IconSize.Standard)
             )
         }
 
         Spacer(modifier = Modifier.width(Spacing.Medium))
 
-        // File description texts
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = file.name,
                 style = CustomTypography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    lineHeight = 19.sp,
+                    letterSpacing = 0.sp
                 ),
                 color = TextStrong,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+
+            val metadata = buildString {
+                append(file.size)
+                if (file.detail.isNotBlank()) append(" | ").append(file.detail)
+                if (file.lastModified.isNotBlank()) append(" | ").append(file.lastModified)
+            }
+
             Text(
-                text = "${file.size} • ${file.detail}",
-                style = CustomTypography.labelMedium,
+                text = metadata,
+                style = CustomTypography.labelMedium.copy(letterSpacing = 0.sp),
                 color = TextSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -169,31 +159,70 @@ fun SelectableFileCard(
 
         Spacer(modifier = Modifier.width(Spacing.Small))
 
-        // Selection Indicator checkbox shape
+        SelectionControl(
+            isSelected = isSelected,
+            contentDescription = if (isSelected) "Deselect ${file.name}" else "Select ${file.name}",
+            onClick = { viewModel.toggleFileSelected(file, context) }
+        )
+    }
+}
+
+@Composable
+private fun SelectionControl(
+    isSelected: Boolean,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
         Box(
             modifier = Modifier
-                .size(24.dp)
+                .size(25.dp)
                 .clip(CircleShape)
-                .background(if (isSelected) NeonPrimary else Color.Transparent)
+                .background(if (isSelected) NeonPrimary else BgPanelMuted)
                 .border(
-                    width = 2.dp,
-                    color = if (isSelected) NeonHighlight else TextMuted,
+                    width = 1.5.dp,
+                    color = if (isSelected) NeonHighlight else TextMuted.copy(alpha = 0.72f),
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
         ) {
-            androidx.compose.animation.AnimatedVisibility(
+            AnimatedVisibility(
                 visible = isSelected,
-                enter = scaleIn(tween(150)),
-                exit = scaleOut(tween(150))
+                enter = scaleIn(),
+                exit = scaleOut()
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Checked",
+                    contentDescription = contentDescription,
                     tint = TextStrong,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(15.dp)
                 )
             }
         }
+    }
+}
+
+private data class FileIconSpec(
+    val icon: ImageVector,
+    val tint: Color,
+    val description: String
+)
+
+private fun FileItem.iconSpec(): FileIconSpec {
+    if (kind == FileKind.FOLDER) {
+        return FileIconSpec(Icons.Default.Folder, NeonHighlight, "Folder")
+    }
+    return when (type) {
+        FileType.VIDEO -> FileIconSpec(Icons.Default.Movie, NeonHighlight, "Video file")
+        FileType.IMAGE -> FileIconSpec(Icons.Default.Image, AccentCyan, "Image file")
+        FileType.MUSIC -> FileIconSpec(Icons.Default.Audiotrack, AccentGreen, "Audio file")
+        FileType.DOCUMENT -> FileIconSpec(Icons.Default.Description, AccentAmber, "Document file")
+        FileType.ALL -> FileIconSpec(Icons.Default.Description, TextSecondary, "File")
     }
 }

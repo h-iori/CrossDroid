@@ -1,20 +1,30 @@
 package com.ioristudios.crossdroid.ui
 
 import android.content.Context
+import android.os.Build
+import android.os.Environment
+import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ioristudios.crossdroid.data.DeviceNode
 import com.ioristudios.crossdroid.data.FileItem
+import com.ioristudios.crossdroid.data.FileKind
 import com.ioristudios.crossdroid.data.HistoryItem
 import com.ioristudios.crossdroid.data.MockData
 import com.ioristudios.crossdroid.data.FileType
 import com.ioristudios.crossdroid.ui.theme.HapticHelper
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 enum class Screen {
@@ -59,6 +69,21 @@ class CrossDroidViewModel : ViewModel() {
 
     private val _searchMode = MutableStateFlow(false)
     val searchMode: StateFlow<Boolean> = _searchMode.asStateFlow()
+
+    // Internal file manager state (Send Flow)
+    private val storageRoot: File = Environment.getExternalStorageDirectory()
+
+    private val _currentDirectoryPath = MutableStateFlow(storageRoot.absolutePath)
+    val currentDirectoryPath: StateFlow<String> = _currentDirectoryPath.asStateFlow()
+
+    private val _fileManagerEntries = MutableStateFlow<List<FileItem>>(emptyList())
+    val fileManagerEntries: StateFlow<List<FileItem>> = _fileManagerEntries.asStateFlow()
+
+    private val _isFileManagerLoading = MutableStateFlow(false)
+    val isFileManagerLoading: StateFlow<Boolean> = _isFileManagerLoading.asStateFlow()
+
+    private val _fileManagerError = MutableStateFlow<String?>(null)
+    val fileManagerError: StateFlow<String?> = _fileManagerError.asStateFlow()
 
     // Enter Code PIN Input
     private val _pinCode = MutableStateFlow("")
@@ -191,13 +216,19 @@ class CrossDroidViewModel : ViewModel() {
     // --- Send Selection Logics ---
     fun toggleFileSelected(file: FileItem, context: Context) {
         val current = _selectedFiles.value.toMutableSet()
-        if (current.contains(file)) {
-            current.remove(file)
+        val existing = current.firstOrNull { it.id == file.id }
+        if (existing != null) {
+            current.remove(existing)
         } else {
             current.add(file)
         }
         _selectedFiles.value = current
         HapticHelper.triggerLight(context)
+    }
+
+    fun clearSelectedFiles(context: Context? = null) {
+        _selectedFiles.value = emptySet()
+        context?.let { HapticHelper.triggerLight(it) }
     }
 
     fun setFilter(filter: FileType, context: Context) {
@@ -213,6 +244,103 @@ class CrossDroidViewModel : ViewModel() {
         _searchMode.value = !_searchMode.value
         if (!_searchMode.value) _searchQuery.value = ""
         HapticHelper.triggerLight(context)
+    }
+
+    fun hasAllFilesAccess(): Boolean {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.R || Environment.isExternalStorageManager()
+    }
+
+    fun openAllFilesAccessSettings(context: Context) {
+        val intent = android.content.Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+        context.startActivity(intent)
+        HapticHelper.triggerMedium(context)
+    }
+
+    fun loadCurrentDirectory() {
+        loadDirectory(_currentDirectoryPath.value)
+    }
+
+    fun loadStorageRoot() {
+        loadDirectory(storageRoot.absolutePath)
+    }
+
+    fun openDirectory(path: String, context: Context? = null) {
+        loadDirectory(path)
+        context?.let { HapticHelper.triggerLight(it) }
+    }
+
+    fun openDirectory(file: FileItem, context: Context? = null) {
+        if (file.kind == FileKind.FOLDER && file.path.isNotBlank()) {
+            openDirectory(file.path, context)
+        }
+    }
+
+    fun goUpDirectory(context: Context? = null): Boolean {
+        val current = File(_currentDirectoryPath.value)
+        val rootPath = storageRoot.absolutePath
+        val parent = current.parentFile
+        if (current.absolutePath == rootPath || parent == null || !parent.absolutePath.startsWith(rootPath)) {
+            return false
+        }
+        loadDirectory(parent.absolutePath)
+        context?.let { HapticHelper.triggerLight(it) }
+        return true
+    }
+
+    fun directoryBreadcrumbs(): List<Pair<String, String>> {
+        val rootPath = storageRoot.absolutePath
+        val current = File(_currentDirectoryPath.value)
+        val breadcrumbs = mutableListOf("Internal storage" to rootPath)
+        val relative = current.absolutePath.removePrefix(rootPath).trim(File.separatorChar)
+        if (relative.isNotBlank()) {
+            var path = rootPath
+            relative.split(File.separatorChar).filter { it.isNotBlank() }.forEach { part ->
+                path = File(path, part).absolutePath
+                breadcrumbs.add(part to path)
+            }
+        }
+        return breadcrumbs
+    }
+
+    private fun loadDirectory(path: String) {
+        viewModelScope.launch {
+            _isFileManagerLoading.value = true
+            _fileManagerError.value = null
+
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val directory = File(path)
+                    if (!directory.exists()) {
+                        throw IllegalArgumentException("Folder no longer exists.")
+                    }
+                    if (!directory.isDirectory) {
+                        throw IllegalArgumentException("This location is not a folder.")
+                    }
+                    val entries = directory
+                        .listFiles()
+                        ?.filter { it.canRead() && !it.isHidden }
+                        ?.map { it.toSendItem() }
+                        ?.sortedWith(
+                            compareByDescending<FileItem> { it.kind == FileKind.FOLDER }
+                                .thenBy { it.name.lowercase(Locale.getDefault()) }
+                        )
+                        ?: emptyList()
+                    directory.absolutePath to entries
+                }
+            }
+
+            result
+                .onSuccess { (resolvedPath, entries) ->
+                    _currentDirectoryPath.value = resolvedPath
+                    _fileManagerEntries.value = entries
+                }
+                .onFailure { throwable ->
+                    _fileManagerEntries.value = emptyList()
+                    _fileManagerError.value = throwable.message ?: "Unable to open this folder."
+                }
+
+            _isFileManagerLoading.value = false
+        }
     }
 
     // --- PIN Entry Logics ---
@@ -404,6 +532,66 @@ class CrossDroidViewModel : ViewModel() {
         HapticHelper.triggerError(context)
         navigateTo(Screen.HOME, context)
     }
+}
+
+private fun File.toSendItem(): FileItem {
+    val kind = if (isDirectory) FileKind.FOLDER else FileKind.FILE
+    val childCount = if (isDirectory) {
+        listFiles()?.count { it.canRead() && !it.isHidden } ?: 0
+    } else {
+        0
+    }
+
+    return FileItem(
+        id = absolutePath,
+        name = name.ifBlank { absolutePath },
+        size = if (isDirectory) "Folder" else length().toReadableSize(),
+        type = if (isDirectory) FileType.DOCUMENT else inferFileType(name),
+        detail = if (isDirectory) "Folder | $childCount items" else extensionLabel(name),
+        kind = kind,
+        path = absolutePath,
+        childrenCount = childCount,
+        lastModified = modifiedLabel(lastModified())
+    )
+}
+
+private fun Long.toReadableSize(): String {
+    if (this <= 0L) return "0 B"
+    val units = listOf("B", "KB", "MB", "GB", "TB")
+    var value = this.toDouble()
+    var unitIndex = 0
+    while (value >= 1024 && unitIndex < units.lastIndex) {
+        value /= 1024
+        unitIndex++
+    }
+    return if (unitIndex == 0) {
+        "${value.toInt()} ${units[unitIndex]}"
+    } else {
+        String.format(Locale.getDefault(), "%.1f %s", value, units[unitIndex])
+    }
+}
+
+private fun inferFileType(fileName: String): FileType {
+    return when (fileName.substringAfterLast('.', "").lowercase(Locale.getDefault())) {
+        "mp4", "mov", "mkv", "avi", "webm" -> FileType.VIDEO
+        "png", "jpg", "jpeg", "webp", "gif", "heic" -> FileType.IMAGE
+        "mp3", "wav", "aac", "flac", "m4a", "ogg" -> FileType.MUSIC
+        else -> FileType.DOCUMENT
+    }
+}
+
+private fun extensionLabel(fileName: String): String {
+    val extension = fileName.substringAfterLast('.', "").uppercase(Locale.getDefault())
+    return if (extension.isBlank() || extension == fileName.uppercase(Locale.getDefault())) {
+        "File"
+    } else {
+        "$extension file"
+    }
+}
+
+private fun modifiedLabel(timestamp: Long): String {
+    if (timestamp <= 0L) return ""
+    return SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(timestamp))
 }
 
 fun buildHistorySessions(records: List<HistoryItem>): List<HistorySession> {

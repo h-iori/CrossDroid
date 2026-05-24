@@ -23,10 +23,12 @@ import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.Icon
+import com.ioristudios.crossdroid.data.FileKind
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -158,11 +160,13 @@ private fun FileBubbleHeader(
     statusColor: Color
 ) {
     val fileIcon = when (bubble.file.type) {
+        FileType.ALL -> Icons.Default.Description
         FileType.VIDEO -> Icons.Default.PlayCircle
         FileType.IMAGE -> Icons.Default.Image
         FileType.MUSIC -> Icons.Default.Audiotrack
-        else -> Icons.Default.Description
+        FileType.DOCUMENT -> Icons.Default.Description
     }
+    val resolvedFileIcon = if (bubble.file.kind == FileKind.FOLDER) Icons.Default.Folder else fileIcon
 
     val statusIcon = when (bubble.status) {
         "Completed" -> Icons.Default.CheckCircle
@@ -181,7 +185,7 @@ private fun FileBubbleHeader(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = fileIcon,
+                imageVector = resolvedFileIcon,
                 contentDescription = "File type",
                 tint = accent,
                 modifier = Modifier.size(IconSize.Small)
