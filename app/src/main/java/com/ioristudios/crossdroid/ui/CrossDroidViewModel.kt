@@ -147,10 +147,12 @@ class CrossDroidViewModel : ViewModel() {
             if (screen == Screen.HOME) {
                 history.clear()
                 history.add(Screen.HOME)
+                _transferDevice.value = null
             } else if (screen in listOf(Screen.DEVICES, Screen.HISTORY)) {
                 history.clear()
                 history.add(Screen.HOME)
                 history.add(screen)
+                _transferDevice.value = null
             } else {
                 history.add(screen)
             }
@@ -198,9 +200,13 @@ class CrossDroidViewModel : ViewModel() {
         val history = _navigationHistory.value.toMutableList()
         if (history.size > 1) {
             val current = history.last()
-            if (current == Screen.TRANSFER && _isTransferActive.value) {
-                cancelTransfer(context)
-                return
+            if (current == Screen.TRANSFER) {
+                if (_isTransferActive.value) {
+                    cancelTransfer(context)
+                    return
+                } else {
+                    _transferDevice.value = null
+                }
             }
             if (current == Screen.SEND && _activeFilter.value == FileType.ALL) {
                 if (goUpDirectory(if (triggerHaptic) context else null)) {
@@ -429,14 +435,14 @@ class CrossDroidViewModel : ViewModel() {
     }
 
     // --- Active Transfer Simulation ---
-    fun startTransferFlow(device: DeviceNode, files: List<FileItem>, isIncoming: Boolean, context: Context) {
+    fun startTransferFlow(device: DeviceNode, files: List<FileItem>, isIncoming: Boolean, context: Context, append: Boolean = false) {
         transferJob?.cancel()
         _transferDevice.value = device
         _isTransferActive.value = true
         _isTransferComplete.value = false
         _isTransferPaused.value = false
 
-        val initialBubbles = files.map { file ->
+        val newBubbles = files.map { file ->
             TransferBubble(
                 file = file,
                 progress = 0f,
@@ -445,11 +451,15 @@ class CrossDroidViewModel : ViewModel() {
                 isIncoming = isIncoming
             )
         }
-        _transferBubbles.value = initialBubbles
+        if (append) {
+            _transferBubbles.value = _transferBubbles.value + newBubbles
+        } else {
+            _transferBubbles.value = newBubbles
+        }
         navigateTo(Screen.TRANSFER, context)
 
         transferJob = viewModelScope.launch {
-            val orderedIds = initialBubbles.map { it.id }
+            val orderedIds = newBubbles.map { it.id }
             val activeStatus = if (isIncoming) TransferStatus.Receiving else TransferStatus.Sending
 
             for (bubbleId in orderedIds) {
@@ -652,17 +662,26 @@ class CrossDroidViewModel : ViewModel() {
         bubbles
             .filter { it.status == TransferStatus.Completed || it.status == TransferStatus.Canceled || it.status == TransferStatus.Failed }
             .forEach { item ->
-                historyRecordsCopy.add(
-                    0,
-                    HistoryItem(
-                        fileName = item.file.name,
-                        size = item.file.size,
-                        date = dateStr,
-                        isIncoming = item.isIncoming,
-                        isSuccess = item.status == TransferStatus.Completed,
-                        deviceName = device.name
+                val exists = historyRecordsCopy.any { record ->
+                    record.fileName == item.file.name &&
+                    record.size == item.file.size &&
+                    record.deviceName == device.name &&
+                    record.isIncoming == item.isIncoming &&
+                    record.date == dateStr
+                }
+                if (!exists) {
+                    historyRecordsCopy.add(
+                        0,
+                        HistoryItem(
+                            fileName = item.file.name,
+                            size = item.file.size,
+                            date = dateStr,
+                            isIncoming = item.isIncoming,
+                            isSuccess = item.status == TransferStatus.Completed,
+                            deviceName = device.name
+                        )
                     )
-                )
+                }
             }
         _historyRecords.value = historyRecordsCopy
     }

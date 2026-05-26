@@ -303,7 +303,20 @@ fun SendScreen(
                 selectedCount = selectedFiles.size,
                 folderCount = selectedFiles.count { it.kind == FileKind.FOLDER },
                 onClear = { viewModel.clearSelectedFiles(context) },
-                onNext = { viewModel.navigateTo(Screen.QR_SCAN, context) }
+                onNext = {
+                    val activeDevice = viewModel.transferDevice.value
+                    if (activeDevice != null) {
+                        viewModel.startTransferFlow(
+                            device = activeDevice,
+                            files = selectedFiles.toList(),
+                            isIncoming = false,
+                            context = context,
+                            append = true
+                        )
+                    } else {
+                        viewModel.navigateTo(Screen.QR_SCAN, context)
+                    }
+                }
             )
         }
     }
