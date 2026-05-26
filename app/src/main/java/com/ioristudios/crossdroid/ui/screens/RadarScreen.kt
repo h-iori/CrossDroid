@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,6 +31,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -280,9 +290,10 @@ private fun DeviceSheet(
             contentPadding = PaddingValues(vertical = Spacing.Small),
             verticalArrangement = Arrangement.spacedBy(Spacing.Small)
         ) {
-            items(devices, key = { it.id }) { device ->
+            itemsIndexed(devices, key = { _, item -> item.id }) { index, device ->
                 DeviceDiscoveryRow(
                     device = device,
+                    index = index,
                     onClick = { onDeviceClick(device) }
                 )
             }
@@ -293,12 +304,34 @@ private fun DeviceSheet(
 @Composable
 private fun DeviceDiscoveryRow(
     device: DeviceNode,
+    index: Int,
     onClick: () -> Unit
 ) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(index * 30L)
+        visible = true
+    }
+
+    val alphaVal by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "discoveryRowAlpha"
+    )
+    val translationYVal by animateFloatAsState(
+        targetValue = if (visible) 0f else 20f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 250f),
+        label = "discoveryRowTranslation"
+    )
+
     val accent = if (device.osType == "android") ColorSuccess else AccentCyan
 
     Row(
         modifier = Modifier
+            .graphicsLayer {
+                alpha = alphaVal
+                translationY = translationYVal.dp.toPx()
+            }
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(BgSurface)

@@ -36,6 +36,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -232,16 +237,43 @@ private fun StaggeredSidebarItem(
     label: String,
     onClick: () -> Unit
 ) {
+    var triggerAnim by androidx.compose.runtime.mutableStateOf(false)
+    
+    androidx.compose.runtime.LaunchedEffect(visible) {
+        if (visible) {
+            kotlinx.coroutines.delay(60L + index * 40L)
+            triggerAnim = true
+        } else {
+            triggerAnim = false
+        }
+    }
+
     val animAlpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(durationMillis = 400, delayMillis = 100 + (index * 50)),
+        targetValue = if (triggerAnim) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+        ),
         label = "itemAlpha"
     )
 
     val animTranslationX by animateFloatAsState(
-        targetValue = if (visible) 0f else 40f,
-        animationSpec = tween(durationMillis = 400, delayMillis = 100 + (index * 50)),
+        targetValue = if (triggerAnim) 0f else 35f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.76f, // bouncy feel
+            stiffness = 220f
+        ),
         label = "itemSlide"
+    )
+
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val isPressed = interactionSource.collectIsPressedAsState().value
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
+        ),
+        label = "itemClickScale"
     )
 
     val haptics = rememberAppHaptics()
@@ -252,14 +284,20 @@ private fun StaggeredSidebarItem(
             .graphicsLayer {
                 alpha = animAlpha
                 translationX = animTranslationX
+                scaleX = scale
+                scaleY = scale
             }
             .clip(RoundedCornerShape(16.dp))
             .background(SidebarEdge.copy(alpha = 0.08f))
             .border(1.dp, SidebarEdge.copy(alpha = 0.28f), RoundedCornerShape(16.dp))
-            .clickable {
-                haptics.performHapticFeedback()
-                onClick()
-            }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = {
+                    haptics.performHapticFeedback()
+                    onClick()
+                }
+            )
             .padding(vertical = 12.dp, horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)

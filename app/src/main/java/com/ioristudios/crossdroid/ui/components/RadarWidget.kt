@@ -14,6 +14,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.dp
 import com.ioristudios.crossdroid.ui.theme.AccentCyan
 import com.ioristudios.crossdroid.ui.theme.BgMain
@@ -37,10 +38,21 @@ fun RadarWidget(
         label = "SweepAngle"
     )
 
+    val rippleProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "RadarRippleProgress"
+    )
+
     Canvas(modifier = modifier) {
         val center = Offset(size.width / 2, size.height / 2)
         val maxRadius = minOf(size.width, size.height) / 2
 
+        // Ambient radial glow background
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
@@ -55,6 +67,25 @@ fun RadarWidget(
             center = center
         )
 
+        // Expanding concentric ripple waves
+        val rippleWaves = listOf(
+            rippleProgress,
+            (rippleProgress + 0.25f) % 1.0f,
+            (rippleProgress + 0.5f) % 1.0f,
+            (rippleProgress + 0.75f) % 1.0f
+        )
+        rippleWaves.forEach { waveProgress ->
+            val radius = maxRadius * waveProgress
+            val alpha = (1.0f - waveProgress) * 0.24f
+            drawCircle(
+                color = AccentCyan.copy(alpha = alpha),
+                radius = radius,
+                center = center,
+                style = Stroke(width = 1.dp.toPx())
+            )
+        }
+
+        // Static radar grid rings
         val circlesCount = 4
         for (i in 1..circlesCount) {
             val radius = maxRadius * (i.toFloat() / circlesCount)
@@ -70,6 +101,7 @@ fun RadarWidget(
             )
         }
 
+        // Vertical and horizontal crosshairs
         drawLine(
             color = AccentCyan.copy(alpha = 0.18f),
             start = Offset(center.x - maxRadius, center.y),
@@ -83,43 +115,47 @@ fun RadarWidget(
             strokeWidth = 1.dp.toPx()
         )
 
+        // 45-degree sub-crosshairs
         for (step in 0..7) {
-            val angleRad = Math.toRadians((step * 45).toDouble())
-            val endX = (center.x + maxRadius * Math.cos(angleRad)).toFloat()
-            val endY = (center.y + maxRadius * Math.sin(angleRad)).toFloat()
+            if (step % 2 != 0) { // skip horizontal and vertical which are drawn above
+                val angleRad = Math.toRadians((step * 45).toDouble())
+                val endX = (center.x + maxRadius * Math.cos(angleRad)).toFloat()
+                val endY = (center.y + maxRadius * Math.sin(angleRad)).toFloat()
+                drawLine(
+                    color = AccentCyan.copy(alpha = 0.08f),
+                    start = center,
+                    end = Offset(endX, endY),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+        }
+
+        // Rotate canvas to draw sweep gradient and leading sweep line perfectly
+        rotate(degrees = angle, pivot = center) {
+            drawArc(
+                brush = Brush.sweepGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        AccentCyan.copy(alpha = 0.02f),
+                        NeonPrimary.copy(alpha = 0.15f),
+                        AccentCyan.copy(alpha = 0.32f)
+                    ),
+                    center = center
+                ),
+                startAngle = -60f,
+                sweepAngle = 60f,
+                useCenter = true
+            )
+
             drawLine(
-                color = AccentCyan.copy(alpha = 0.08f),
+                color = NeonHighlight,
                 start = center,
-                end = Offset(endX, endY),
-                strokeWidth = 1.dp.toPx()
+                end = Offset(center.x + maxRadius, center.y),
+                strokeWidth = 1.5.dp.toPx()
             )
         }
 
-        drawArc(
-            brush = Brush.sweepGradient(
-                colors = listOf(
-                    Color.Transparent,
-                    AccentCyan.copy(alpha = 0.08f),
-                    NeonPrimary.copy(alpha = 0.26f),
-                    AccentCyan.copy(alpha = 0.38f)
-                ),
-                center = center
-            ),
-            startAngle = angle - 60f,
-            sweepAngle = 60f,
-            useCenter = true
-        )
-
-        val angleRad = Math.toRadians(angle.toDouble())
-        val endX = (center.x + maxRadius * Math.cos(angleRad)).toFloat()
-        val endY = (center.y + maxRadius * Math.sin(angleRad)).toFloat()
-        drawLine(
-            color = NeonHighlight,
-            start = center,
-            end = Offset(endX, endY),
-            strokeWidth = 1.5.dp.toPx()
-        )
-
+        // Radar center hub
         drawCircle(
             color = NeonHighlight.copy(alpha = 0.85f),
             radius = 4.dp.toPx(),

@@ -1,6 +1,12 @@
 package com.ioristudios.crossdroid.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +30,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,10 +71,24 @@ fun PinDisplayCard(
 ) {
     val maxLen = 4
     val canConfirm = pinCode.length == maxLen
-    val panelScale by animateFloatAsState(
-        targetValue = if (errorMessage != null) 0.985f else 1f,
-        label = "PinPanelErrorPulse"
-    )
+
+    // Hardware-accelerated horizontal shake offset for error state
+    val shakeOffset = remember { Animatable(0f) }
+    LaunchedEffect(errorMessage) {
+        if (errorMessage != null) {
+            val shakeSpec = spring<Float>(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessHigh
+            )
+            shakeOffset.animateTo(12f, animationSpec = shakeSpec)
+            shakeOffset.animateTo(-12f, animationSpec = shakeSpec)
+            shakeOffset.animateTo(8f, animationSpec = shakeSpec)
+            shakeOffset.animateTo(-8f, animationSpec = shakeSpec)
+            shakeOffset.animateTo(4f, animationSpec = shakeSpec)
+            shakeOffset.animateTo(-4f, animationSpec = shakeSpec)
+            shakeOffset.animateTo(0f, animationSpec = shakeSpec)
+        }
+    }
 
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
@@ -80,7 +102,9 @@ fun PinDisplayCard(
 
         Column(
             modifier = Modifier
-                .scale(panelScale)
+                .graphicsLayer {
+                    translationX = shakeOffset.value
+                }
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
                 .neonGlow(
@@ -124,6 +148,14 @@ fun PinDisplayCard(
                         else -> BorderSubtle
                     }
 
+                    // Digit bounce state when typed
+                    val digitTyped = hasChar && index == pinCode.length - 1
+                    val digitScale by animateFloatAsState(
+                        targetValue = if (digitTyped) 1.15f else 1.0f,
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                        label = "digitBounce"
+                    )
+
                     Box(
                         modifier = Modifier
                             .padding(horizontal = Spacing.Tiny)
@@ -140,7 +172,11 @@ fun PinDisplayCard(
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.sp
-                            )
+                            ),
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = digitScale
+                                scaleY = digitScale
+                            }
                         )
                     }
                 }
@@ -227,10 +263,25 @@ private fun PinKey(
         else -> Brush.linearGradient(listOf(BgPanelMuted, BgSurface))
     }
 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed = interactionSource.collectIsPressedAsState().value
+    val keyScale by animateFloatAsState(
+        targetValue = if (isPressed && enabled) 0.91f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "pinButtonScale"
+    )
+
     Box(
         modifier = Modifier
             .padding(horizontal = Spacing.Small)
             .size(keySize)
+            .graphicsLayer {
+                scaleX = keyScale
+                scaleY = keyScale
+            }
             .clip(CircleShape)
             .background(background)
             .border(
@@ -238,14 +289,24 @@ private fun PinKey(
                 color = if (enabled) accent.copy(alpha = 0.45f) else BorderSubtle,
                 shape = CircleShape
             )
-            .clickable(enabled = enabled) {
+            .clickable(
+                enabled = enabled,
+                interactionSource = interactionSource,
+                indication = null
+            ) {
                 when (key) {
-                    'B' -> onBackspace()
+                    'B' -> {
+                        HapticHelper.triggerLight(context)
+                        onBackspace()
+                    }
                     'C' -> {
                         HapticHelper.triggerMedium(context)
                         onConfirm()
                     }
-                    else -> onKeyTap(key)
+                    else -> {
+                        HapticHelper.triggerLight(context)
+                        onKeyTap(key)
+                    }
                 }
             },
         contentAlignment = Alignment.Center

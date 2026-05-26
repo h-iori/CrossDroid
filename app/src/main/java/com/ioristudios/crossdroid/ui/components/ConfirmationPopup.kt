@@ -1,6 +1,8 @@
 package com.ioristudios.crossdroid.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -81,8 +83,14 @@ fun ConfirmationPopup(
         ) {
             AnimatedVisibility(
                 visible = visible,
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it })
+                enter = slideInVertically(
+                    animationSpec = spring(dampingRatio = 0.82f, stiffness = Spring.StiffnessMediumLow),
+                    initialOffsetY = { it }
+                ),
+                exit = slideOutVertically(
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    targetOffsetY = { it }
+                )
             ) {
                 Column(
                     modifier = Modifier

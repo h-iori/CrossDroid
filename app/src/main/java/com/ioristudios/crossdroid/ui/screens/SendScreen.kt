@@ -6,6 +6,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -284,11 +288,16 @@ fun SendScreen(
                 }
             }
         }
-
         AnimatedVisibility(
             visible = selectedFiles.isNotEmpty(),
-            enter = slideInVertically(initialOffsetY = { it }),
-            exit = slideOutVertically(targetOffsetY = { it })
+            enter = slideInVertically(
+                animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow),
+                initialOffsetY = { it }
+            ) + fadeIn(),
+            exit = slideOutVertically(
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                targetOffsetY = { it }
+            ) + fadeOut()
         ) {
             SendCommandBar(
                 selectedCount = selectedFiles.size,

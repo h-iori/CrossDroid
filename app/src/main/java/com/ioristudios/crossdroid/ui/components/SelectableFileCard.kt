@@ -4,6 +4,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,10 +88,25 @@ fun SelectableFileCard(
         label = "FileRowBorder"
     )
 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed = interactionSource.collectIsPressedAsState().value
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = 300f
+        ),
+        label = "fileCardPressScale"
+    )
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(RoundedCornerShape(Radii.ButtonSmall))
             .then(
                 if (isSelected) {
@@ -100,7 +122,10 @@ fun SelectableFileCard(
             )
             .background(cardBgColor)
             .border(1.dp, borderColor, RoundedCornerShape(Radii.ButtonSmall))
-            .clickable {
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) {
                 if (file.kind == FileKind.FOLDER && onOpenFolder != null) {
                     onOpenFolder(file)
                 } else {
@@ -173,6 +198,23 @@ private fun SelectionControl(
     contentDescription: String,
     onClick: () -> Unit
 ) {
+    val rotateProgress by animateFloatAsState(
+        targetValue = if (isSelected) 0f else -45f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "checkboxRotate"
+    )
+    val scaleProgress by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "checkboxScale"
+    )
+
     Box(
         modifier = Modifier
             .size(44.dp)
@@ -192,16 +234,18 @@ private fun SelectionControl(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            AnimatedVisibility(
-                visible = isSelected,
-                enter = scaleIn(),
-                exit = scaleOut()
-            ) {
+            if (scaleProgress > 0f) {
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = contentDescription,
                     tint = TextStrong,
-                    modifier = Modifier.size(15.dp)
+                    modifier = Modifier
+                        .size(15.dp)
+                        .graphicsLayer {
+                            scaleX = scaleProgress
+                            scaleY = scaleProgress
+                            rotationZ = rotateProgress
+                        }
                 )
             }
         }

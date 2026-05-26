@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,9 +27,20 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -118,12 +130,13 @@ fun HistoryScreen(
                     )
                 }
 
-                items(
+                itemsIndexed(
                     items = sessions,
-                    key = { it.id }
-                ) { session ->
+                    key = { _, item -> item.id }
+                ) { index, session ->
                     HistorySessionRow(
                         session = session,
+                        index = index,
                         onClick = { viewModel.openHistorySession(session, context) }
                     )
                 }
@@ -138,8 +151,28 @@ private fun HistoryOverview(
     files: Int,
     failed: Int
 ) {
+    var visible by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    val overviewAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+        label = "historyOverviewAlpha"
+    )
+    val overviewTranslationY by animateFloatAsState(
+        targetValue = if (visible) 0f else 20f,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 250f),
+        label = "historyOverviewTranslation"
+    )
+
     Row(
         modifier = Modifier
+            .graphicsLayer {
+                alpha = overviewAlpha
+                translationY = overviewTranslationY.dp.toPx()
+            }
             .fillMaxWidth()
             .clip(RoundedCornerShape(Radii.CardStandard))
             .neonGlow(
@@ -206,8 +239,26 @@ private fun HistoryOverview(
 @Composable
 private fun HistorySessionRow(
     session: HistorySession,
+    index: Int,
     onClick: () -> Unit
 ) {
+    var visible by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(index * 30L)
+        visible = true
+    }
+
+    val rowAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+        label = "historyRowAlpha"
+    )
+    val rowTranslationY by animateFloatAsState(
+        targetValue = if (visible) 0f else 20f,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 250f),
+        label = "historyRowTranslation"
+    )
+
     val accent = if (session.isIncoming) AccentCyan else NeonHighlight
     val statusColor = if (session.isSuccess) ColorSuccess else ColorError
     val direction = if (session.isIncoming) "Received from" else "Sent to"
@@ -219,6 +270,10 @@ private fun HistorySessionRow(
 
     Row(
         modifier = Modifier
+            .graphicsLayer {
+                alpha = rowAlpha
+                translationY = rowTranslationY.dp.toPx()
+            }
             .fillMaxWidth()
             .height(94.dp)
             .clip(RoundedCornerShape(14.dp))
@@ -319,6 +374,17 @@ private fun StatusBadge(
 
 @Composable
 private fun HistoryEmptyState() {
+    val floatTransition = rememberInfiniteTransition(label = "HistoryEmptyStateFloat")
+    val floatOffsetY by floatTransition.animateFloat(
+        initialValue = -5f,
+        targetValue = 5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "floatingHistoryIcon"
+    )
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -329,6 +395,9 @@ private fun HistoryEmptyState() {
     ) {
         Box(
             modifier = Modifier
+                .graphicsLayer {
+                    translationY = floatOffsetY.dp.toPx()
+                }
                 .size(54.dp)
                 .clip(RoundedCornerShape(18.dp))
                 .background(NeonPrimary.copy(alpha = 0.12f))

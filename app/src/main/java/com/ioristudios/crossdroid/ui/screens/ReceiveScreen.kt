@@ -3,9 +3,16 @@ package com.ioristudios.crossdroid.ui.screens
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -73,6 +80,62 @@ fun ReceiveScreen(
 ) {
     val context = LocalContext.current
     val showPopup by viewModel.showReceivePopup.collectAsState()
+    
+    var activeTrigger by remember { mutableStateOf(false) }
+    var heroTrigger by remember { mutableStateOf(false) }
+    var pinTrigger by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        activeTrigger = true
+        kotlinx.coroutines.delay(80L)
+        heroTrigger = true
+        kotlinx.coroutines.delay(80L)
+        pinTrigger = true
+    }
+
+    val activeAlpha by animateFloatAsState(
+        targetValue = if (activeTrigger) 1f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "activeAlpha"
+    )
+    val activeOffsetY by animateFloatAsState(
+        targetValue = if (activeTrigger) 0f else 25f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 250f),
+        label = "activeOffsetY"
+    )
+
+    val heroAlpha by animateFloatAsState(
+        targetValue = if (heroTrigger) 1f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "heroAlpha"
+    )
+    val heroOffsetY by animateFloatAsState(
+        targetValue = if (heroTrigger) 0f else 25f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 250f),
+        label = "heroOffsetY"
+    )
+
+    val pinAlpha by animateFloatAsState(
+        targetValue = if (pinTrigger) 1f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "pinAlpha"
+    )
+    val pinOffsetY by animateFloatAsState(
+        targetValue = if (pinTrigger) 0f else 25f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 250f),
+        label = "pinOffsetY"
+    )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "ReceiveTechGridDrift")
+    val gridOffsetDp by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 40f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(12000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "GridOffset"
+    )
 
     Box(
         modifier = modifier
@@ -104,9 +167,11 @@ fun ReceiveScreen(
 
             // Dotted/dashed tech grid line drawing
             val gridSize = 40.dp.toPx()
+            val offsetX = gridOffsetDp.dp.toPx()
+            val offsetY = gridOffsetDp.dp.toPx()
             val gridPathEffect = PathEffect.dashPathEffect(floatArrayOf(2f, 8f), 0f)
             
-            var x = 0f
+            var x = offsetX % gridSize
             while (x < width) {
                 drawLine(
                     color = BorderSubtle.copy(alpha = 0.15f),
@@ -118,7 +183,7 @@ fun ReceiveScreen(
                 x += gridSize
             }
             
-            var y = 0f
+            var y = offsetY % gridSize
             while (y < height) {
                 drawLine(
                     color = BorderSubtle.copy(alpha = 0.15f),
@@ -148,9 +213,30 @@ fun ReceiveScreen(
                 verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
             ) {
                 Spacer(modifier = Modifier.weight(1f))
-                ReceiveStatusBand()
-                ReceiverHeroCard()
-                ConnectionPinCard()
+                Box(
+                    modifier = Modifier.graphicsLayer {
+                        alpha = activeAlpha
+                        translationY = activeOffsetY.dp.toPx()
+                    }
+                ) {
+                    ReceiveStatusBand()
+                }
+                Box(
+                    modifier = Modifier.graphicsLayer {
+                        alpha = heroAlpha
+                        translationY = heroOffsetY.dp.toPx()
+                    }
+                ) {
+                    ReceiverHeroCard()
+                }
+                Box(
+                    modifier = Modifier.graphicsLayer {
+                        alpha = pinAlpha
+                        translationY = pinOffsetY.dp.toPx()
+                    }
+                ) {
+                    ConnectionPinCard()
+                }
                 Spacer(modifier = Modifier.weight(1f))
             }
         }
@@ -170,6 +256,17 @@ fun ReceiveScreen(
 
 @Composable
 private fun ReceiveStatusBand() {
+    val statusTransition = rememberInfiniteTransition(label = "StatusBandBreathe")
+    val breatheAlpha by statusTransition.animateFloat(
+        initialValue = 0.28f,
+        targetValue = 0.68f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "breatheAlpha"
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -179,8 +276,8 @@ private fun ReceiveStatusBand() {
                 1.dp,
                 Brush.horizontalGradient(
                     listOf(
-                        AccentCyan.copy(alpha = 0.42f),
-                        BorderSubtle.copy(alpha = 0.72f)
+                        AccentCyan.copy(alpha = breatheAlpha),
+                        BorderSubtle.copy(alpha = (breatheAlpha * 1.5f).coerceAtMost(1f))
                     )
                 ),
                 RoundedCornerShape(16.dp)

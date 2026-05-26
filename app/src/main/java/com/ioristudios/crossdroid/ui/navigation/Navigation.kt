@@ -1,6 +1,7 @@
 package com.ioristudios.crossdroid.ui.navigation
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -47,27 +48,39 @@ fun NavigationHost(
                 Screen.SEND, Screen.QR_SCAN, Screen.ENTER_CODE, Screen.RADAR, Screen.TRANSFER, Screen.RECEIVE, Screen.HISTORY_DETAIL
             )
 
+            val slideSpec = spring<androidx.compose.ui.unit.IntOffset>(
+                dampingRatio = 0.82f, // smooth, natural damping
+                stiffness = 350f      // fast and responsive
+            )
+            val fadeSpec = spring<Float>(
+                stiffness = 350f
+            )
+            val scaleSpec = spring<Float>(
+                dampingRatio = 0.8f,
+                stiffness = 300f
+            )
+
             if (isEnteringSubflow && !isExitingSubflow) {
                 // Entering from Main Tabs to subflow: Slide up/right & Fade
-                (slideInHorizontally(animationSpec = tween(350)) { it / 2 } + fadeIn(tween(350)))
-                    .togetherWith(slideOutHorizontally(animationSpec = tween(350)) { -it / 2 } + fadeOut(tween(350)))
+                (slideInHorizontally(animationSpec = slideSpec) { it / 2 } + fadeIn(fadeSpec))
+                    .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { -it / 2 } + fadeOut(fadeSpec))
             } else if (!isEnteringSubflow && isExitingSubflow) {
                 // Back to main tabs: Slide back out
-                (slideInHorizontally(animationSpec = tween(350)) { -it / 2 } + fadeIn(tween(350)))
-                    .togetherWith(slideOutHorizontally(animationSpec = tween(350)) { it / 2 } + fadeOut(tween(350)))
+                (slideInHorizontally(animationSpec = slideSpec) { -it / 2 } + fadeIn(fadeSpec))
+                    .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { it / 2 } + fadeOut(fadeSpec))
             } else if (isEnteringSubflow && isExitingSubflow) {
                 // Moving between subflow screens (e.g. Scan -> Code -> Radar -> Transfer)
                 if (targetState == Screen.TRANSFER) {
                     // Critical entry: scale zoom & fade
-                    (scaleIn(initialScale = 0.85f, animationSpec = tween(380)) + fadeIn(tween(380)))
-                        .togetherWith(scaleOut(targetScale = 1.15f, animationSpec = tween(380)) + fadeOut(tween(380)))
+                    (scaleIn(initialScale = 0.88f, animationSpec = scaleSpec) + fadeIn(fadeSpec))
+                        .togetherWith(scaleOut(targetScale = 1.12f, animationSpec = scaleSpec) + fadeOut(fadeSpec))
                 } else {
-                    (slideInHorizontally(animationSpec = tween(300)) { it } + fadeIn(tween(300)))
-                        .togetherWith(slideOutHorizontally(animationSpec = tween(300)) { -it } + fadeOut(tween(300)))
+                    (slideInHorizontally(animationSpec = slideSpec) { it } + fadeIn(fadeSpec))
+                        .togetherWith(slideOutHorizontally(animationSpec = slideSpec) { -it } + fadeOut(fadeSpec))
                 }
             } else {
                 // Crossfade between main screens (Home, Devices, History)
-                fadeIn(animationSpec = tween(250)) togetherWith fadeOut(animationSpec = tween(250))
+                fadeIn(animationSpec = fadeSpec) togetherWith fadeOut(animationSpec = fadeSpec)
             }
         },
         label = "MainScreenNavigation"

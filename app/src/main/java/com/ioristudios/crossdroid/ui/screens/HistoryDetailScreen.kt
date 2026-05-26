@@ -32,6 +32,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -96,6 +102,33 @@ fun HistoryDetailScreen(
         } else {
             val activeSession = session!!
             val bubbles = activeSession.records.map { it.toTransferBubble() }
+            
+            var visible by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+            androidx.compose.runtime.LaunchedEffect(Unit) {
+                visible = true
+            }
+
+            val cardAlpha by animateFloatAsState(
+                targetValue = if (visible) 1f else 0f,
+                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                label = "detailCardAlpha"
+            )
+            val cardOffsetY by animateFloatAsState(
+                targetValue = if (visible) 0f else -30f,
+                animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 250f),
+                label = "detailCardOffsetY"
+            )
+
+            val barAlpha by animateFloatAsState(
+                targetValue = if (visible) 1f else 0f,
+                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                label = "detailBarAlpha"
+            )
+            val barOffsetY by animateFloatAsState(
+                targetValue = if (visible) 0f else 30f,
+                animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.82f, stiffness = 250f),
+                label = "detailBarOffsetY"
+            )
 
             LazyColumn(
                 modifier = Modifier
@@ -110,13 +143,20 @@ fun HistoryDetailScreen(
                 verticalArrangement = Arrangement.Top
             ) {
                 item {
-                    SessionSummaryCard(
-                        deviceName = activeSession.deviceName,
-                        date = activeSession.date,
-                        isIncoming = activeSession.isIncoming,
-                        isSuccess = activeSession.isSuccess,
-                        fileCount = activeSession.records.size
-                    )
+                    Box(
+                        modifier = Modifier.graphicsLayer {
+                            alpha = cardAlpha
+                            translationY = cardOffsetY.dp.toPx()
+                        }
+                    ) {
+                        SessionSummaryCard(
+                            deviceName = activeSession.deviceName,
+                            date = activeSession.date,
+                            isIncoming = activeSession.isIncoming,
+                            isSuccess = activeSession.isSuccess,
+                            fileCount = activeSession.records.size
+                        )
+                    }
                 }
 
                 item {
@@ -139,6 +179,10 @@ fun HistoryDetailScreen(
             // Bottom elegant send bar
             Box(
                 modifier = Modifier
+                    .graphicsLayer {
+                        alpha = barAlpha
+                        translationY = barOffsetY.dp.toPx()
+                    }
                     .fillMaxWidth()
                     .background(BgElevated)
                     .border(width = 1.dp, color = BorderSubtle, shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))

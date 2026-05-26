@@ -27,6 +27,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +68,47 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    
+    var sendTrigger by remember { mutableStateOf(false) }
+    var receiveTrigger by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        sendTrigger = true
+        kotlinx.coroutines.delay(90L)
+        receiveTrigger = true
+    }
+
+    val sendAlpha by animateFloatAsState(
+        targetValue = if (sendTrigger) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+        ),
+        label = "sendAlpha"
+    )
+    val sendOffsetY by animateFloatAsState(
+        targetValue = if (sendTrigger) 0f else 30f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.8f,
+            stiffness = 250f
+        ),
+        label = "sendOffsetY"
+    )
+
+    val receiveAlpha by animateFloatAsState(
+        targetValue = if (receiveTrigger) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+        ),
+        label = "receiveAlpha"
+    )
+    val receiveOffsetY by animateFloatAsState(
+        targetValue = if (receiveTrigger) 0f else 30f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.8f,
+            stiffness = 250f
+        ),
+        label = "receiveOffsetY"
+    )
 
     Column(
         modifier = modifier
@@ -83,33 +129,49 @@ fun HomeScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            EnterpriseActionPanel(
-                title = "Send",
-                description = "Select files and transfer them instantly to nearby devices.",
-                icon = Icons.Default.FileUpload,
-                palette = ActionPalette(
-                    accent = NeonPrimary,
-                    wash = Color(0xFFE46CFF),
-                    edge = NeonHighlight,
-                    iconTint = Color(0xFFF3D7FF)
-                ),
-                onClick = { viewModel.navigateTo(Screen.SEND, context) }
-            )
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        alpha = sendAlpha
+                        translationY = sendOffsetY
+                    }
+            ) {
+                EnterpriseActionPanel(
+                    title = "Send",
+                    description = "Select files and transfer them instantly to nearby devices.",
+                    icon = Icons.Default.FileUpload,
+                    palette = ActionPalette(
+                        accent = NeonPrimary,
+                        wash = Color(0xFFE46CFF),
+                        edge = NeonHighlight,
+                        iconTint = Color(0xFFF3D7FF)
+                    ),
+                    onClick = { viewModel.navigateTo(Screen.SEND, context) }
+                )
+            }
 
             Spacer(modifier = Modifier.height(Spacing.Large))
 
-            EnterpriseActionPanel(
-                title = "Receive",
-                description = "Make this device discoverable and accept incoming files.",
-                icon = Icons.Default.FileDownload,
-                palette = ActionPalette(
-                    accent = AccentCyan,
-                    wash = Color(0xFF8B5CFF),
-                    edge = Color(0xFF8AF7FF),
-                    iconTint = Color(0xFFD9FDFF)
-                ),
-                onClick = { viewModel.navigateTo(Screen.RECEIVE, context) }
-            )
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        alpha = receiveAlpha
+                        translationY = receiveOffsetY
+                    }
+            ) {
+                EnterpriseActionPanel(
+                    title = "Receive",
+                    description = "Make this device discoverable and accept incoming files.",
+                    icon = Icons.Default.FileDownload,
+                    palette = ActionPalette(
+                        accent = AccentCyan,
+                        wash = Color(0xFF8B5CFF),
+                        edge = Color(0xFF8AF7FF),
+                        iconTint = Color(0xFFD9FDFF)
+                    ),
+                    onClick = { viewModel.navigateTo(Screen.RECEIVE, context) }
+                )
+            }
         }
     }
 }
@@ -131,12 +193,19 @@ private fun EnterpriseActionPanel(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed = interactionSource.collectIsPressedAsState().value
-    val scale = animateFloatAsState(
-        targetValue = if (isPressed) 0.985f else 1f,
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.965f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = 300f
+        ),
         label = "EnterpriseActionPanelScale"
     )
-    val washAlpha = animateFloatAsState(
+    val washAlpha by animateFloatAsState(
         targetValue = if (isPressed) 0.24f else 0.16f,
+        animationSpec = androidx.compose.animation.core.spring(
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+        ),
         label = "EnterpriseActionPanelWash"
     )
     val cornerRadius = 20.dp
@@ -145,7 +214,7 @@ private fun EnterpriseActionPanel(
         modifier = Modifier
             .fillMaxWidth()
             .height(152.dp)
-            .scale(scale.value)
+            .scale(scale)
             .clip(RoundedCornerShape(cornerRadius))
             .neonGlow(
                 color = palette.accent,
@@ -159,7 +228,7 @@ private fun EnterpriseActionPanel(
                     colors = listOf(
                         palette.accent.copy(alpha = 0.18f),
                         BgPanel,
-                        palette.wash.copy(alpha = washAlpha.value)
+                        palette.wash.copy(alpha = washAlpha)
                     )
                 )
             )

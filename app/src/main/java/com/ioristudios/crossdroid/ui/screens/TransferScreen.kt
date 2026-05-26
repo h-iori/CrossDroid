@@ -1,10 +1,14 @@
 package com.ioristudios.crossdroid.ui.screens
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -153,16 +157,25 @@ fun TransferScreen(
                         .padding(horizontal = Spacing.Small, vertical = 6.dp),
                     horizontalAlignment = Alignment.End
                 ) {
-                    Text(
-                        text = totalSpeed,
-                        style = CustomTypography.labelLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            letterSpacing = 0.sp
-                        ),
-                        color = NeonHighlight,
-                        maxLines = 1
-                    )
+                    AnimatedContent(
+                        targetState = totalSpeed,
+                        transitionSpec = {
+                            (slideInVertically { height -> height } + fadeIn())
+                                .togetherWith(slideOutVertically { height -> -height } + fadeOut())
+                        },
+                        label = "SpeedChangeAnimation"
+                    ) { targetSpeed ->
+                        Text(
+                            text = targetSpeed,
+                            style = CustomTypography.labelLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                letterSpacing = 0.sp
+                            ),
+                            color = NeonHighlight,
+                            maxLines = 1
+                        )
+                    }
                     Text(
                         text = "TOTAL SPEED",
                         style = CustomTypography.labelSmall.copy(

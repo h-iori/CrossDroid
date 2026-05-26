@@ -2,6 +2,9 @@ package com.ioristudios.crossdroid.ui.components
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -20,11 +23,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,6 +53,17 @@ fun NearbyDeviceChip(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    
+    var entryVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        entryVisible = true
+    }
+    
+    val entryScale by animateFloatAsState(
+        targetValue = if (entryVisible) 1.0f else 0f,
+        animationSpec = spring(dampingRatio = 0.76f, stiffness = Spring.StiffnessMediumLow),
+        label = "chipEntryScale"
+    )
     
     // Constant pulsing animation for the discoverable node
     val infiniteTransition = rememberInfiniteTransition(label = "NodePulseTransition")
@@ -71,7 +90,11 @@ fun NearbyDeviceChip(
 
     Column(
         modifier = modifier
-            .scale(pulseScale)
+            .graphicsLayer {
+                scaleX = entryScale * pulseScale
+                scaleY = entryScale * pulseScale
+                alpha = entryScale
+            }
             .clickable {
                 HapticHelper.triggerMedium(context)
                 onClick()

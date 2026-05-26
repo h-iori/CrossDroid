@@ -5,6 +5,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -80,6 +93,17 @@ class MainActivity : ComponentActivity() {
                 val snackbarHostState = remember { SnackbarHostState() }
                 var lastBackPressTime by remember { mutableLongStateOf(0L) }
 
+                val breathingTransition = rememberInfiniteTransition(label = "SnackbarBreathe")
+                val breatheOpacity by breathingTransition.animateFloat(
+                    initialValue = 0.14f,
+                    targetValue = 0.32f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(2000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "SnackbarBreatheOpacity"
+                )
+
                 BackHandler(enabled = true) {
                     if (isSidebarVisible) {
                         viewModel.setSidebarVisible(false)
@@ -111,55 +135,73 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         snackbarHost = {
-                            SnackbarHost(hostState = snackbarHostState) { data ->
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = Spacing.Large, vertical = Spacing.Medium),
-                                    contentAlignment = Alignment.Center
+                            val currentData = snackbarHostState.currentSnackbarData
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = Spacing.Large, vertical = Spacing.Medium),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AnimatedVisibility(
+                                    visible = currentData != null,
+                                    enter = slideInVertically(
+                                        initialOffsetY = { it },
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioLowBouncy,
+                                            stiffness = Spring.StiffnessMediumLow
+                                        )
+                                    ) + fadeIn(),
+                                    exit = slideOutVertically(
+                                        targetOffsetY = { it },
+                                        animationSpec = spring(
+                                            stiffness = Spring.StiffnessMediumLow
+                                        )
+                                    ) + fadeOut()
                                 ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .background(
-                                                brush = Brush.linearGradient(
-                                                    colors = listOf(
-                                                        BgPanel.copy(alpha = 0.95f),
-                                                        BgPanelMuted.copy(alpha = 0.92f)
+                                    if (currentData != null) {
+                                        Row(
+                                            modifier = Modifier
+                                                .clip(CircleShape)
+                                                .background(
+                                                    brush = Brush.linearGradient(
+                                                        colors = listOf(
+                                                            BgPanel.copy(alpha = 0.95f),
+                                                            BgPanelMuted.copy(alpha = 0.92f)
+                                                        )
                                                     )
                                                 )
+                                                .border(
+                                                    width = 1.dp,
+                                                    brush = Brush.horizontalGradient(
+                                                        colors = listOf(
+                                                            NeonPrimary.copy(alpha = 0.45f),
+                                                            AccentCyan.copy(alpha = 0.35f)
+                                                        )
+                                                    ),
+                                                    shape = CircleShape
+                                                )
+                                                .neonGlow(
+                                                    color = NeonPrimary,
+                                                    borderRadius = 22.dp,
+                                                    glowRadius = 14.dp,
+                                                    opacity = breatheOpacity
+                                                )
+                                                .padding(horizontal = Spacing.Medium + 4.dp, vertical = Spacing.Small + 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Info,
+                                                contentDescription = null,
+                                                tint = NeonHighlight,
+                                                modifier = Modifier.size(IconSize.Standard)
                                             )
-                                            .border(
-                                                width = 1.dp,
-                                                brush = Brush.horizontalGradient(
-                                                    colors = listOf(
-                                                        NeonPrimary.copy(alpha = 0.45f),
-                                                        AccentCyan.copy(alpha = 0.35f)
-                                                    )
-                                                ),
-                                                shape = CircleShape
+                                            Spacer(modifier = Modifier.width(Spacing.Small + 2.dp))
+                                            Text(
+                                                text = currentData.visuals.message,
+                                                style = CustomTypography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                                color = TextStrong
                                             )
-                                            .neonGlow(
-                                                color = NeonPrimary,
-                                                borderRadius = 22.dp,
-                                                glowRadius = 14.dp,
-                                                opacity = 0.22f
-                                            )
-                                            .padding(horizontal = Spacing.Medium + 4.dp, vertical = Spacing.Small + 2.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Info,
-                                            contentDescription = null,
-                                            tint = NeonHighlight,
-                                            modifier = Modifier.size(IconSize.Standard)
-                                        )
-                                        Spacer(modifier = Modifier.width(Spacing.Small + 2.dp))
-                                        Text(
-                                            text = data.visuals.message,
-                                            style = CustomTypography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                                            color = TextStrong
-                                        )
+                                        }
                                     }
                                 }
                             }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,7 +25,14 @@ import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -105,11 +113,11 @@ fun DevicesScreen(
                         count = sectionDevices.size
                     )
                 }
-                items(
+                itemsIndexed(
                     items = sectionDevices,
-                    key = { it.id }
-                ) { device ->
-                    DeviceDirectoryRow(device = device)
+                    key = { _, item -> item.id }
+                ) { index, device ->
+                    DeviceDirectoryRow(device = device, index = index)
                 }
             }
         }
@@ -121,8 +129,28 @@ private fun DeviceOverview(
     connected: Int,
     paired: Int
 ) {
+    var visible by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    val overviewAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+        label = "overviewAlpha"
+    )
+    val overviewTranslationY by animateFloatAsState(
+        targetValue = if (visible) 0f else 20f,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 250f),
+        label = "overviewTranslation"
+    )
+
     Row(
         modifier = Modifier
+            .graphicsLayer {
+                alpha = overviewAlpha
+                translationY = overviewTranslationY.dp.toPx()
+            }
             .fillMaxWidth()
             .clip(RoundedCornerShape(Radii.CardStandard))
             .neonGlow(
@@ -215,12 +243,33 @@ private fun SectionHeader(
 }
 
 @Composable
-private fun DeviceDirectoryRow(device: DeviceNode) {
+private fun DeviceDirectoryRow(device: DeviceNode, index: Int) {
+    var visible by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(index * 30L)
+        visible = true
+    }
+
+    val rowAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+        label = "rowAlpha"
+    )
+    val rowTranslationY by animateFloatAsState(
+        targetValue = if (visible) 0f else 20f,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 250f),
+        label = "rowTranslation"
+    )
+
     val isConnected = device.status == "Connected"
     val deviceColor = if (isConnected) NeonPrimary else AccentCyan
 
     Row(
         modifier = Modifier
+            .graphicsLayer {
+                alpha = rowAlpha
+                translationY = rowTranslationY.dp.toPx()
+            }
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(BgElevated.copy(alpha = 0.92f))

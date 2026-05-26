@@ -33,6 +33,13 @@ import androidx.compose.material3.Icon
 import com.ioristudios.crossdroid.data.FileKind
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -94,8 +101,32 @@ fun ChatBubbleItem(
         RoundedCornerShape(18.dp, 18.dp, 18.dp, 6.dp)
     }
 
+    var visible by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    val entryAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+        label = "bubbleAlpha"
+    )
+
+    val entrySlideX by animateFloatAsState(
+        targetValue = if (visible) 0f else (if (isOutgoing) 35f else -35f),
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.78f, // bouncy, tactile feel
+            stiffness = 220f
+        ),
+        label = "bubbleSlideX"
+    )
+
     Row(
         modifier = modifier
+            .graphicsLayer {
+                alpha = entryAlpha
+                translationX = entrySlideX.dp.toPx()
+            }
             .fillMaxWidth()
             .padding(vertical = Spacing.Small),
         horizontalArrangement = if (isOutgoing) Arrangement.End else Arrangement.Start
