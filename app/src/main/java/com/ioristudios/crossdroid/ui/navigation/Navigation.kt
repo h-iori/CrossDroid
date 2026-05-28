@@ -42,10 +42,10 @@ fun NavigationHost(
         transitionSpec = {
             // Check slide transition criteria
             val isEnteringSubflow = targetState in listOf(
-                Screen.SEND, Screen.QR_SCAN, Screen.ENTER_CODE, Screen.RADAR, Screen.TRANSFER, Screen.RECEIVE, Screen.HISTORY_DETAIL
+                Screen.SEND, Screen.QR_SCAN, Screen.ENTER_CODE, Screen.RADAR, Screen.TRANSFER, Screen.RECEIVE, Screen.HISTORY_DETAIL, Screen.ABOUT
             )
             val isExitingSubflow = initialState in listOf(
-                Screen.SEND, Screen.QR_SCAN, Screen.ENTER_CODE, Screen.RADAR, Screen.TRANSFER, Screen.RECEIVE, Screen.HISTORY_DETAIL
+                Screen.SEND, Screen.QR_SCAN, Screen.ENTER_CODE, Screen.RADAR, Screen.TRANSFER, Screen.RECEIVE, Screen.HISTORY_DETAIL, Screen.ABOUT
             )
 
             val slideSpec = spring<androidx.compose.ui.unit.IntOffset>(

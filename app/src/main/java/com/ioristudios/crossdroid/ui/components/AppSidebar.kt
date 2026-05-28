@@ -162,7 +162,7 @@ fun AppSidebar(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         StaggeredSidebarItem(
-                            index = 2,
+                            index = 0,
                             visible = isVisible,
                             icon = Icons.Filled.Info,
                             label = "About Developer",
@@ -237,7 +237,7 @@ private fun StaggeredSidebarItem(
     label: String,
     onClick: () -> Unit
 ) {
-    var triggerAnim by androidx.compose.runtime.mutableStateOf(false)
+    var triggerAnim by remember { androidx.compose.runtime.mutableStateOf(false) }
     
     androidx.compose.runtime.LaunchedEffect(visible) {
         if (visible) {
