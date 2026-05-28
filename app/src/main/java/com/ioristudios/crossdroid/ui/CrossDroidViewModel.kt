@@ -12,6 +12,8 @@ import com.ioristudios.crossdroid.data.FileKind
 import com.ioristudios.crossdroid.data.HistoryItem
 import com.ioristudios.crossdroid.data.MockData
 import com.ioristudios.crossdroid.data.FileType
+import android.provider.MediaStore
+import android.content.ContentUris
 import com.ioristudios.crossdroid.ui.theme.HapticHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
@@ -94,6 +96,9 @@ class CrossDroidViewModel : ViewModel() {
 
     private val _fileManagerError = MutableStateFlow<String?>(null)
     val fileManagerError: StateFlow<String?> = _fileManagerError.asStateFlow()
+
+    private val _mediaEntries = MutableStateFlow<List<FileItem>>(emptyList())
+    val mediaEntries: StateFlow<List<FileItem>> = _mediaEntries.asStateFlow()
 
     // Enter Code PIN Input
     private val _pinCode = MutableStateFlow("")
@@ -361,6 +366,85 @@ class CrossDroidViewModel : ViewModel() {
                 }
 
             _isFileManagerLoading.value = false
+        }
+    }
+
+    fun loadMedia(context: Context, type: FileType) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val items = mutableListOf<FileItem>()
+            val uri = when (type) {
+                FileType.IMAGE -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                FileType.VIDEO -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                FileType.MUSIC -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                FileType.DOCUMENT -> MediaStore.Files.getContentUri("external")
+                else -> return@launch
+            }
+            
+            val selection = if (type == FileType.DOCUMENT) {
+                val mimeTypes = listOf(
+                    "application/pdf",
+                    "text/plain",
+                    "text/csv",
+                    "application/msword",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "application/vnd.ms-powerpoint",
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                )
+                val placeholders = mimeTypes.joinToString(separator = " OR ") { "${MediaStore.Files.FileColumns.MIME_TYPE} = ?" }
+                placeholders
+            } else null
+
+            val selectionArgs = if (type == FileType.DOCUMENT) {
+                arrayOf(
+                    "application/pdf",
+                    "text/plain",
+                    "text/csv",
+                    "application/msword",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "application/vnd.ms-powerpoint",
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                )
+            } else null
+
+            val projection = arrayOf(
+                MediaStore.MediaColumns._ID,
+                MediaStore.MediaColumns.DISPLAY_NAME,
+                MediaStore.MediaColumns.SIZE,
+                MediaStore.MediaColumns.DATA,
+                MediaStore.MediaColumns.DATE_MODIFIED
+            )
+            context.contentResolver.query(uri, projection, selection, selectionArgs, "${MediaStore.MediaColumns.DATE_MODIFIED} DESC")?.use { cursor ->
+                val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+                val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA)
+                val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED)
+
+                while (cursor.moveToNext()) {
+                    val name = cursor.getString(nameColumn) ?: "Unknown"
+                    val size = cursor.getLong(sizeColumn)
+                    val data = cursor.getString(dataColumn) ?: ""
+                    val date = cursor.getLong(dateColumn) * 1000L
+
+                    items.add(
+                        FileItem(
+                            id = data,
+                            name = name,
+                            size = size.toReadableSize(),
+                            type = type,
+                            detail = extensionLabel(name),
+                            kind = FileKind.FILE,
+                            path = data,
+                            childrenCount = 0,
+                            lastModified = modifiedLabel(date)
+                        )
+                    )
+                }
+            }
+            _mediaEntries.value = items
         }
     }
 

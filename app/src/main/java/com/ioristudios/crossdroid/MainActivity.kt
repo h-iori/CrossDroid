@@ -41,7 +41,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -90,6 +92,64 @@ class MainActivity : ComponentActivity() {
                 val isSidebarVisible by viewModel.isSidebarVisible.collectAsState()
                 val context = LocalContext.current
                 val scope = rememberCoroutineScope()
+                
+                var hasRequestedPermissions by remember {
+                    val sharedPrefs = context.getSharedPreferences("crossdroid_prefs", android.content.Context.MODE_PRIVATE)
+                    mutableStateOf(sharedPrefs.getBoolean("has_requested_permissions", false))
+                }
+
+                val manageStorageLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                    contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+                ) {
+                    // storage permission returned
+                }
+
+                val permissionsLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                    contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+                ) { _ ->
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                        if (!android.os.Environment.isExternalStorageManager()) {
+                            try {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                                intent.data = android.net.Uri.parse("package:${context.packageName}")
+                                manageStorageLauncher.launch(intent)
+                            } catch (e: Exception) {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                                manageStorageLauncher.launch(intent)
+                            }
+                        }
+                    }
+                }
+
+                LaunchedEffect(Unit) {
+                    if (!hasRequestedPermissions) {
+                        context.getSharedPreferences("crossdroid_prefs", android.content.Context.MODE_PRIVATE)
+                            .edit().putBoolean("has_requested_permissions", true).apply()
+                        hasRequestedPermissions = true
+                        
+                        val list = mutableListOf<String>()
+                        list.add(android.Manifest.permission.CAMERA)
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                            list.add(android.Manifest.permission.READ_MEDIA_IMAGES)
+                            list.add(android.Manifest.permission.READ_MEDIA_VIDEO)
+                            list.add(android.Manifest.permission.READ_MEDIA_AUDIO)
+                            list.add(android.Manifest.permission.NEARBY_WIFI_DEVICES)
+                            list.add(android.Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            list.add(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+                            list.add(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                            list.add(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                        }
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                            list.add(android.Manifest.permission.BLUETOOTH_CONNECT)
+                            list.add(android.Manifest.permission.BLUETOOTH_SCAN)
+                        }
+                        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.P) {
+                            list.add(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        }
+                        permissionsLauncher.launch(list.toTypedArray())
+                    }
+                }
                 val snackbarHostState = remember { SnackbarHostState() }
                 var lastBackPressTime by remember { mutableLongStateOf(0L) }
 

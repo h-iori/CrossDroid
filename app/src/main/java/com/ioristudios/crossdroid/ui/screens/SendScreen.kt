@@ -78,7 +78,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.data.FileKind
 import com.ioristudios.crossdroid.data.FileType
-import com.ioristudios.crossdroid.data.MockData
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
 import com.ioristudios.crossdroid.ui.components.FilterTabs
@@ -117,6 +116,7 @@ fun SendScreen(
     val activeFilter by viewModel.activeFilter.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val entries by viewModel.fileManagerEntries.collectAsState()
+    val mediaEntries by viewModel.mediaEntries.collectAsState()
     val isLoading by viewModel.isFileManagerLoading.collectAsState()
     val error by viewModel.fileManagerError.collectAsState()
     var hasAllFilesAccess by remember { mutableStateOf(viewModel.hasAllFilesAccess()) }
@@ -130,8 +130,12 @@ fun SendScreen(
     }
 
     LaunchedEffect(activeFilter, hasAllFilesAccess) {
-        if (hasAllFilesAccess && activeFilter == FileType.ALL && entries.isEmpty()) {
-            viewModel.loadStorageRoot()
+        if (activeFilter == FileType.ALL) {
+            if (hasAllFilesAccess && entries.isEmpty()) {
+                viewModel.loadStorageRoot()
+            }
+        } else {
+            viewModel.loadMedia(context, activeFilter)
         }
     }
 
@@ -203,37 +207,34 @@ fun SendScreen(
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            if (!hasAllFilesAccess) {
-                PermissionGate(
-                    onGrantClick = {
-                        allFilesSettingsLauncher.launch(
-                            Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                        )
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    val pageFilter = fileTypes[page]
-                    val pageEntries = remember(entries, pageFilter, searchQuery) {
-                        val filtered = entries.filter { entry ->
-                            val matchesSearch = searchQuery.isBlank() || entry.name.contains(searchQuery, ignoreCase = true)
-                            val matchesType = pageFilter == FileType.ALL ||
-                                (entry.kind == FileKind.FILE && entry.type == pageFilter)
-                            matchesSearch && matchesType
-                        }
-                        if (pageFilter != FileType.ALL) {
-                            val dummyItems = MockData.filesList.filter {
-                                it.type == pageFilter && (searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true))
-                            }
-                            filtered + dummyItems
-                        } else {
-                            filtered
-                        }
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                val pageFilter = fileTypes[page]
+                
+                if (pageFilter == FileType.ALL && !hasAllFilesAccess) {
+                    PermissionGate(
+                        onGrantClick = {
+                            allFilesSettingsLauncher.launch(
+                                Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                            )
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    return@HorizontalPager
+                }
+
+                val pageEntries = remember(entries, mediaEntries, pageFilter, searchQuery) {
+                    val sourceList = if (pageFilter == FileType.ALL) entries else mediaEntries
+                    val filtered = sourceList.filter { entry ->
+                        val matchesSearch = searchQuery.isBlank() || entry.name.contains(searchQuery, ignoreCase = true)
+                        val matchesType = pageFilter == FileType.ALL ||
+                            (entry.kind == FileKind.FILE && entry.type == pageFilter)
+                        matchesSearch && matchesType
                     }
+                    filtered
+                }
 
                     // Slide transition scale & alpha animation
                     val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
@@ -287,7 +288,6 @@ fun SendScreen(
                     }
                 }
             }
-        }
         AnimatedVisibility(
             visible = selectedFiles.isNotEmpty(),
             enter = slideInVertically(
