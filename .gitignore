@@ -1,2 +1,5 @@
 app/build
 /.gradle
+/.vs
+debug.log
+test_app.ps1

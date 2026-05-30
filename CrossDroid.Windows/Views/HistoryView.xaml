@@ -1,0 +1,98 @@
+<Page
+    x:Class="CrossDroid.Windows.Views.HistoryView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{StaticResource BgMain}">
+
+    <Grid Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="Transfer History" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+            <TextBlock Text="Historical records of network files transferred" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0" />
+        </StackPanel>
+
+        <!-- Search and Filter controls -->
+        <Grid Grid.Row="1" Margin="0,0,0,12" RowSpacing="8" ColumnSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Search box -->
+            <AutoSuggestBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" x:Name="SearchBox" PlaceholderText="Search by filename or device..." QueryIcon="Find" QuerySubmitted="SearchBox_QuerySubmitted" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}"/>
+
+            <!-- Sort By -->
+            <ComboBox Grid.Row="1" Grid.Column="0" x:Name="SortCombo" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Stretch" SelectedIndex="0" SelectionChanged="SortCombo_SelectionChanged" Height="32">
+                <ComboBoxItem Content="Date (Newest)" />
+                <ComboBoxItem Content="Size (Largest)" />
+                <ComboBoxItem Content="File Name" />
+            </ComboBox>
+
+            <!-- Clear -->
+            <Button Grid.Row="1" Grid.Column="1" Content="Clear" Click="ClearHistory_Click" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource ColorError}" Foreground="{StaticResource ColorError}" Height="32" Padding="12,0"/>
+        </Grid>
+
+        <!-- History ListView -->
+        <ListView x:Name="HistoryItemsList" Grid.Row="2" SelectionMode="None" IsItemClickEnabled="False">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="0,0,0,8" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Border CornerRadius="10" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="12">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Success / Fail Indicator Icon -->
+                            <Border Grid.Column="0" CornerRadius="14" Background="{Binding IconBg}" Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <FontIcon Glyph="{Binding StatusGlyph}" FontFamily="Segoe MDL2 Assets" Foreground="{Binding StatusBrush}" FontSize="12"/>
+                            </Border>
+
+                            <!-- Details -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding FileName}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis"/>
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{Binding FileSize}" FontSize="11" Foreground="{StaticResource AccentCyan}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="•" FontSize="11" Foreground="{StaticResource TextMuted}"/>
+                                    <TextBlock Text="{Binding DateText}" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding DetailMessage}" FontSize="11" Foreground="{StaticResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+
+                            <!-- Action context -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <Button Click="OpenFile_Click" Background="Transparent" BorderThickness="0" Padding="4" Visibility="{Binding OpenVisible}" ToolTipService.ToolTip="Open File">
+                                    <FontIcon Glyph="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource AccentCyan}"/>
+                                </Button>
+                                <Button Click="OpenFolder_Click" Background="Transparent" BorderThickness="0" Padding="4" Visibility="{Binding OpenVisible}" ToolTipService.ToolTip="Open Folder">
+                                    <FontIcon Glyph="&#xE8DA;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextSecondary}"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Page>

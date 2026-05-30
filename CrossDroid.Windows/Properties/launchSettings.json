@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CrossDroid.Windows (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "CrossDroid.Windows (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

@@ -1,0 +1,90 @@
+<Page
+    x:Class="CrossDroid.Windows.Views.SettingsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{StaticResource BgMain}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Padding="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Title -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,24">
+                <TextBlock Text="Settings" FontSize="28" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+                <TextBlock Text="Configure tray controls, launch options, directory locations and network defaults" FontSize="14" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,0" />
+            </StackPanel>
+
+            <!-- Settings Categories -->
+            <StackPanel Grid.Row="1" Spacing="24" MaxWidth="600" HorizontalAlignment="Left">
+                
+                <!-- Startup & Tray Section -->
+                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="20">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Startup &amp; System Tray" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
+                        
+                        <ToggleSwitch x:Name="AutoStartToggle" Header="Auto-start with Windows" OnContent="Enabled" OffContent="Disabled" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled"/>
+                        <ToggleSwitch x:Name="StartMinimizedToggle" Header="Start Minimized in System Tray" OnContent="Yes" OffContent="No" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled"/>
+                        <ToggleSwitch x:Name="CloseToTrayToggle" Header="Close button minimizes to Tray" OnContent="Minimize to Tray" OffContent="Exit Application" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Storage & Files Section -->
+                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="20">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Files &amp; Save Locations" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
+                        
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Default Downloads Destination" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="DownloadPathBox" Grid.Column="0" IsReadOnly="True" Text="C:\Users\harsh\Downloads\CrossDroid" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Browse Folder" Click="BrowseDownloadFolder_Click" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextBody}" VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <ToggleSwitch x:Name="AutoAcceptTrustedToggle" Header="Auto-accept transfers from Paired Trusted devices" OnContent="Yes, download immediately" OffContent="No, prompt me every time" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Network Options Section -->
+                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="20">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Connection &amp; Network Rules" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
+                        
+                        <ToggleSwitch x:Name="WifiOnlyToggle" Header="Transfer over Wi-Fi only" OnContent="Enabled" OffContent="Allow mobile hotspot/fallback" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled"/>
+                        <ToggleSwitch x:Name="P2pFallbackToggle" Header="Direct Peer-to-Peer fallback support" OnContent="Allowed if LAN unavailable" OffContent="LAN connection only" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled"/>
+                        
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Preferred Network Band" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
+                            <ComboBox x:Name="NetworkBandCombo" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" SelectedIndex="0" HorizontalAlignment="Stretch">
+                                <ComboBoxItem Content="Prefer 5 GHz Band (Fastest)" />
+                                <ComboBoxItem Content="Prefer 2.4 GHz Band (Longest Range)" />
+                                <ComboBoxItem Content="Auto Negotiate" />
+                            </ComboBox>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Notifications & Sound -->
+                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="20">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Notifications" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
+                        
+                        <ToggleSwitch x:Name="ToastNotifyToggle" Header="Show toast notifications for transfer statuses" OnContent="Enabled" OffContent="Disabled" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled"/>
+                        <ToggleSwitch x:Name="SoundNotifyToggle" Header="Play alert sound on completion" OnContent="Enabled" OffContent="Disabled" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

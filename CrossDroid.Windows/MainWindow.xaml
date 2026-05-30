@@ -1,0 +1,146 @@
+<Window
+    x:Class="CrossDroid.Windows.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:CrossDroid.Windows"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:tb="using:H.NotifyIcon"
+    Title="CrossDroid"
+    mc:Ignorable="d">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="BaseAlt" />
+    </Window.SystemBackdrop>
+
+    <Grid Background="{StaticResource BgMain}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Taskbar / System Tray Icon -->
+        <tb:TaskbarIcon
+            x:Name="TrayIcon"
+            ToolTipText="CrossDroid Desktop Companion">
+            <tb:TaskbarIcon.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem Text="Open CrossDroid" Click="TrayOpen_Click">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon Glyph="&#xE7F4;" FontFamily="Segoe MDL2 Assets"/>
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="Receive Mode (Toggle)" Click="TrayToggleReceive_Click">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon Glyph="&#xE104;" FontFamily="Segoe MDL2 Assets"/>
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="Show Paired Devices" Click="TrayDevices_Click">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon Glyph="&#xE776;" FontFamily="Segoe MDL2 Assets"/>
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSeparator/>
+                    <MenuFlyoutItem Text="Exit App" Click="TrayExit_Click">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon Glyph="&#xE711;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource ColorError}"/>
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                </MenuFlyout>
+            </tb:TaskbarIcon.ContextFlyout>
+        </tb:TaskbarIcon>
+
+        <!-- Extended Title Bar -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="40" Background="{StaticResource BgElevated}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- App Logo & Title -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Padding="12,0,0,0" VerticalAlignment="Center">
+                <Border Width="20" Height="20" Background="{StaticResource BgSurface}" CornerRadius="4" BorderBrush="{StaticResource NeonPrimary}" BorderThickness="1" Margin="0,0,8,0">
+                    <FontIcon Glyph="&#xE104;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NeonPrimary}" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <TextBlock Text="CrossDroid" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" />
+                <Border Margin="8,0,0,0" CornerRadius="4" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" VerticalAlignment="Center" Padding="6,2">
+                    <TextBlock Text="Companion" FontSize="10" Foreground="{StaticResource AccentCyan}" FontWeight="Bold"/>
+                </Border>
+            </StackPanel>
+
+            <!-- Close Button for frameless window -->
+            <Button Grid.Column="2" Click="CloseButton_Click" Background="Transparent" BorderThickness="0" Width="40" Height="40" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextSecondary}"/>
+        </Grid>
+
+        <!-- Central Frame hosting views -->
+        <Frame x:Name="ContentFrame" Grid.Row="1" Margin="0,0,0,0"/>
+
+        <!-- Custom Bottom Navigation Bar -->
+        <Grid x:Name="BottomNavBar" Grid.Row="2" Height="60" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,1,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Home Tab -->
+            <Button Grid.Column="0" Click="NavTab_Click" Tag="Home" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+                <Grid>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <FontIcon x:Name="HomeIcon" Glyph="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource NeonPrimary}" />
+                        <TextBlock x:Name="HomeText" Text="Home" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource NeonPrimary}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                    <Border x:Name="HomeIndicator" Height="3" Width="36" Background="{StaticResource NeonPrimary}" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2" Visibility="Visible" />
+                </Grid>
+            </Button>
+
+            <!-- Devices Tab -->
+            <Button Grid.Column="1" Click="NavTab_Click" Tag="Devices" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+                <Grid>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <FontIcon x:Name="DevicesIcon" Glyph="&#xE776;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextSecondary}" />
+                        <TextBlock x:Name="DevicesText" Text="Devices" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                    <Border x:Name="DevicesIndicator" Height="3" Width="36" Background="{StaticResource NeonPrimary}" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2" Visibility="Collapsed" />
+                </Grid>
+            </Button>
+
+            <!-- Transfers Tab -->
+            <Button Grid.Column="2" Click="NavTab_Click" Tag="Transfers" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+                <Grid>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <FontIcon x:Name="TransfersIcon" Glyph="&#xE8D7;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextSecondary}" />
+                        <TextBlock x:Name="TransfersText" Text="Transfers" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                    <Border x:Name="TransfersIndicator" Height="3" Width="36" Background="{StaticResource NeonPrimary}" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2" Visibility="Collapsed" />
+                </Grid>
+            </Button>
+
+            <!-- History Tab -->
+            <Button Grid.Column="3" Click="NavTab_Click" Tag="History" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+                <Grid>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <FontIcon x:Name="HistoryIcon" Glyph="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextSecondary}" />
+                        <TextBlock x:Name="HistoryText" Text="History" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                    <Border x:Name="HistoryIndicator" Height="3" Width="36" Background="{StaticResource NeonPrimary}" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2" Visibility="Collapsed" />
+                </Grid>
+            </Button>
+
+            <!-- Settings Tab -->
+            <Button Grid.Column="4" Click="NavTab_Click" Tag="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+                <Grid>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <FontIcon x:Name="SettingsIcon" Glyph="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextSecondary}" />
+                        <TextBlock x:Name="SettingsText" Text="Settings" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                    <Border x:Name="SettingsIndicator" Height="3" Width="36" Background="{StaticResource NeonPrimary}" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2" Visibility="Collapsed" />
+                </Grid>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>
