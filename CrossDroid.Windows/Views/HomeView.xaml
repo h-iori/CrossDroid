@@ -7,6 +7,12 @@
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
+    <Page.Transitions>
+        <TransitionCollection>
+            <EntranceThemeTransition FromHorizontalOffset="0" FromVerticalOffset="28"/>
+        </TransitionCollection>
+    </Page.Transitions>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Padding="16">
             <Grid.RowDefinitions>
@@ -17,7 +23,7 @@
             </Grid.RowDefinitions>
 
             <!-- Pairing Widget Card -->
-            <Border Grid.Row="0" CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimary}" BorderThickness="1.5" Padding="16" Margin="0,0,0,16">
+            <Border Grid.Row="0" CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.5" Padding="16" Margin="0,0,0,16">
                 <StackPanel Spacing="12" HorizontalAlignment="Center">
                     <TextBlock Text="Pair with Mobile" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" />
                     <TextBlock Text="Scan QR or enter PIN on your phone" FontSize="12" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" Margin="0,-4,0,0" />
@@ -123,11 +129,11 @@
                                 <StackPanel.RenderTransform>
                                     <RotateTransform Angle="0" />
                                 </StackPanel.RenderTransform>
-                                <Rectangle Width="60" Height="1.5" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="60,59,0,0">
+                                <Rectangle Width="60" Height="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="60,59,0,0">
                                     <Rectangle.Fill>
                                         <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                            <GradientStop Color="#00BF00FF" Offset="0.0" />
-                                            <GradientStop Color="#BFBF00FF" Offset="1.0" />
+                                            <GradientStop Color="#009B30FF" Offset="0.0" />
+                                            <GradientStop Color="#FFBF00FF" Offset="1.0" />
                                         </LinearGradientBrush>
                                     </Rectangle.Fill>
                                 </Rectangle>
@@ -141,35 +147,47 @@
                 </Grid>
             </Border>
 
-            <!-- Send Action Buttons Stack -->
-            <StackPanel Grid.Row="3" Spacing="10" Margin="0,0,0,10">
-                <!-- Send Files Action -->
-                <Button HorizontalAlignment="Stretch" Height="52" CornerRadius="10" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimary}" BorderThickness="1.5" Click="SendFilesButton_Click" Padding="12,0">
+            <!-- Send Action Buttons Stack (Restyled as Premium Gradient Cards) -->
+            <StackPanel Grid.Row="3" Spacing="12" Margin="0,0,0,10">
+                <!-- Send Files Action Card -->
+                <Button HorizontalAlignment="Stretch" Height="62" CornerRadius="16" Background="{StaticResource SendCardBg}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Click="SendFilesButton_Click" Padding="12,0">
                     <Grid HorizontalAlignment="Stretch" Width="100%">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <FontIcon Grid.Column="0" Glyph="&#xE105;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{StaticResource NeonPrimary}" Margin="0,0,12,0" VerticalAlignment="Center" />
+                        <!-- Rounded Icon Box -->
+                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="10" Background="#33BF00FF" BorderThickness="1" BorderBrush="#88D455FF" Margin="0,0,12,0" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE105;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left">
-                            <TextBlock Text="Send Files" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" />
+                            <TextBlock Text="Send Files" FontSize="14.5" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
                             <TextBlock Text="Select files from local drive" FontSize="10.5" Foreground="{StaticResource TextSecondary}" />
                         </StackPanel>
+                        <!-- Chevron Right Arrow -->
+                        <FontIcon Grid.Column="2" Glyph="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
                     </Grid>
                 </Button>
 
-                <!-- Send Folder Action -->
-                <Button HorizontalAlignment="Stretch" Height="52" CornerRadius="10" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource AccentCyan}" BorderThickness="1.5" Click="SendFolderButton_Click" Padding="12,0">
+                <!-- Send Folder Action Card -->
+                <Button HorizontalAlignment="Stretch" Height="62" CornerRadius="16" Background="{StaticResource ReceiveCardBg}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1.2" Click="SendFolderButton_Click" Padding="12,0">
                     <Grid HorizontalAlignment="Stretch" Width="100%">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <FontIcon Grid.Column="0" Glyph="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{StaticResource AccentCyan}" Margin="0,0,12,0" VerticalAlignment="Center" />
+                        <!-- Rounded Icon Box -->
+                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="10" Background="#3327D7E7" BorderThickness="1" BorderBrush="#888AF7FF" Margin="0,0,12,0" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left">
-                            <TextBlock Text="Send Folder" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" />
+                            <TextBlock Text="Send Folder" FontSize="14.5" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
                             <TextBlock Text="Preserve hierarchy &amp; structure" FontSize="10.5" Foreground="{StaticResource TextSecondary}" />
                         </StackPanel>
+                        <!-- Chevron Right Arrow -->
+                        <FontIcon Grid.Column="2" Glyph="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
                     </Grid>
                 </Button>
             </StackPanel>

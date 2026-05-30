@@ -52,4 +52,29 @@
     <!-- Semi-transparent overlay backdrop -->
     <SolidColorBrush x:Key="TranslucentBg" Color="#B00A0A0F" />
 
+    <!-- Premium Gradient Brushes matching Android Action Panels -->
+    <LinearGradientBrush x:Key="SendCardBg" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#30BF00FF" Offset="0.0" />
+        <GradientStop Color="#FF10131B" Offset="0.6" />
+        <GradientStop Color="#22E46CFF" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="ReceiveCardBg" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#3027D7E7" Offset="0.0" />
+        <GradientStop Color="#FF10131B" Offset="0.6" />
+        <GradientStop Color="#228B5CFF" Offset="1.0" />
+    </LinearGradientBrush>
+    
+    <LinearGradientBrush x:Key="NeonPrimaryBorderBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#C2D455FF" Offset="0.0" />
+        <GradientStop Color="#55BF00FF" Offset="0.5" />
+        <GradientStop Color="#FF262B38" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="AccentCyanBorderBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#C28AF7FF" Offset="0.0" />
+        <GradientStop Color="#5527D7E7" Offset="0.5" />
+        <GradientStop Color="#FF262B38" Offset="1.0" />
+    </LinearGradientBrush>
+
 </ResourceDictionary>

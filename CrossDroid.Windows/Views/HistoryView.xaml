@@ -7,6 +7,12 @@
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
+    <Page.Transitions>
+        <TransitionCollection>
+            <EntranceThemeTransition FromHorizontalOffset="0" FromVerticalOffset="28"/>
+        </TransitionCollection>
+    </Page.Transitions>
+
     <Grid Padding="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -46,7 +52,7 @@
         </Grid>
 
         <!-- History ListView -->
-        <ListView x:Name="HistoryItemsList" Grid.Row="2" SelectionMode="None" IsItemClickEnabled="False">
+        <ListView x:Name="HistoryItemsList" Grid.Row="2" SelectionMode="None" IsItemClickEnabled="False" ItemsSource="{x:Bind DisplayedItems, Mode=OneWay}">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />

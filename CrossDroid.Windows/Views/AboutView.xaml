@@ -7,6 +7,12 @@
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
+    <Page.Transitions>
+        <TransitionCollection>
+            <EntranceThemeTransition FromHorizontalOffset="0" FromVerticalOffset="28"/>
+        </TransitionCollection>
+    </Page.Transitions>
+
     <Grid Padding="36">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -28,11 +34,11 @@
 
             <!-- Left: App Identity -->
             <StackPanel Grid.Column="0" Spacing="20">
-                <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="24">
+                <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Padding="24">
                     <StackPanel Spacing="16">
                         <StackPanel Orientation="Horizontal" Spacing="16">
-                            <Border Width="64" Height="64" Background="{StaticResource BgSurface}" CornerRadius="12" BorderBrush="{StaticResource NeonPrimary}" BorderThickness="1.5">
-                                <FontIcon Glyph="&#xE104;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NeonPrimary}" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Border Width="64" Height="64" CornerRadius="12" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource NeonPrimary}" BorderThickness="1.5" Padding="6">
+                                <Image Source="ms-appx:///Assets/crossdroidlogo.png" Width="52" Height="52" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock Text="CrossDroid Desktop Companion" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
@@ -47,7 +53,7 @@
                 </Border>
 
                 <!-- Storage Clean Card -->
-                <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="24">
+                <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1.2" Padding="24">
                     <StackPanel Spacing="16">
                         <TextBlock Text="Storage &amp; Temporary Files" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                         <TextBlock Text="When transfers are interrupted or canceled, temporary chunk files can remain on disk. Clean these files to reclaim storage space." FontSize="13" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
@@ -68,7 +74,7 @@
             </StackPanel>
 
             <!-- Right: License & Credits -->
-            <Border Grid.Column="1" CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="20" VerticalAlignment="Top">
+            <Border Grid.Column="1" CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Padding="20" VerticalAlignment="Top">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Specifications" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                     

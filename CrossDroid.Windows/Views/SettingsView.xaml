@@ -7,6 +7,12 @@
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
+    <Page.Transitions>
+        <TransitionCollection>
+            <EntranceThemeTransition FromHorizontalOffset="0" FromVerticalOffset="28"/>
+        </TransitionCollection>
+    </Page.Transitions>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Padding="16">
             <Grid.RowDefinitions>
@@ -24,7 +30,7 @@
             <StackPanel Grid.Row="1" Spacing="24" MaxWidth="600" HorizontalAlignment="Left">
                 
                 <!-- Startup & Tray Section -->
-                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="20">
+                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Padding="20">
                     <StackPanel Spacing="16">
                         <TextBlock Text="Startup &amp; System Tray" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                         
@@ -35,7 +41,7 @@
                 </Border>
 
                 <!-- Storage & Files Section -->
-                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="20">
+                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1.2" Padding="20">
                     <StackPanel Spacing="16">
                         <TextBlock Text="Files &amp; Save Locations" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                         
@@ -56,7 +62,7 @@
                 </Border>
 
                 <!-- Network Options Section -->
-                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="20">
+                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Padding="20">
                     <StackPanel Spacing="16">
                         <TextBlock Text="Connection &amp; Network Rules" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                         
@@ -75,7 +81,7 @@
                 </Border>
 
                 <!-- Notifications & Sound -->
-                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="20">
+                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1.2" Padding="20">
                     <StackPanel Spacing="16">
                         <TextBlock Text="Notifications" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                         

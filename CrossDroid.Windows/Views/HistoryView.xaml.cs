@@ -13,11 +13,12 @@ namespace CrossDroid.Windows.Views
         public HistoryView()
         {
             this.InitializeComponent();
-            RefreshList();
+            this.Loaded += (s, e) => RefreshList();
         }
 
         private void RefreshList()
         {
+            if (App.MainWindowInstance == null) return;
             var records = App.MainWindowInstance.HistoryRecords;
             
             // Apply Search filter
@@ -54,8 +55,6 @@ namespace CrossDroid.Windows.Views
             {
                 DisplayedItems.Add(item);
             }
-            
-            HistoryItemsList.ItemsSource = DisplayedItems;
         }
 
         private double ParseSize(string sizeStr)

@@ -7,6 +7,12 @@
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
+    <Page.Transitions>
+        <TransitionCollection>
+            <EntranceThemeTransition FromHorizontalOffset="0" FromVerticalOffset="28"/>
+        </TransitionCollection>
+    </Page.Transitions>
+
     <Grid Padding="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -82,7 +88,7 @@
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0" Text="Queue Items" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                         
-                        <ListView x:Name="QueueItemsList" Grid.Row="1" SelectionMode="None" IsItemClickEnabled="False">
+                        <ListView x:Name="QueueItemsList" Grid.Row="1" SelectionMode="None" IsItemClickEnabled="False" ItemsSource="{x:Bind QueueItems, Mode=OneWay}">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -152,7 +158,7 @@
                                 <TextBlock Text="Files shared from explorer or dashboard" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0"/>
                             </StackPanel>
 
-                            <ListView x:Name="StagedItemsList" Grid.Row="1" SelectionMode="None" Padding="0,4,0,0">
+                            <ListView x:Name="StagedItemsList" Grid.Row="1" SelectionMode="None" Padding="0,4,0,0" ItemsSource="{x:Bind StagedItems, Mode=OneWay}">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Padding="0,6" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,0,0,1">
@@ -175,7 +181,7 @@
                     <Border Grid.Row="1" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="12">
                         <StackPanel Spacing="10">
                             <TextBlock Text="Select Destination Device" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
-                            <ComboBox x:Name="TargetDeviceCombo" HorizontalAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" PlaceholderText="Select Device..."/>
+                            <ComboBox x:Name="TargetDeviceCombo" HorizontalAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" PlaceholderText="Select Device..." ItemsSource="{x:Bind TargetDevices, Mode=OneWay}" SelectedIndex="0"/>
                             <Button Content="Start Transfer" Click="StartTransfer_Click" HorizontalAlignment="Stretch" Background="{StaticResource AccentCyan}" Foreground="{StaticResource BgMain}" FontWeight="Bold" BorderThickness="0" Height="36"/>
                         </StackPanel>
                     </Border>
@@ -185,7 +191,7 @@
 
         <!-- Simulated Incoming Request Modal Dialog Overlay -->
         <Grid x:Name="IncomingOverlay" Grid.RowSpan="2" Background="{StaticResource TranslucentBg}" Visibility="Collapsed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimary}" BorderThickness="1.5" Width="320" Height="260" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20" Shadow="{StaticResource ThemeShadow}">
+            <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.5" Width="320" Height="260" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20" Shadow="{StaticResource ThemeShadow}">
                 <Grid RowSpacing="12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />

@@ -7,6 +7,12 @@
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
+    <Page.Transitions>
+        <TransitionCollection>
+            <EntranceThemeTransition FromHorizontalOffset="0" FromVerticalOffset="28"/>
+        </TransitionCollection>
+    </Page.Transitions>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Padding="16">
             <Grid.RowDefinitions>
@@ -172,7 +178,7 @@
                         </Grid>
 
                         <!-- PIN / Camera Pairing Controls -->
-                        <Border Grid.Row="1" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="16">
+                        <Border Grid.Row="1" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1.2" Padding="16">
                             <StackPanel Spacing="12">
                                 <TextBlock Text="Pair via Verification PIN" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" />
                                 <TextBlock Text="Enter the 4-digit PIN displayed on the other device below." FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>

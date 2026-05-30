@@ -42,6 +42,46 @@ namespace CrossDroid.Windows.Views
             _simTimer = new DispatcherTimer();
             _simTimer.Interval = TimeSpan.FromMilliseconds(500);
             _simTimer.Tick += SimTimer_Tick;
+
+            if (QueueItems.Count == 0 && StagedItems.Count == 0)
+            {
+                QueueItems.Add(new TransferItemViewModel
+                {
+                    FileName = "work_presentation.pptx",
+                    FileSize = "24.5 MB",
+                    BytesTotal = 24 * 1024 * 1024 + 500 * 1024,
+                    ProgressValue = 68,
+                    Status = "Transferring",
+                    IconGlyph = "\xE7C3", 
+                    StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231)), 
+                    PauseGlyph = "\xE103" 
+                });
+                QueueItems.Add(new TransferItemViewModel
+                {
+                    FileName = "family_photo_39.jpg",
+                    FileSize = "3.2 MB",
+                    BytesTotal = 3 * 1024 * 1024 + 200 * 1024,
+                    ProgressValue = 100,
+                    Status = "Completed",
+                    IconGlyph = "\xE114", 
+                    StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136)), 
+                    PauseGlyph = "\xE768" 
+                });
+                QueueItems.Add(new TransferItemViewModel
+                {
+                    FileName = "crossdroid_archive.zip",
+                    FileSize = "340.8 MB",
+                    BytesTotal = 340 * 1024 * 1024 + 800 * 1024,
+                    ProgressValue = 15,
+                    Status = "Paused",
+                    IconGlyph = "\xE838", 
+                    StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 248, 184, 78)), 
+                    PauseGlyph = "\xE768" 
+                });
+                
+                // Start simulator timer automatically
+                _simTimer.Start();
+            }
         }
 
         private void TransfersView_Unloaded(object sender, RoutedEventArgs e)

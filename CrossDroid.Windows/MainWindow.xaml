@@ -61,9 +61,7 @@
 
             <!-- App Logo & Title -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" Padding="12,0,0,0" VerticalAlignment="Center">
-                <Border Width="20" Height="20" Background="{StaticResource BgSurface}" CornerRadius="4" BorderBrush="{StaticResource NeonPrimary}" BorderThickness="1" Margin="0,0,8,0">
-                    <FontIcon Glyph="&#xE104;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NeonPrimary}" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
+                <Image Source="Assets/crossdroidlogo.png" Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center" Stretch="Uniform"/>
                 <TextBlock Text="CrossDroid" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" />
                 <Border Margin="8,0,0,0" CornerRadius="4" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" VerticalAlignment="Center" Padding="6,2">
                     <TextBlock Text="Companion" FontSize="10" Foreground="{StaticResource AccentCyan}" FontWeight="Bold"/>
