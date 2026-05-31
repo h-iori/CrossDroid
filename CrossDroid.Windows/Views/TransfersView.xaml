@@ -181,7 +181,7 @@
                     <Border Grid.Row="1" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="12">
                         <StackPanel Spacing="10">
                             <TextBlock Text="Select Destination Device" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
-                            <ComboBox x:Name="TargetDeviceCombo" HorizontalAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" PlaceholderText="Select Device..." ItemsSource="{x:Bind TargetDevices, Mode=OneWay}" SelectedIndex="0"/>
+                            <ComboBox x:Name="TargetDeviceCombo" HorizontalAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" PlaceholderText="Select Device..." SelectedIndex="0"/>
                             <Button Content="Start Transfer" Click="StartTransfer_Click" HorizontalAlignment="Stretch" Background="{StaticResource AccentCyan}" Foreground="{StaticResource BgMain}" FontWeight="Bold" BorderThickness="0" Height="36"/>
                         </StackPanel>
                     </Border>
