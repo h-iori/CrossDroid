@@ -13,7 +13,13 @@
         <MicaBackdrop Kind="BaseAlt" />
     </Window.SystemBackdrop>
 
-    <Grid Background="{StaticResource BgMain}">
+    <Grid x:Name="RootGrid" Background="{StaticResource BgMain}">
+        <Grid.Resources>
+            <Storyboard x:Key="BottomBarPulse" RepeatBehavior="Forever" AutoReverse="True">
+                <DoubleAnimation Storyboard.TargetName="BottomBarBorderBrush" Storyboard.TargetProperty="Opacity" From="0.328" To="0.423" Duration="0:0:1.25"/>
+            </Storyboard>
+        </Grid.Resources>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -52,20 +58,25 @@
         </tb:TaskbarIcon>
 
         <!-- Extended Title Bar -->
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="40" Background="{StaticResource BgElevated}">
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="58" Background="{StaticResource BgMain}" Padding="16,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
+            <!-- Bottom Separator Border (1.dp high boundary box at 70% opacity) -->
+            <Border Grid.ColumnSpan="3" VerticalAlignment="Bottom" Height="1" Background="{StaticResource BorderSubtle}" Opacity="0.70" />
+
             <!-- App Logo & Title -->
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Padding="12,0,0,0" VerticalAlignment="Center">
-                <Image Source="Assets/crossdroidlogo.png" Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center" Stretch="Uniform"/>
-                <TextBlock Text="CrossDroid" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" />
-                <Border Margin="8,0,0,0" CornerRadius="4" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" VerticalAlignment="Center" Padding="6,2">
-                    <TextBlock Text="Companion" FontSize="10" Foreground="{StaticResource AccentCyan}" FontWeight="Bold"/>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <Border Width="40" Height="40" CornerRadius="11" Margin="0,0,10,0" VerticalAlignment="Center">
+                    <Image Source="Assets/crossdroidlogo.png" Stretch="UniformToFill"/>
                 </Border>
+                <StackPanel VerticalAlignment="Center" Spacing="0">
+                    <TextBlock Text="CrossDroid" FontSize="19" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" FontFamily="{StaticResource BrandFont}" LineHeight="22" LineStackingStrategy="MaxHeight" />
+                    <TextBlock Text="BY IORI STUDIOS" FontSize="9" FontWeight="Normal" Foreground="{StaticResource TextSecondary}" Opacity="0.92" FontFamily="{StaticResource SubheadingFont}" CharacterSpacing="100" LineHeight="12" LineStackingStrategy="MaxHeight" />
+                </StackPanel>
             </StackPanel>
 
             <!-- Close Button for frameless window -->
@@ -76,7 +87,11 @@
         <Frame x:Name="ContentFrame" Grid.Row="1" Margin="0,0,0,0"/>
 
         <!-- Custom Bottom Navigation Bar -->
-        <Grid x:Name="BottomNavBar" Grid.Row="2" Height="60" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,1,0,0">
+        <Grid x:Name="BottomNavBar" Grid.Row="2" Height="60" Background="{StaticResource BgPanel}" Opacity="0.98" BorderThickness="0,1,0,0">
+            <Grid.BorderBrush>
+                <SolidColorBrush x:Name="BottomBarBorderBrush" Color="{StaticResource NeonPrimaryColor}" Opacity="0.328" />
+            </Grid.BorderBrush>
+            
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
@@ -86,45 +101,69 @@
 
             <!-- Home Tab -->
             <Button Grid.Column="0" Click="NavTab_Click" Tag="Home" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
-                <Grid>
+                <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
-                        <FontIcon x:Name="HomeIcon" Glyph="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource NeonPrimary}" />
-                        <TextBlock x:Name="HomeText" Text="Home" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource NeonPrimary}" HorizontalAlignment="Center" />
+                        <Grid Width="60" Height="28">
+                            <Border x:Name="HomePill" CornerRadius="14" Background="#26BF00FF" BorderBrush="#50BF00FF" BorderThickness="1" Opacity="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                            <FontIcon x:Name="HomeIcon" Glyph="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <FontIcon.RenderTransform>
+                                    <ScaleTransform x:Name="HomeIconScale" CenterX="8" CenterY="8" ScaleX="1.0" ScaleY="1.0"/>
+                                </FontIcon.RenderTransform>
+                            </FontIcon>
+                        </Grid>
+                        <TextBlock x:Name="HomeText" Text="Home" FontSize="10" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
                     </StackPanel>
-                    <Border x:Name="HomeIndicator" Height="3" Width="36" Background="{StaticResource NeonPrimary}" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2" Visibility="Visible" />
                 </Grid>
             </Button>
 
             <!-- Devices Tab -->
             <Button Grid.Column="1" Click="NavTab_Click" Tag="Devices" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
-                <Grid>
+                <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
-                        <FontIcon x:Name="DevicesIcon" Glyph="&#xE776;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextSecondary}" />
-                        <TextBlock x:Name="DevicesText" Text="Devices" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" />
+                        <Grid Width="60" Height="28">
+                            <Border x:Name="DevicesPill" CornerRadius="14" Background="#26BF00FF" BorderBrush="#50BF00FF" BorderThickness="1" Opacity="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                            <FontIcon x:Name="DevicesIcon" Glyph="&#xE776;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <FontIcon.RenderTransform>
+                                    <ScaleTransform x:Name="DevicesIconScale" CenterX="8" CenterY="8" ScaleX="1.0" ScaleY="1.0"/>
+                                </FontIcon.RenderTransform>
+                            </FontIcon>
+                        </Grid>
+                        <TextBlock x:Name="DevicesText" Text="Devices" FontSize="10" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
                     </StackPanel>
-                    <Border x:Name="DevicesIndicator" Height="3" Width="36" Background="{StaticResource NeonPrimary}" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2" Visibility="Collapsed" />
                 </Grid>
             </Button>
 
             <!-- History Tab -->
             <Button Grid.Column="2" Click="NavTab_Click" Tag="History" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
-                <Grid>
+                <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
-                        <FontIcon x:Name="HistoryIcon" Glyph="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextSecondary}" />
-                        <TextBlock x:Name="HistoryText" Text="History" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" />
+                        <Grid Width="60" Height="28">
+                            <Border x:Name="HistoryPill" CornerRadius="14" Background="#26BF00FF" BorderBrush="#50BF00FF" BorderThickness="1" Opacity="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                            <FontIcon x:Name="HistoryIcon" Glyph="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <FontIcon.RenderTransform>
+                                    <ScaleTransform x:Name="HistoryIconScale" CenterX="8" CenterY="8" ScaleX="1.0" ScaleY="1.0"/>
+                                </FontIcon.RenderTransform>
+                            </FontIcon>
+                        </Grid>
+                        <TextBlock x:Name="HistoryText" Text="History" FontSize="10" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
                     </StackPanel>
-                    <Border x:Name="HistoryIndicator" Height="3" Width="36" Background="{StaticResource NeonPrimary}" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2" Visibility="Collapsed" />
                 </Grid>
             </Button>
 
             <!-- Settings Tab -->
             <Button Grid.Column="3" Click="NavTab_Click" Tag="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
-                <Grid>
+                <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
-                        <FontIcon x:Name="SettingsIcon" Glyph="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextSecondary}" />
-                        <TextBlock x:Name="SettingsText" Text="Settings" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" />
+                        <Grid Width="60" Height="28">
+                            <Border x:Name="SettingsPill" CornerRadius="14" Background="#26BF00FF" BorderBrush="#50BF00FF" BorderThickness="1" Opacity="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                            <FontIcon x:Name="SettingsIcon" Glyph="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <FontIcon.RenderTransform>
+                                    <ScaleTransform x:Name="SettingsIconScale" CenterX="8" CenterY="8" ScaleX="1.0" ScaleY="1.0"/>
+                                </FontIcon.RenderTransform>
+                            </FontIcon>
+                        </Grid>
+                        <TextBlock x:Name="SettingsText" Text="Settings" FontSize="10" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
                     </StackPanel>
-                    <Border x:Name="SettingsIndicator" Height="3" Width="36" Background="{StaticResource NeonPrimary}" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2" Visibility="Collapsed" />
                 </Grid>
             </Button>
         </Grid>

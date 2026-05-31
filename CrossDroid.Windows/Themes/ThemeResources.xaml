@@ -4,6 +4,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="using:Windows.UI">
 
+    <FontFamily x:Key="BrandFont">ms-appx:///Assets/Fonts/oxanium.ttf#Oxanium</FontFamily>
+    <FontFamily x:Key="SubheadingFont">ms-appx:///Assets/Fonts/sora.ttf#Sora</FontFamily>
+
     <ui:Color x:Key="BgMainColor">#0A0A0F</ui:Color>
     <ui:Color x:Key="BgElevatedColor">#12121A</ui:Color>
     <ui:Color x:Key="BgSurfaceColor">#161622</ui:Color>

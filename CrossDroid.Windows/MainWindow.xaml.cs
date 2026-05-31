@@ -76,6 +76,19 @@ namespace CrossDroid.Windows
             // Load initial history items
             LoadMockHistory();
 
+            // Start bottom bar pulsing animation
+            try
+            {
+                if (RootGrid.Resources.TryGetValue("BottomBarPulse", out var bottomBarPulseObj) && bottomBarPulseObj is Microsoft.UI.Xaml.Media.Animation.Storyboard bottomBarPulse)
+                {
+                    bottomBarPulse.Begin();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to start bottom bar pulsing animation: {ex.Message}");
+            }
+
             // Navigate to home on startup and position the window near the tray
             NavigateToPage("Home");
             PositionWindowNearTray();
@@ -252,24 +265,53 @@ namespace CrossDroid.Windows
             UpdateBottomNavSelection(pageTag);
         }
 
+        private void AnimateDoubleProperty(DependencyObject target, string propertyPath, double toValue, double durationMs, Microsoft.UI.Xaml.Media.Animation.EasingFunctionBase? easing = null)
+        {
+            var anim = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = toValue,
+                Duration = TimeSpan.FromMilliseconds(durationMs),
+                EasingFunction = easing
+            };
+            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, target);
+            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, propertyPath);
+            var sb = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
+            sb.Children.Add(anim);
+            sb.Begin();
+        }
+
         private void UpdateBottomNavSelection(string selectedTag)
         {
             if (HomeIcon == null) return; // UI not fully initialized yet
 
-            var activeBrush = (Microsoft.UI.Xaml.Media.SolidColorBrush)Application.Current.Resources["NeonPrimary"];
-            var inactiveBrush = (Microsoft.UI.Xaml.Media.SolidColorBrush)Application.Current.Resources["TextSecondary"];
+            var activeBrush = (Microsoft.UI.Xaml.Media.SolidColorBrush)Application.Current.Resources["NeonHighlight"];
+            var inactiveBrush = (Microsoft.UI.Xaml.Media.SolidColorBrush)Application.Current.Resources["TextMuted"];
+            var textActiveBrush = (Microsoft.UI.Xaml.Media.SolidColorBrush)Application.Current.Resources["TextStrong"];
+            var textInactiveBrush = (Microsoft.UI.Xaml.Media.SolidColorBrush)Application.Current.Resources["TextSecondary"];
 
-            void SetState(FontIcon icon, TextBlock text, Border indicator, bool isActive)
+            // Spring-like easing functions
+            var tabBouncyEasing = new Microsoft.UI.Xaml.Media.Animation.BackEase { Amplitude = 0.35, EasingMode = Microsoft.UI.Xaml.Media.Animation.EasingMode.EaseOut };
+            var smoothEasing = new Microsoft.UI.Xaml.Media.Animation.QuadraticEase { EasingMode = Microsoft.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
+
+            void SetTabState(FontIcon icon, Microsoft.UI.Xaml.Media.ScaleTransform iconScale, TextBlock text, Border pill, bool isActive)
             {
+                // Set colors and font weight
                 icon.Foreground = isActive ? activeBrush : inactiveBrush;
-                text.Foreground = isActive ? activeBrush : inactiveBrush;
-                indicator.Visibility = isActive ? Visibility.Visible : Visibility.Collapsed;
+                text.Foreground = isActive ? textActiveBrush : textInactiveBrush;
+                text.FontWeight = isActive ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Medium;
+
+                // Animate icon scale
+                AnimateDoubleProperty(iconScale, "ScaleX", isActive ? 1.18 : 1.0, 300, tabBouncyEasing);
+                AnimateDoubleProperty(iconScale, "ScaleY", isActive ? 1.18 : 1.0, 300, tabBouncyEasing);
+
+                // Animate selection pill opacity
+                AnimateDoubleProperty(pill, "Opacity", isActive ? 1.0 : 0.0, 200, smoothEasing);
             }
 
-            SetState(HomeIcon, HomeText, HomeIndicator, selectedTag == "Home");
-            SetState(DevicesIcon, DevicesText, DevicesIndicator, selectedTag == "Devices");
-            SetState(HistoryIcon, HistoryText, HistoryIndicator, selectedTag == "History");
-            SetState(SettingsIcon, SettingsText, SettingsIndicator, selectedTag == "Settings");
+            SetTabState(HomeIcon, HomeIconScale, HomeText, HomePill, selectedTag == "Home");
+            SetTabState(DevicesIcon, DevicesIconScale, DevicesText, DevicesPill, selectedTag == "Devices");
+            SetTabState(HistoryIcon, HistoryIconScale, HistoryText, HistoryPill, selectedTag == "History");
+            SetTabState(SettingsIcon, SettingsIconScale, SettingsText, SettingsPill, selectedTag == "Settings");
         }
 
         private void NavTab_Click(object sender, RoutedEventArgs e)
