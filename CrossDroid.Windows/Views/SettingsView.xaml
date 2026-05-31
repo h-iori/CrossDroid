@@ -95,6 +95,29 @@
                     </StackPanel>
                 </Border>
 
+                <!-- About & Info Section -->
+                <Border CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Padding="20">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="About &amp; Developer" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
+                        
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="CrossDroid Developer Info" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextBody}"/>
+                                <TextBlock Text="App information, versioning and about the developer" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="View About" Click="ViewAbout_Click" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextBody}" VerticalAlignment="Center" FontSize="12" common:MouseCursorHelper.HandCursor="True">
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DBF00FF" />
+                                </Button.Resources>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
             </StackPanel>
         </Grid>
     </ScrollViewer>

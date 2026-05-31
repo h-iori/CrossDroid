@@ -6,104 +6,258 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:common="using:CrossDroid.Windows"
     mc:Ignorable="d"
-    Background="{StaticResource BgMain}">
+    Background="#0A0A0F"
+    Loaded="Page_Loaded">
 
-    <Page.Transitions>
-        <TransitionCollection>
-            <EntranceThemeTransition FromHorizontalOffset="0" FromVerticalOffset="28"/>
-        </TransitionCollection>
-    </Page.Transitions>
+    <Page.Resources>
+        <SolidColorBrush x:Key="SurfaceDark" Color="#0A0A0F" />
+        <SolidColorBrush x:Key="SurfaceDarkElevated" Color="#12121A" />
+        <SolidColorBrush x:Key="SurfaceDarkCard" Color="#161622" />
+        <SolidColorBrush x:Key="NeonPurpleAbout" Color="#A855F7" />
+        <SolidColorBrush x:Key="NeonPurpleGlow" Color="#7C3AED" />
+        <SolidColorBrush x:Key="NeonPurpleLight" Color="#C084FC" />
+        <SolidColorBrush x:Key="NeonPurpleSubtle" Color="#1A1030" />
+        <SolidColorBrush x:Key="SuccessGreenAbout" Color="#00FF88" />
+        <SolidColorBrush x:Key="TextPrimary" Color="#EEEEFF" />
+        <SolidColorBrush x:Key="TextSecondary" Color="#7A7A8E" />
+        <SolidColorBrush x:Key="TextMuted" Color="#4A4A5E" />
 
-    <Grid Padding="36">
+        <LinearGradientBrush x:Key="MainGradient" StartPoint="0.5,0" EndPoint="0.5,1">
+            <GradientStop Color="#0A0A0F" Offset="0.0" />
+            <GradientStop Color="#12121A" Offset="0.5" />
+            <GradientStop Color="#0A0A0F" Offset="1.0" />
+        </LinearGradientBrush>
+
+        <RadialGradientBrush x:Key="ProfileBgGradient" Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+            <GradientStop Color="#12121A" Offset="0.0" />
+            <GradientStop Color="#0A0A0F" Offset="1.0" />
+        </RadialGradientBrush>
+
+        <Storyboard x:Key="EntryStoryboard">
+            <!-- Profile Avatar Animation -->
+            <DoubleAnimation Storyboard.TargetName="AvatarContainer" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.360">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="AvatarContainerTranslate" Storyboard.TargetProperty="Y" From="80" To="0" Duration="0:0:0.360">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="AvatarContainerScale" Storyboard.TargetProperty="ScaleX" From="0.94" To="1" Duration="0:0:0.360">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="AvatarContainerScale" Storyboard.TargetProperty="ScaleY" From="0.94" To="1" Duration="0:0:0.360">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+
+            <!-- Personal Info Animation -->
+            <DoubleAnimation Storyboard.TargetName="PersonalInfoContainer" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.380" BeginTime="0:0:0.120">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PersonalInfoTranslate" Storyboard.TargetProperty="Y" From="60" To="0" Duration="0:0:0.380" BeginTime="0:0:0.120">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+
+            <!-- About Me Card Animation -->
+            <DoubleAnimation Storyboard.TargetName="AboutMeCard" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.420" BeginTime="0:0:0.180">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="AboutMeTranslate" Storyboard.TargetProperty="Y" From="50" To="0" Duration="0:0:0.420" BeginTime="0:0:0.180">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+
+            <!-- App Info Card Animation -->
+            <DoubleAnimation Storyboard.TargetName="AppInfoCard" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.420" BeginTime="0:0:0.240">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="AppInfoTranslate" Storyboard.TargetProperty="Y" From="40" To="0" Duration="0:0:0.420" BeginTime="0:0:0.240">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Key="InfiniteAnimations" RepeatBehavior="Forever">
+            <!-- Sweep Arc Rotation -->
+            <DoubleAnimation Storyboard.TargetName="SweepArcRotation" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:8.000" />
+            <!-- Dots Rotation (21.052s = 8s / 0.38) -->
+            <DoubleAnimation Storyboard.TargetName="DotsRotation" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:21.052" />
+        </Storyboard>
+
+        <!-- Pulsing Glow (needs AutoReverse) -->
+        <Storyboard x:Key="PulseAnimation" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="GlowEllipse" Storyboard.TargetProperty="Opacity" From="0.078" To="0.169" Duration="0:0:1.800">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+    </Page.Resources>
+
+    <Grid Background="{StaticResource SurfaceDark}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Title -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="About CrossDroid" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
-            <TextBlock Text="App information, versioning and system cache tools" FontSize="11.5" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,0" />
-        </StackPanel>
-
-        <!-- Info Grid -->
-        <Grid Grid.Row="1" ColumnSpacing="24">
+        <!-- Top App Bar -->
+        <Grid Grid.Row="0" Padding="16,10" Background="{StaticResource SurfaceDark}">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="360" />
             </Grid.ColumnDefinitions>
-
-            <!-- Left: App Identity -->
-            <StackPanel Grid.Column="0" Spacing="20">
-                <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Padding="24">
-                    <StackPanel Spacing="16">
-                        <StackPanel Orientation="Horizontal" Spacing="16">
-                            <Border Width="64" Height="64" CornerRadius="12" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource NeonPrimary}" BorderThickness="1.5" Padding="6">
-                                <Image Source="ms-appx:///Assets/crossdroidlogo.png" Width="52" Height="52" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="CrossDroid Desktop" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
-                                <TextBlock Text="Version 2.0.1 (Stable Build)" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <TextBlock Text="CrossDroid is an end-to-end encrypted local network file sharing suite. This desktop application communicates seamlessly with the Android client to transfer files, folders and archives without cloud dependencies." FontSize="12" Foreground="{StaticResource TextBody}" TextWrapping="Wrap"/>
-                        
-                        <HyperlinkButton Content="Visit Project Website" NavigateUri="https://github.com/h-iori/CrossDroid" Foreground="{StaticResource AccentCyan}" FontSize="12" common:MouseCursorHelper.HandCursor="True"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Storage Clean Card -->
-                <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1.2" Padding="24">
-                    <StackPanel Spacing="16">
-                        <TextBlock Text="Storage &amp; Temporary Files" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
-                        <TextBlock Text="When transfers are interrupted or canceled, temporary chunk files can remain on disk. Clean these files to reclaim storage space." FontSize="11.5" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
-                        
-                        <Grid ColumnSpacing="12" Margin="0,8,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Temporary Transfer Cache" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextBody}"/>
-                                <TextBlock Text="Calculated Size: 12.8 MB" FontSize="10.5" Foreground="{StaticResource TextSecondary}"/>
-                            </StackPanel>
-                            <Button Grid.Column="1" Content="Clean Storage" Click="CleanStorage_Click" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource ColorError}" Foreground="{StaticResource ColorError}" VerticalAlignment="Center" FontSize="12" common:MouseCursorHelper.HandCursor="True">
-                                <Button.Resources>
-                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
-                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{StaticResource ColorErrorColor}" />
-                                </Button.Resources>
-                            </Button>
-                        </Grid>
-                    </StackPanel>
-                </Border>
+            <Button Grid.Column="0" Click="BackButton_Click" Background="Transparent" BorderThickness="0" Padding="8" Margin="0,0,8,0" common:MouseCursorHelper.HandCursor="True">
+                <FontIcon Glyph="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextPrimary}" />
+            </Button>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                <TextBlock Text="About" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" />
+                <TextBlock Text="Meet the developer." FontSize="11" Foreground="{StaticResource TextSecondary}" />
             </StackPanel>
-
-            <!-- Right: License & Credits -->
-            <Border Grid.Column="1" CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Padding="20" VerticalAlignment="Top">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Specifications" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
-                    
-                    <Grid Padding="0,6" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,0,0,1">
-                        <TextBlock Text="Runtime Environment" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text=".NET 10.0 LTS" FontSize="11.5" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
-                    </Grid>
-                    <Grid Padding="0,6" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,0,0,1">
-                        <TextBlock Text="User Interface" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text="WinUI 3 (WASDK 2.0.1)" FontSize="11.5" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
-                    </Grid>
-                    <Grid Padding="0,6" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,0,0,1">
-                        <TextBlock Text="Security Primatives" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text="AES-256-GCM / ECDH" FontSize="11.5" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
-                    </Grid>
-                    <Grid Padding="0,6">
-                        <TextBlock Text="Installation Package" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text="MSIX Desktop App" FontSize="11.5" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
-                    </Grid>
-
-                    <TextBlock Text="© 2026 Iori Studios. All rights reserved." FontSize="10" Foreground="{StaticResource TextMuted}" Margin="0,16,0,0" HorizontalAlignment="Center"/>
-                </StackPanel>
-            </Border>
         </Grid>
+
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Grid Background="{StaticResource MainGradient}">
+                <StackPanel Padding="24,16,24,24" Spacing="16" HorizontalAlignment="Center" MaxWidth="500">
+                    
+                    <!-- Avatar Section (Scaled down to 140x140 overall) -->
+                    <Grid x:Name="AvatarContainer" Width="140" Height="140" HorizontalAlignment="Center" Opacity="0">
+                        <Grid.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform x:Name="AvatarContainerScale" ScaleX="0.94" ScaleY="0.94" CenterX="70" CenterY="70" />
+                                <TranslateTransform x:Name="AvatarContainerTranslate" Y="80" />
+                            </TransformGroup>
+                        </Grid.RenderTransform>
+
+                        <!-- Pulsing Glow (Scaled to 120dp) -->
+                        <Ellipse x:Name="GlowEllipse" Width="120" Height="120" HorizontalAlignment="Center" VerticalAlignment="Center" StrokeThickness="16" Stroke="{StaticResource NeonPurpleGlow}" Opacity="0.078" />
+
+                        <!-- Sweeping Arc using StrokeDashArray -->
+                        <!-- A perfect 235 degree arc using DashArray: Total Circumference = ~439.8, Dash = 82, Gap = 44 -->
+                        <Ellipse Width="140" Height="140" HorizontalAlignment="Center" VerticalAlignment="Center" StrokeThickness="3.5" StrokeDashArray="82 44" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <RotateTransform x:Name="SweepArcRotation" Angle="0" />
+                            </Ellipse.RenderTransform>
+                            <Ellipse.Stroke>
+                                <LinearGradientBrush StartPoint="1,0" EndPoint="0,1">
+                                    <GradientStop Color="#00A855F7" Offset="0.0" />
+                                    <GradientStop Color="#F2A855F7" Offset="0.5" />
+                                    <GradientStop Color="#00A855F7" Offset="1.0" />
+                                </LinearGradientBrush>
+                            </Ellipse.Stroke>
+                        </Ellipse>
+
+                        <!-- Orbiting Colored Dots (120 radius container for exact placement) -->
+                        <Canvas Width="120" Height="120" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                            <Canvas.RenderTransform>
+                                <RotateTransform x:Name="DotsRotation" Angle="0" />
+                            </Canvas.RenderTransform>
+                            <Ellipse Width="10" Height="10" Fill="{StaticResource NeonPurpleAbout}" Canvas.Left="115" Canvas.Top="55" />
+                            <Ellipse Width="10" Height="10" Fill="{StaticResource SuccessGreenAbout}" Canvas.Left="55" Canvas.Top="115" />
+                            <Ellipse Width="10" Height="10" Fill="{StaticResource NeonPurpleLight}" Canvas.Left="-5" Canvas.Top="55" />
+                            <Ellipse Width="10" Height="10" Fill="{StaticResource NeonPurpleGlow}" Canvas.Left="55" Canvas.Top="-5" />
+                        </Canvas>
+
+                        <!-- Profile Image (Scaled to 96dp) -->
+                        <Border Width="96" Height="96" CornerRadius="48" BorderBrush="#9EA855F7" BorderThickness="2.5" Background="{StaticResource ProfileBgGradient}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Ellipse Width="91" Height="91" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Ellipse.Fill>
+                                    <ImageBrush ImageSource="ms-appx:///Assets/dev_profile.webp" Stretch="UniformToFill" />
+                                </Ellipse.Fill>
+                            </Ellipse>
+                        </Border>
+                    </Grid>
+
+                    <!-- Personal Info -->
+                    <StackPanel x:Name="PersonalInfoContainer" HorizontalAlignment="Center" Opacity="0" Margin="0,4,0,0">
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform x:Name="PersonalInfoTranslate" Y="60" />
+                        </StackPanel.RenderTransform>
+                        <TextBlock Text="Harsh Swatantra Upadhyay" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Center" />
+                        <TextBlock Text="AI Engineer - Tech Enthusiast" FontSize="12.5" Foreground="{StaticResource NeonPurpleAbout}" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                        <TextBlock Text="Mumbai, India" FontSize="11" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                    </StackPanel>
+
+                    <!-- About Me Card -->
+                    <Border x:Name="AboutMeCard" Background="{StaticResource SurfaceDarkCard}" BorderBrush="{StaticResource NeonPurpleSubtle}" BorderThickness="1" CornerRadius="12" Padding="16" Opacity="0" Margin="0,6,0,0">
+                        <Border.RenderTransform>
+                            <TranslateTransform x:Name="AboutMeTranslate" Y="50" />
+                        </Border.RenderTransform>
+                        <StackPanel Spacing="10">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xEB51;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NeonPurpleAbout}" FontSize="16" />
+                                <TextBlock Text="About Me" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" />
+                            </StackPanel>
+                            <TextBlock Text="I am an AI Engineer and Tech Enthusiast based in Mumbai, India. CrossDroid was independently designed and developed end to end by me, with a focus on high-performance local file sharing, clean architecture, and a polished user experience. I build practical, production-minded software with a strong emphasis on purpose, precision, and quality." FontSize="11.5" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- App Info Card -->
+                    <Border x:Name="AppInfoCard" Background="{StaticResource SurfaceDarkCard}" BorderBrush="{StaticResource NeonPurpleSubtle}" BorderThickness="1" CornerRadius="12" Padding="16" Opacity="0">
+                        <Border.RenderTransform>
+                            <TranslateTransform x:Name="AppInfoTranslate" Y="40" />
+                        </Border.RenderTransform>
+                        <StackPanel Spacing="10">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xEA18;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NeonPurpleAbout}" FontSize="16" />
+                                <TextBlock Text="App Info" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" />
+                            </StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="App Name" FontSize="11.5" Foreground="{StaticResource TextSecondary}" />
+                                <TextBlock Grid.Column="1" Text="CrossDroid" FontSize="11.5" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" />
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Version" FontSize="11.5" Foreground="{StaticResource TextSecondary}" />
+                                <TextBlock Grid.Column="1" Text="1.1" FontSize="11.5" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" />
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Contact" FontSize="11.5" Foreground="{StaticResource TextSecondary}" />
+                                <TextBlock Grid.Column="1" Text="harshupadhyay9702@gmail.com" FontSize="11.5" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" />
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="GitHub" FontSize="11.5" Foreground="{StaticResource TextSecondary}" />
+                                <TextBlock Grid.Column="1" Text="https://www.github.com/h-iori" FontSize="11.5" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Footer -->
+                    <TextBlock Text="Built independently 💪 with purpose" FontSize="11" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,0,0,24" />
+
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
     </Grid>
 </Page>

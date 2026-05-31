@@ -352,6 +352,7 @@ namespace CrossDroid.Windows
                 "Transfers" => typeof(Views.TransfersView),
                 "History" => typeof(Views.HistoryView),
                 "Settings" => typeof(Views.SettingsView),
+                "About" => typeof(Views.AboutView),
                 _ => typeof(Views.HomeView)
             };
 

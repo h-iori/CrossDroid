@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace CrossDroid.Windows.Views
 {
@@ -11,16 +11,27 @@ namespace CrossDroid.Windows.Views
             this.InitializeComponent();
         }
 
-        private async void CleanStorage_Click(object sender, RoutedEventArgs e)
+        private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            var dialog = new ContentDialog
+            if (this.Resources.TryGetValue("EntryStoryboard", out object entryObj) && entryObj is Storyboard entryStoryboard)
             {
-                Title = "Cache Cleaned Successfully",
-                Content = "Reclaimed 12.8 MB of temporary files.",
-                CloseButtonText = "OK",
-                XamlRoot = this.XamlRoot
-            };
-            await dialog.ShowAsync();
+                entryStoryboard.Begin();
+            }
+
+            if (this.Resources.TryGetValue("InfiniteAnimations", out object infObj) && infObj is Storyboard infStoryboard)
+            {
+                infStoryboard.Begin();
+            }
+
+            if (this.Resources.TryGetValue("PulseAnimation", out object pulseObj) && pulseObj is Storyboard pulseStoryboard)
+            {
+                pulseStoryboard.Begin();
+            }
+        }
+
+        private void BackButton_Click(object sender, RoutedEventArgs e)
+        {
+            App.MainWindowInstance.NavigateToPage("Settings");
         }
     }
 }

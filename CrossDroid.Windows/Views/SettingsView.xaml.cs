@@ -59,5 +59,10 @@ namespace CrossDroid.Windows.Views
                 App.MainWindowInstance.IsPickingFile = false;
             }
         }
+
+        private void ViewAbout_Click(object sender, RoutedEventArgs e)
+        {
+            App.MainWindowInstance.NavigateToPage("About");
+        }
     }
 }
