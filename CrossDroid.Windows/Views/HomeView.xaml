@@ -8,17 +8,7 @@
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
-    <Page.Resources>
-        <!-- Storyboard for QR code scanning line laser -->
-        <Storyboard x:Key="ScanLineAnim" RepeatBehavior="Forever">
-            <DoubleAnimation 
-                Storyboard.TargetName="ScanLineTransform"
-                Storyboard.TargetProperty="Y"
-                From="0" To="135"
-                Duration="0:0:2"
-                AutoReverse="True" />
-        </Storyboard>
-    </Page.Resources>
+
 
     <Page.Transitions>
         <TransitionCollection>
@@ -63,12 +53,7 @@
                         <!-- Cyberpunk cyan-glowing vector QR Code representation -->
                         <Path Data="M0,0 h40 v20 h-20 v20 h-20 Z M100,0 h40 v40 h-20 v-20 h-20 Z M0,100 h20 v20 h20 v20 h-40 Z M20,20 h20 v20 h-20 Z M100,20 h20 v20 h-20 Z M20,100 h20 v20 h-20 Z M50,50 h40 v40 h-40 Z" Fill="{StaticResource AccentCyan}" Stretch="Uniform"/>
                         
-                        <!-- Glow Laser Scan line -->
-                        <Rectangle x:Name="ScanLine" Height="3" VerticalAlignment="Top" Fill="{StaticResource NeonHighlight}" Opacity="0.85">
-                            <Rectangle.RenderTransform>
-                                <TranslateTransform x:Name="ScanLineTransform" Y="0" />
-                            </Rectangle.RenderTransform>
-                        </Rectangle>
+
                     </Grid>
                 </Border>
 

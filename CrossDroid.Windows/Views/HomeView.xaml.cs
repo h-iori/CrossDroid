@@ -7,14 +7,13 @@ namespace CrossDroid.Windows.Views
 {
     public sealed partial class HomeView : Page
     {
-        private Storyboard? _scanLineStoryboard;
+
         private readonly Random _random = new();
 
         public HomeView()
         {
             this.InitializeComponent();
             this.Loaded += HomeView_Loaded;
-            this.Unloaded += HomeView_Unloaded;
         }
 
         private void HomeView_Loaded(object sender, RoutedEventArgs e)
@@ -22,25 +21,9 @@ namespace CrossDroid.Windows.Views
             // Initialize with a random PIN
             GenerateNewPin();
 
-            // Retrieve and start the laser scan line animation
-            if (this.Resources.TryGetValue("ScanLineAnim", out object storyboardObj) && 
-                storyboardObj is Storyboard storyboard)
-            {
-                _scanLineStoryboard = storyboard;
-                if (VisibilityToggle.IsOn)
-                {
-                    _scanLineStoryboard.Begin();
-                }
-            }
+
         }
 
-        private void HomeView_Unloaded(object sender, RoutedEventArgs e)
-        {
-            if (_scanLineStoryboard != null)
-            {
-                _scanLineStoryboard.Stop();
-            }
-        }
 
         private void VisibilityToggle_Toggled(object sender, RoutedEventArgs e)
         {
@@ -54,10 +37,7 @@ namespace CrossDroid.Windows.Views
                 VisibilityStatusText.Text = "Visible to nearby devices";
                 VisibilityStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ColorSuccess"];
 
-                if (_scanLineStoryboard != null)
-                {
-                    _scanLineStoryboard.Begin();
-                }
+
             }
             else
             {
@@ -66,10 +46,7 @@ namespace CrossDroid.Windows.Views
                 VisibilityStatusText.Text = "Hidden from nearby devices";
                 VisibilityStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ColorError"];
 
-                if (_scanLineStoryboard != null)
-                {
-                    _scanLineStoryboard.Stop();
-                }
+
             }
         }
 

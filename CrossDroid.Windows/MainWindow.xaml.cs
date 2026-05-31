@@ -53,15 +53,17 @@ namespace CrossDroid.Windows
                 System.Diagnostics.Debug.WriteLine($"Mica backdrop unavailable: {ex.Message}");
             }
 
-            // Remove/suppress the native white window border on Windows 11 by setting it to match the dark theme background color (#0A0A0F)
+            // Completely remove native window borders (WS_BORDER, WS_THICKFRAME, WS_CAPTION, WS_DLGFRAME) to avoid any white border artifacts
             try
             {
-                uint bgrBgColor = 0x000F0A0A;
-                User32.DwmSetWindowAttribute(hwnd, 34, ref bgrBgColor, sizeof(uint)); // 34 = DWMWA_BORDER_COLOR
+                uint style = User32.GetWindowLong(hwnd, -16); // -16 = GWL_STYLE
+                style &= ~(0x00800000U | 0x00040000U | 0x00C00000U | 0x00400000U); // WS_BORDER, WS_THICKFRAME, WS_CAPTION, WS_DLGFRAME
+                User32.SetWindowLong(hwnd, -16, style);
+                User32.SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, 0x0002 | 0x0001 | 0x0004 | 0x0010 | 0x0020); // SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to set DWM border color: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Failed to remove native window borders: {ex.Message}");
             }
 
             // Set window icon safely using absolute path to prevent startup crashes
@@ -531,6 +533,16 @@ namespace CrossDroid.Windows
 
         [System.Runtime.InteropServices.DllImport("dwmapi.dll", PreserveSig = true)]
         public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref uint attrValue, int attrSize);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+        public static extern uint GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SetWindowLongW")]
+        public static extern uint SetWindowLong(IntPtr hWnd, int nIndex, uint dwNewLong);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
     }
 
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
