@@ -26,6 +26,14 @@ namespace CrossDroid.Windows.Views
                 DisplayedItems.Add(item);
             }
         }
+
+        private void HistoryItemsList_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (e.ClickedItem is HistoryItemViewModel clickedItem)
+            {
+                this.Frame.Navigate(typeof(TransferStreamView), clickedItem);
+            }
+        }
     }
 
     public class HistoryItemViewModel : System.ComponentModel.INotifyPropertyChanged
