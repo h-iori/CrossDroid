@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="using:CrossDroid.Windows.Views"
+    xmlns:common="using:CrossDroid.Windows"
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
@@ -21,9 +22,9 @@
         </Grid.RowDefinitions>
 
         <!-- Title Header -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,20" Spacing="4">
-            <TextBlock Text="Transfer History" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
-            <TextBlock Text="Log of successfully received and sent files" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+        <StackPanel Grid.Row="0" Margin="0,0,0,16" Spacing="4">
+            <TextBlock Text="Transfer History" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+            <TextBlock Text="Log of device-grouped transfers and activity" FontSize="11" Foreground="{StaticResource TextSecondary}" />
         </StackPanel>
 
         <!-- History ListView (Enterprise Cyberpunk styling) -->
@@ -31,47 +32,52 @@
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Padding" Value="12" />
                     <Setter Property="Margin" Value="0,0,0,10" />
+                    <Setter Property="CornerRadius" Value="12" />
+                    <Setter Property="Background" Value="{StaticResource BgElevated}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}" />
+                    <Setter Property="BorderThickness" Value="1.2" />
+                    <Setter Property="common:MouseCursorHelper.HandCursor" Value="True" />
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:HistoryItemViewModel">
-                    <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1.2" Padding="14">
-                        <Grid ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                            <!-- Success / Fail Indicator Icon -->
-                            <Border Grid.Column="0" CornerRadius="16" Background="{x:Bind IconBg}" Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1">
-                                <FontIcon Glyph="{x:Bind StatusGlyph}" FontFamily="Segoe MDL2 Assets" Foreground="{x:Bind StatusBrush}" FontSize="13"/>
-                            </Border>
+                        <!-- Device Icon -->
+                        <Border Grid.Column="0" CornerRadius="18" Background="{StaticResource BgSurface}" Width="36" Height="36" HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1">
+                            <FontIcon Glyph="{x:Bind DeviceIconGlyph}" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NeonPrimary}" FontSize="15"/>
+                        </Border>
 
-                            <!-- Details -->
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="{x:Bind FileName}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis"/>
-                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <TextBlock Text="{x:Bind FileSize}" FontSize="11" Foreground="{StaticResource AccentCyan}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="•" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                                    <TextBlock Text="{x:Bind DateText}" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                </StackPanel>
-                                <TextBlock Text="{x:Bind DetailMessage}" FontSize="11" Foreground="{StaticResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
+                        <!-- Details (Professional & Detailed) -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind DeviceName}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis"/>
+                                <Border Padding="5,1.5" CornerRadius="4" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind DeviceType}" FontSize="8" FontWeight="Bold" Foreground="{StaticResource TextSecondary}"/>
+                                </Border>
                             </StackPanel>
-
-                            <!-- Quick Action Buttons -->
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                <Button Click="OpenFile_Click" Background="Transparent" BorderThickness="0" Padding="8,6" Visibility="{x:Bind OpenVisible}" ToolTipService.ToolTip="Open File" CornerRadius="8">
-                                    <FontIcon Glyph="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource AccentCyan}"/>
-                                </Button>
-                                <Button Click="OpenFolder_Click" Background="Transparent" BorderThickness="0" Padding="8,6" Visibility="{x:Bind OpenVisible}" ToolTipService.ToolTip="Open Folder" CornerRadius="8">
-                                    <FontIcon Glyph="&#xE8DA;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextSecondary}"/>
-                                </Button>
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind TransfersCountText}" FontSize="10" Foreground="{StaticResource AccentCyan}" FontWeight="SemiBold"/>
+                                <TextBlock Text="•" FontSize="10" Foreground="{StaticResource TextMuted}"/>
+                                <TextBlock Text="{x:Bind TotalBytesText}" FontSize="10" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Text="•" FontSize="10" Foreground="{StaticResource TextMuted}"/>
+                                <TextBlock Text="{x:Bind DateText}" FontSize="10" Foreground="{StaticResource TextSecondary}"/>
                             </StackPanel>
-                        </Grid>
-                    </Border>
+                            <TextBlock Text="{x:Bind LastTransferInfo}" FontSize="10.5" Foreground="{StaticResource TextSecondary}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+
+                        <!-- Status Badge (Success / Fail Indicator Icon) -->
+                        <Border Grid.Column="2" CornerRadius="12" Background="{x:Bind IconBg}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <FontIcon Glyph="{x:Bind StatusGlyph}" FontFamily="Segoe MDL2 Assets" Foreground="{x:Bind StatusBrush}" FontSize="9"/>
+                        </Border>
+                    </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>

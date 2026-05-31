@@ -54,7 +54,8 @@ namespace CrossDroid.Windows.Views
                     Status = "Transferring",
                     IconGlyph = "\xE7C3", 
                     StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231)), 
-                    PauseGlyph = "\xE103" 
+                    PauseGlyph = "\xE103",
+                    DeviceName = "Galaxy Tab S9"
                 });
                 QueueItems.Add(new TransferItemViewModel
                 {
@@ -65,7 +66,8 @@ namespace CrossDroid.Windows.Views
                     Status = "Completed",
                     IconGlyph = "\xE114", 
                     StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136)), 
-                    PauseGlyph = "\xE768" 
+                    PauseGlyph = "\xE768",
+                    DeviceName = "Pixel 8 Pro"
                 });
                 QueueItems.Add(new TransferItemViewModel
                 {
@@ -76,7 +78,8 @@ namespace CrossDroid.Windows.Views
                     Status = "Paused",
                     IconGlyph = "\xE838", 
                     StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 248, 184, 78)), 
-                    PauseGlyph = "\xE768" 
+                    PauseGlyph = "\xE768",
+                    DeviceName = "Pixel 8 Pro"
                 });
                 
                 // Start simulator timer automatically
@@ -133,7 +136,7 @@ namespace CrossDroid.Windows.Views
                         item.PauseGlyph = "\xE768"; // Play (shows it can't pause anymore)
                         
                         // Add to history list in App
-                        App.MainWindowInstance.AddHistoryRecord(item.FileName, item.FileSize, "Success", "Transferred successfully");
+                        App.MainWindowInstance.AddHistoryRecord(item.DeviceName, item.FileName, item.FileSize, "Success", "Transferred successfully");
                     }
                 }
 
@@ -229,7 +232,8 @@ namespace CrossDroid.Windows.Views
                 ProgressValue = 0,
                 Status = "Transferring",
                 IconGlyph = "\xE714", // Video
-                StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231)) // Cyan
+                StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231)), // Cyan
+                DeviceName = "Pixel 8 Pro"
             };
             QueueItems.Add(item);
             _simTimer?.Start();
@@ -237,7 +241,11 @@ namespace CrossDroid.Windows.Views
 
         private void StartTransfer_Click(object sender, RoutedEventArgs e)
         {
-            if (StagedItems.Count == 0) return;
+            string targetDevice = TargetDeviceCombo.SelectedItem as string ?? "Pixel 8 Pro";
+            if (targetDevice.Contains(" ("))
+            {
+                targetDevice = targetDevice.Substring(0, targetDevice.IndexOf(" ("));
+            }
 
             foreach (var staged in StagedItems)
             {
@@ -250,7 +258,8 @@ namespace CrossDroid.Windows.Views
                     ProgressValue = 0,
                     Status = "Transferring",
                     IconGlyph = isFolder ? "\xE8B7" : "\xE8A5", // Folder vs File icon
-                    StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231))
+                    StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231)),
+                    DeviceName = targetDevice
                 });
             }
 
@@ -307,7 +316,7 @@ namespace CrossDroid.Windows.Views
                 QueueItems.Remove(vm);
                 if (vm.Status != "Completed")
                 {
-                    App.MainWindowInstance.AddHistoryRecord(vm.FileName, vm.FileSize, "Cancelled", "User cancelled transfer");
+                    App.MainWindowInstance.AddHistoryRecord(vm.DeviceName, vm.FileName, vm.FileSize, "Cancelled", "User cancelled transfer");
                 }
             }
         }
@@ -354,6 +363,13 @@ namespace CrossDroid.Windows.Views
         {
             get => pauseGlyph;
             set { pauseGlyph = value; OnPropertyChanged(nameof(PauseGlyph)); }
+        }
+
+        private string deviceName = "Pixel 8 Pro";
+        public string DeviceName
+        {
+            get => deviceName;
+            set { deviceName = value; OnPropertyChanged(nameof(DeviceName)); }
         }
 
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;

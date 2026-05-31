@@ -9,9 +9,8 @@
     Title="CrossDroid"
     mc:Ignorable="d">
 
-    <Window.SystemBackdrop>
-        <MicaBackdrop Kind="BaseAlt" />
-    </Window.SystemBackdrop>
+    <!-- SystemBackdrop is applied programmatically in code-behind to avoid
+         STATUS_FAIL_FAST_EXCEPTION in unpackaged (dotnet run) mode -->
 
     <Grid x:Name="RootGrid" Background="{StaticResource BgMain}">
         <Grid.Resources>
@@ -74,13 +73,20 @@
                     <Image Source="Assets/crossdroidlogo.png" Stretch="UniformToFill"/>
                 </Border>
                 <StackPanel VerticalAlignment="Center" Spacing="0">
-                    <TextBlock Text="CrossDroid" FontSize="19" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" FontFamily="{StaticResource BrandFont}" LineHeight="22" LineStackingStrategy="MaxHeight" />
-                    <TextBlock Text="BY IORI STUDIOS" FontSize="9" FontWeight="Normal" Foreground="{StaticResource TextSecondary}" Opacity="0.92" FontFamily="{StaticResource SubheadingFont}" CharacterSpacing="100" LineHeight="12" LineStackingStrategy="MaxHeight" />
+                    <TextBlock Text="CrossDroid" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" FontFamily="{StaticResource BrandFont}" LineHeight="20" LineStackingStrategy="MaxHeight" />
+                    <TextBlock Text="BY IORI STUDIOS" FontSize="8.5" FontWeight="Normal" Foreground="{StaticResource TextSecondary}" Opacity="0.92" FontFamily="{StaticResource SubheadingFont}" CharacterSpacing="100" LineHeight="11" LineStackingStrategy="MaxHeight" />
                 </StackPanel>
             </StackPanel>
 
             <!-- Close Button for frameless window -->
-            <Button Grid.Column="2" Click="CloseButton_Click" Background="Transparent" BorderThickness="0" Width="40" Height="40" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextSecondary}"/>
+            <Button Grid.Column="2" Click="CloseButton_Click" Background="Transparent" BorderThickness="0" Width="40" Height="40" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextSecondary}" local:MouseCursorHelper.HandCursor="True">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E81123" />
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#F1707A" />
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF" />
+                </Button.Resources>
+            </Button>
         </Grid>
 
         <!-- Central Frame hosting views -->
@@ -88,6 +94,12 @@
 
         <!-- Custom Bottom Navigation Bar -->
         <Grid x:Name="BottomNavBar" Grid.Row="2" Height="60" Background="{StaticResource BgPanel}" Opacity="0.98" BorderThickness="0,1,0,0">
+            <Grid.Resources>
+                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DBF00FF" />
+                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#33BF00FF" />
+                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{StaticResource TextStrongColor}" />
+                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{StaticResource TextStrongColor}" />
+            </Grid.Resources>
             <Grid.BorderBrush>
                 <SolidColorBrush x:Name="BottomBarBorderBrush" Color="{StaticResource NeonPrimaryColor}" Opacity="0.328" />
             </Grid.BorderBrush>
@@ -100,7 +112,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Home Tab -->
-            <Button Grid.Column="0" Click="NavTab_Click" Tag="Home" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+            <Button Grid.Column="0" Click="NavTab_Click" Tag="Home" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" local:MouseCursorHelper.HandCursor="True">
                 <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                         <Grid Width="60" Height="28">
@@ -111,13 +123,13 @@
                                 </FontIcon.RenderTransform>
                             </FontIcon>
                         </Grid>
-                        <TextBlock x:Name="HomeText" Text="Home" FontSize="10" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
+                        <TextBlock x:Name="HomeText" Text="Home" FontSize="9" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
                     </StackPanel>
                 </Grid>
             </Button>
 
             <!-- Devices Tab -->
-            <Button Grid.Column="1" Click="NavTab_Click" Tag="Devices" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+            <Button Grid.Column="1" Click="NavTab_Click" Tag="Devices" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" local:MouseCursorHelper.HandCursor="True">
                 <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                         <Grid Width="60" Height="28">
@@ -128,13 +140,13 @@
                                 </FontIcon.RenderTransform>
                             </FontIcon>
                         </Grid>
-                        <TextBlock x:Name="DevicesText" Text="Devices" FontSize="10" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
+                        <TextBlock x:Name="DevicesText" Text="Devices" FontSize="9" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
                     </StackPanel>
                 </Grid>
             </Button>
 
             <!-- History Tab -->
-            <Button Grid.Column="2" Click="NavTab_Click" Tag="History" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+            <Button Grid.Column="2" Click="NavTab_Click" Tag="History" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" local:MouseCursorHelper.HandCursor="True">
                 <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                         <Grid Width="60" Height="28">
@@ -145,13 +157,13 @@
                                 </FontIcon.RenderTransform>
                             </FontIcon>
                         </Grid>
-                        <TextBlock x:Name="HistoryText" Text="History" FontSize="10" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
+                        <TextBlock x:Name="HistoryText" Text="History" FontSize="9" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
                     </StackPanel>
                 </Grid>
             </Button>
 
             <!-- Settings Tab -->
-            <Button Grid.Column="3" Click="NavTab_Click" Tag="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+            <Button Grid.Column="3" Click="NavTab_Click" Tag="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" local:MouseCursorHelper.HandCursor="True">
                 <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                         <Grid Width="60" Height="28">
@@ -162,7 +174,7 @@
                                 </FontIcon.RenderTransform>
                             </FontIcon>
                         </Grid>
-                        <TextBlock x:Name="SettingsText" Text="Settings" FontSize="10" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
+                        <TextBlock x:Name="SettingsText" Text="Settings" FontSize="9" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
                     </StackPanel>
                 </Grid>
             </Button>

@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:common="using:CrossDroid.Windows"
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
@@ -20,9 +21,9 @@
         </Grid.RowDefinitions>
 
         <!-- Title -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,24">
-            <TextBlock Text="About CrossDroid" FontSize="28" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
-            <TextBlock Text="App information, versioning and system cache tools" FontSize="14" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,0" />
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="About CrossDroid" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+            <TextBlock Text="App information, versioning and system cache tools" FontSize="11.5" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,0" />
         </StackPanel>
 
         <!-- Info Grid -->
@@ -41,22 +42,22 @@
                                 <Image Source="ms-appx:///Assets/crossdroidlogo.png" Width="52" Height="52" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="CrossDroid Desktop Companion" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
-                                <TextBlock Text="Version 2.0.1 (Stable Build)" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Text="CrossDroid Desktop" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
+                                <TextBlock Text="Version 2.0.1 (Stable Build)" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
                             </StackPanel>
                         </StackPanel>
 
-                        <TextBlock Text="CrossDroid is an end-to-end encrypted local network file sharing suite. This desktop application communicates seamlessly with the Android client to transfer files, folders and archives without cloud dependencies." FontSize="14" Foreground="{StaticResource TextBody}" TextWrapping="Wrap"/>
+                        <TextBlock Text="CrossDroid is an end-to-end encrypted local network file sharing suite. This desktop application communicates seamlessly with the Android client to transfer files, folders and archives without cloud dependencies." FontSize="12" Foreground="{StaticResource TextBody}" TextWrapping="Wrap"/>
                         
-                        <HyperlinkButton Content="Visit Project Website" NavigateUri="https://github.com/h-iori/CrossDroid" Foreground="{StaticResource AccentCyan}"/>
+                        <HyperlinkButton Content="Visit Project Website" NavigateUri="https://github.com/h-iori/CrossDroid" Foreground="{StaticResource AccentCyan}" FontSize="12" common:MouseCursorHelper.HandCursor="True"/>
                     </StackPanel>
                 </Border>
 
                 <!-- Storage Clean Card -->
                 <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1.2" Padding="24">
                     <StackPanel Spacing="16">
-                        <TextBlock Text="Storage &amp; Temporary Files" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
-                        <TextBlock Text="When transfers are interrupted or canceled, temporary chunk files can remain on disk. Clean these files to reclaim storage space." FontSize="13" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
+                        <TextBlock Text="Storage &amp; Temporary Files" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
+                        <TextBlock Text="When transfers are interrupted or canceled, temporary chunk files can remain on disk. Clean these files to reclaim storage space." FontSize="11.5" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
                         
                         <Grid ColumnSpacing="12" Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
@@ -64,10 +65,15 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Temporary Transfer Cache" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextBody}"/>
-                                <TextBlock Text="Calculated Size: 12.8 MB" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Text="Temporary Transfer Cache" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextBody}"/>
+                                <TextBlock Text="Calculated Size: 12.8 MB" FontSize="10.5" Foreground="{StaticResource TextSecondary}"/>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="Clean Storage" Click="CleanStorage_Click" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource ColorError}" Foreground="{StaticResource ColorError}" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="Clean Storage" Click="CleanStorage_Click" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource ColorError}" Foreground="{StaticResource ColorError}" VerticalAlignment="Center" FontSize="12" common:MouseCursorHelper.HandCursor="True">
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{StaticResource ColorErrorColor}" />
+                                </Button.Resources>
+                            </Button>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -76,26 +82,26 @@
             <!-- Right: License & Credits -->
             <Border Grid.Column="1" CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Padding="20" VerticalAlignment="Top">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="Specifications" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
+                    <TextBlock Text="Specifications" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                     
                     <Grid Padding="0,6" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,0,0,1">
-                        <TextBlock Text="Runtime Environment" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text=".NET 10.0 LTS" FontSize="13" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
+                        <TextBlock Text="Runtime Environment" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
+                        <TextBlock Text=".NET 10.0 LTS" FontSize="11.5" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
                     </Grid>
                     <Grid Padding="0,6" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,0,0,1">
-                        <TextBlock Text="User Interface" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text="WinUI 3 (WASDK 2.0.1)" FontSize="13" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
+                        <TextBlock Text="User Interface" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
+                        <TextBlock Text="WinUI 3 (WASDK 2.0.1)" FontSize="11.5" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
                     </Grid>
                     <Grid Padding="0,6" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,0,0,1">
-                        <TextBlock Text="Security Primatives" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text="AES-256-GCM / ECDH" FontSize="13" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
+                        <TextBlock Text="Security Primatives" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
+                        <TextBlock Text="AES-256-GCM / ECDH" FontSize="11.5" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
                     </Grid>
                     <Grid Padding="0,6">
-                        <TextBlock Text="Installation Package" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text="MSIX Desktop App" FontSize="13" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
+                        <TextBlock Text="Installation Package" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
+                        <TextBlock Text="MSIX Desktop App" FontSize="11.5" Foreground="{StaticResource TextBody}" HorizontalAlignment="Right"/>
                     </Grid>
 
-                    <TextBlock Text="© 2026 Iori Studios. All rights reserved." FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,16,0,0" HorizontalAlignment="Center"/>
+                    <TextBlock Text="© 2026 Iori Studios. All rights reserved." FontSize="10" Foreground="{StaticResource TextMuted}" Margin="0,16,0,0" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
         </Grid>

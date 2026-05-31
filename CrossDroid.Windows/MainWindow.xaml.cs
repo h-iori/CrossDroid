@@ -35,6 +35,35 @@ namespace CrossDroid.Windows
                 presenter.IsAlwaysOnTop = true;
             }
 
+            // Apply Mica backdrop programmatically so that unpackaged (dotnet run) mode
+            // does not crash with STATUS_FAIL_FAST_EXCEPTION when the XAML parser tries
+            // to instantiate MicaBackdrop before the package identity is available.
+            try
+            {
+                if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported())
+                {
+                    this.SystemBackdrop = new Microsoft.UI.Xaml.Media.MicaBackdrop
+                    {
+                        Kind = Microsoft.UI.Composition.SystemBackdrops.MicaKind.BaseAlt
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Mica backdrop unavailable: {ex.Message}");
+            }
+
+            // Remove/suppress the native white window border on Windows 11 by setting it to match the dark theme background color (#0A0A0F)
+            try
+            {
+                uint bgrBgColor = 0x000F0A0A;
+                User32.DwmSetWindowAttribute(hwnd, 34, ref bgrBgColor, sizeof(uint)); // 34 = DWMWA_BORDER_COLOR
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to set DWM border color: {ex.Message}");
+            }
+
             // Set window icon safely using absolute path to prevent startup crashes
             try
             {
@@ -172,63 +201,131 @@ namespace CrossDroid.Windows
 
         private void LoadMockHistory()
         {
+            // Pixel 8 Pro
             HistoryRecords.Add(new Views.HistoryItemViewModel
             {
-                FileName = "photo_gallery.zip",
-                FileSize = "156.4 MB",
+                DeviceName = "Pixel 8 Pro",
+                DeviceType = "PHONE",
+                DeviceIconGlyph = "\xE8EA", // CellPhone
+                FileCount = 8,
+                TotalBytesText = "248.5 MB",
                 Status = "Success",
                 DateText = "Today, 10:15 AM",
-                DetailMessage = "Received from Pixel 8 Pro",
+                LastTransferInfo = "Last: photo_gallery.zip (Success)",
                 StatusGlyph = "\xE73E", // Checkmark
                 StatusBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136)),
-                IconBg = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136)),
-                OpenVisible = Visibility.Visible
+                IconBg = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136))
             });
+
+            // Galaxy Tab S9
             HistoryRecords.Add(new Views.HistoryItemViewModel
             {
-                FileName = "Presentation.pdf",
-                FileSize = "4.2 MB",
+                DeviceName = "Galaxy Tab S9",
+                DeviceType = "TABLET",
+                DeviceIconGlyph = "\xE70B", // Tablet
+                FileCount = 3,
+                TotalBytesText = "14.2 MB",
                 Status = "Success",
                 DateText = "Yesterday, 3:30 PM",
-                DetailMessage = "Sent to Galaxy Tab S9",
+                LastTransferInfo = "Last: Presentation.pdf (Success)",
                 StatusGlyph = "\xE73E",
                 StatusBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136)),
-                IconBg = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136)),
-                OpenVisible = Visibility.Visible
+                IconBg = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136))
             });
+
+            // Unknown Device (Failed attempt)
             HistoryRecords.Add(new Views.HistoryItemViewModel
             {
-                FileName = "raw_video_footage.mov",
-                FileSize = "1.8 GB",
+                DeviceName = "Unknown Device",
+                DeviceType = "PHONE",
+                DeviceIconGlyph = "\xE8EA",
+                FileCount = 1,
+                TotalBytesText = "1.8 GB",
                 Status = "Failed",
                 DateText = "May 28, 11:20 AM",
-                DetailMessage = "Connection lost during transfer",
-                StatusGlyph = "\xE10A", // Cancel X
+                LastTransferInfo = "Last: raw_video_footage.mov (Failed)",
+                StatusGlyph = "\xE10A", // Cancel
                 StatusBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102)),
-                IconBg = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102)),
-                OpenVisible = Visibility.Collapsed
+                IconBg = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102))
             });
         }
 
-        public void AddHistoryRecord(string fileName, string fileSize, string status, string message)
+        public void AddHistoryRecord(string deviceName, string fileName, string fileSize, string status, string message)
         {
             bool isSuccess = status == "Success";
-            HistoryRecords.Add(new Views.HistoryItemViewModel
+            
+            // Find existing device history item
+            var deviceRecord = HistoryRecords.FirstOrDefault(r => r.DeviceName.Equals(deviceName, StringComparison.OrdinalIgnoreCase));
+            
+            if (deviceRecord == null)
             {
-                FileName = fileName,
-                FileSize = fileSize,
-                Status = status,
-                DateText = DateTime.Now.ToString("g"),
-                DetailMessage = isSuccess ? $"Transferred successfully" : message,
-                StatusGlyph = isSuccess ? "\xE73E" : "\xE10A",
-                StatusBrush = isSuccess 
-                    ? new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136))
-                    : new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102)),
-                IconBg = isSuccess
-                    ? new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136))
-                    : new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102)),
-                OpenVisible = isSuccess ? Visibility.Visible : Visibility.Collapsed
-            });
+                deviceRecord = new Views.HistoryItemViewModel
+                {
+                    DeviceName = deviceName,
+                    DeviceType = deviceName.Contains("Tab", StringComparison.OrdinalIgnoreCase) ? "TABLET" : (deviceName.Contains("PC", StringComparison.OrdinalIgnoreCase) || deviceName.Contains("Desktop", StringComparison.OrdinalIgnoreCase) ? "PC" : "PHONE"),
+                    DeviceIconGlyph = deviceName.Contains("Tab", StringComparison.OrdinalIgnoreCase) ? "\xE70B" : (deviceName.Contains("PC", StringComparison.OrdinalIgnoreCase) || deviceName.Contains("Desktop", StringComparison.OrdinalIgnoreCase) ? "\xE7F4" : "\xE8EA"),
+                    FileCount = 0,
+                    TotalBytesText = "0 MB"
+                };
+                // Add to list (newest device at top)
+                HistoryRecords.Insert(0, deviceRecord);
+            }
+
+            deviceRecord.FileCount++;
+            deviceRecord.LastTransferInfo = $"Last: {fileName} ({status})";
+            deviceRecord.DateText = DateTime.Now.ToString("g");
+            deviceRecord.Status = status;
+            deviceRecord.StatusGlyph = isSuccess ? "\xE73E" : "\xE10A";
+            deviceRecord.StatusBrush = isSuccess 
+                ? new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136))
+                : new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102));
+            deviceRecord.IconBg = isSuccess
+                ? new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136))
+                : new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102));
+            
+            deviceRecord.TotalBytesText = AddSizes(deviceRecord.TotalBytesText, fileSize);
+        }
+
+        private string AddSizes(string currentText, string sizeToAdd)
+        {
+            double val1 = ParseSizeToMB(currentText);
+            double val2 = ParseSizeToMB(sizeToAdd);
+            double total = val1 + val2;
+            if (total >= 1024)
+            {
+                return $"{total / 1024.0:F1} GB";
+            }
+            return $"{total:F1} MB";
+        }
+
+        private double ParseSizeToMB(string sizeText)
+        {
+            if (string.IsNullOrWhiteSpace(sizeText)) return 0;
+            try
+            {
+                string clean = sizeText.Trim().ToUpper();
+                if (clean.EndsWith("GB"))
+                {
+                    double.TryParse(clean.Replace("GB", "").Trim(), out double val);
+                    return val * 1024.0;
+                }
+                if (clean.EndsWith("MB"))
+                {
+                    double.TryParse(clean.Replace("MB", "").Trim(), out double val);
+                    return val;
+                }
+                if (clean.EndsWith("KB"))
+                {
+                    double.TryParse(clean.Replace("KB", "").Trim(), out double val);
+                    return val / 1024.0;
+                }
+                double.TryParse(clean, out double valDirect);
+                return valDirect;
+            }
+            catch
+            {
+                return 0;
+            }
         }
 
         private void AppWindow_Closing(Microsoft.UI.Windowing.AppWindow sender, Microsoft.UI.Windowing.AppWindowClosingEventArgs args)
@@ -431,6 +528,9 @@ namespace CrossDroid.Windows
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         public static extern uint GetDpiForWindow(IntPtr hwnd);
+
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll", PreserveSig = true)]
+        public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref uint attrValue, int attrSize);
     }
 
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]

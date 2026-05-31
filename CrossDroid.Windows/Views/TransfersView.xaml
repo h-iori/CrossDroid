@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:common="using:CrossDroid.Windows"
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
@@ -20,21 +21,30 @@
         </Grid.RowDefinitions>
 
         <!-- Title Header -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
+        <Grid Grid.Row="0" Margin="0,0,0,12">
             <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center">
-                <TextBlock Text="Transfers" FontSize="22" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
-                <TextBlock Text="Active and staged transfers" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0" />
+                <TextBlock Text="Transfers" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
+                <TextBlock Text="Active and staged transfers" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0" />
             </StackPanel>
             
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="6">
-                <Button Click="SimulateIncoming_Click" Height="32" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" ToolTipService.ToolTip="Simulate Incoming Request">
-                    <FontIcon Glyph="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{StaticResource TextBody}"/>
+                <Button Click="SimulateIncoming_Click" Height="30" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" ToolTipService.ToolTip="Simulate Incoming Request" common:MouseCursorHelper.HandCursor="True">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1D27D7E7" />
+                    </Button.Resources>
+                    <FontIcon Glyph="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="{StaticResource TextBody}"/>
                 </Button>
-                <Button Click="PauseAll_Click" Height="32" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" ToolTipService.ToolTip="Pause / Resume All">
-                    <FontIcon Glyph="&#xE103;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{StaticResource TextBody}"/>
+                <Button Click="PauseAll_Click" Height="30" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" ToolTipService.ToolTip="Pause / Resume All" common:MouseCursorHelper.HandCursor="True">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DBF00FF" />
+                    </Button.Resources>
+                    <FontIcon Glyph="&#xE103;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="{StaticResource TextBody}"/>
                 </Button>
-                <Button Click="CancelAll_Click" Height="32" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource ColorError}" ToolTipService.ToolTip="Cancel All">
-                    <FontIcon Glyph="&#xE10A;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{StaticResource ColorError}"/>
+                <Button Click="CancelAll_Click" Height="30" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource ColorError}" ToolTipService.ToolTip="Cancel All" common:MouseCursorHelper.HandCursor="True">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
+                    </Button.Resources>
+                    <FontIcon Glyph="&#xE10A;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="{StaticResource ColorError}"/>
                 </Button>
             </StackPanel>
         </Grid>
@@ -52,31 +62,31 @@
 
                     <!-- Overall Progress Card -->
                     <Border Grid.Row="0" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="12">
-                        <StackPanel Spacing="8">
+                        <StackPanel Spacing="6">
                             <Grid>
-                                <TextBlock Text="Overall Progress" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
-                                <TextBlock x:Name="OverallProgressText" Text="Staging (0%)" FontSize="13" Foreground="{StaticResource AccentCyan}" HorizontalAlignment="Right"/>
+                                <TextBlock Text="Overall Progress" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
+                                <TextBlock x:Name="OverallProgressText" Text="Staging (0%)" FontSize="11.5" Foreground="{StaticResource AccentCyan}" HorizontalAlignment="Right"/>
                             </Grid>
                             
-                            <ProgressBar x:Name="OverallProgressBar" Value="0" Maximum="100" Height="6" CornerRadius="3" Background="{StaticResource BgSurface}" Foreground="{StaticResource NeonPrimary}"/>
+                            <ProgressBar x:Name="OverallProgressBar" Value="0" Maximum="100" Height="5" CornerRadius="2.5" Background="{StaticResource BgSurface}" Foreground="{StaticResource NeonPrimary}"/>
                             
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock x:Name="SpeedText" Text="Speed: 0.0 MB/s" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                    <TextBlock x:Name="TimeRemainingText" Text="Remaining: --:--" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock x:Name="SpeedText" Text="Speed: 0.0 MB/s" FontSize="10" Foreground="{StaticResource TextSecondary}"/>
+                                    <TextBlock x:Name="TimeRemainingText" Text="Remaining: --:--" FontSize="10" Foreground="{StaticResource TextSecondary}"/>
                                 </StackPanel>
-                                <Border Grid.Column="1" VerticalAlignment="Center" Padding="8,4" CornerRadius="6" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1">
+                                <Border Grid.Column="1" VerticalAlignment="Center" Padding="6,3" CornerRadius="6" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <Ellipse Width="8" Height="8" Fill="{StaticResource AccentCyan}"/>
-                                        <TextBlock Text="Idle" x:Name="QueueStatusText" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextBody}"/>
+                                        <Ellipse Width="6" Height="6" Fill="{StaticResource AccentCyan}"/>
+                                        <TextBlock Text="Idle" x:Name="QueueStatusText" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextBody}"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>
-                            <TextBlock x:Name="TransferredItemsText" Text="Items: 0 / 0" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBlock x:Name="TransferredItemsText" Text="Items: 0 / 0" FontSize="10" Foreground="{StaticResource TextSecondary}"/>
                         </StackPanel>
                     </Border>
 
@@ -86,7 +96,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Text="Queue Items" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
+                        <TextBlock Grid.Row="0" Text="Queue Items" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                         
                         <ListView x:Name="QueueItemsList" Grid.Row="1" SelectionMode="None" IsItemClickEnabled="False" ItemsSource="{x:Bind QueueItems, Mode=OneWay}">
                             <ListView.ItemContainerStyle>
@@ -107,25 +117,36 @@
                                             </Grid.ColumnDefinitions>
 
                                             <!-- Icon -->
-                                            <FontIcon Grid.Column="0" Glyph="{Binding IconGlyph}" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource AccentCyan}" FontSize="20" VerticalAlignment="Center"/>
+                                            <FontIcon Grid.Column="0" Glyph="{Binding IconGlyph}" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource AccentCyan}" FontSize="18" VerticalAlignment="Center"/>
 
                                             <!-- File Info & Progress -->
                                             <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding FileName}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding FileName}" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis" MaxWidth="180"/>
+                                                    <Border Padding="4,1" CornerRadius="3" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0.8" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DeviceName}" FontSize="8.5" Foreground="{StaticResource TextSecondary}"/>
+                                                    </Border>
+                                                </StackPanel>
                                                 <ProgressBar Value="{Binding ProgressValue}" Maximum="100" Height="4" CornerRadius="2" Background="{StaticResource BgSurface}" Foreground="{StaticResource NeonPrimary}"/>
                                                 <Grid>
-                                                    <TextBlock Text="{Binding FileSize}" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                                                    <TextBlock Text="{Binding ProgressPercentText}" FontSize="11" Foreground="{StaticResource AccentCyan}" HorizontalAlignment="Right"/>
+                                                    <TextBlock Text="{Binding FileSize}" FontSize="10" Foreground="{StaticResource TextSecondary}"/>
+                                                    <TextBlock Text="{Binding ProgressPercentText}" FontSize="10" Foreground="{StaticResource AccentCyan}" HorizontalAlignment="Right"/>
                                                 </Grid>
                                             </StackPanel>
 
                                             <!-- Controls -->
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                <Button Click="ItemPause_Click" Background="Transparent" BorderThickness="0" Padding="4">
-                                                    <FontIcon Glyph="{Binding PauseGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextSecondary}"/>
+                                                <Button Click="ItemPause_Click" Background="Transparent" BorderThickness="0" Padding="4" common:MouseCursorHelper.HandCursor="True">
+                                                    <Button.Resources>
+                                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DBF00FF" />
+                                                    </Button.Resources>
+                                                    <FontIcon Glyph="{Binding PauseGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
                                                 </Button>
-                                                <Button Click="ItemCancel_Click" Background="Transparent" BorderThickness="0" Padding="4">
-                                                    <FontIcon Glyph="&#xE10A;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource ColorError}"/>
+                                                <Button Click="ItemCancel_Click" Background="Transparent" BorderThickness="0" Padding="4" common:MouseCursorHelper.HandCursor="True">
+                                                    <Button.Resources>
+                                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
+                                                    </Button.Resources>
+                                                    <FontIcon Glyph="&#xE10A;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource ColorError}"/>
                                                 </Button>
                                             </StackPanel>
                                         </Grid>
@@ -154,8 +175,8 @@
                             </Grid.RowDefinitions>
                             
                             <StackPanel Grid.Row="0">
-                                <TextBlock Text="Staged for Sending" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
-                                <TextBlock Text="Files shared from explorer or dashboard" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0"/>
+                                <TextBlock Text="Staged for Sending" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
+                                <TextBlock Text="Files shared from explorer or dashboard" FontSize="10" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0"/>
                             </StackPanel>
 
                             <ListView x:Name="StagedItemsList" Grid.Row="1" SelectionMode="None" Padding="0,4,0,0" ItemsSource="{x:Bind StagedItems, Mode=OneWay}">
@@ -166,8 +187,11 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="12.5" Foreground="{StaticResource TextBody}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Click="RemoveStaged_Click" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" Padding="4">
+                                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="11.5" Foreground="{StaticResource TextBody}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Click="RemoveStaged_Click" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" Padding="4" common:MouseCursorHelper.HandCursor="True">
+                                                <Button.Resources>
+                                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
+                                                </Button.Resources>
                                                 <FontIcon Glyph="&#xE10A;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="{StaticResource TextMuted}"/>
                                             </Button>
                                         </Grid>
@@ -180,9 +204,13 @@
                     <!-- Destination and Start Actions -->
                     <Border Grid.Row="1" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="12">
                         <StackPanel Spacing="10">
-                            <TextBlock Text="Select Destination Device" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
-                            <ComboBox x:Name="TargetDeviceCombo" HorizontalAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" PlaceholderText="Select Device..." SelectedIndex="0"/>
-                            <Button Content="Start Transfer" Click="StartTransfer_Click" HorizontalAlignment="Stretch" Background="{StaticResource AccentCyan}" Foreground="{StaticResource BgMain}" FontWeight="Bold" BorderThickness="0" Height="36"/>
+                            <TextBlock Text="Select Destination Device" FontSize="10.5" Foreground="{StaticResource TextSecondary}"/>
+                            <ComboBox x:Name="TargetDeviceCombo" HorizontalAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" PlaceholderText="Select Device..." SelectedIndex="0" FontSize="12" common:MouseCursorHelper.HandCursor="True"/>
+                            <Button Content="Start Transfer" Click="StartTransfer_Click" HorizontalAlignment="Stretch" Background="{StaticResource AccentCyan}" Foreground="{StaticResource BgMain}" FontWeight="Bold" BorderThickness="0" Height="32" FontSize="12.5" common:MouseCursorHelper.HandCursor="True">
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource AccentCyanColor}" Opacity="0.85" />
+                                </Button.Resources>
+                            </Button>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -191,7 +219,7 @@
 
         <!-- Simulated Incoming Request Modal Dialog Overlay -->
         <Grid x:Name="IncomingOverlay" Grid.RowSpan="2" Background="{StaticResource TranslucentBg}" Visibility="Collapsed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.5" Width="320" Height="260" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20" Shadow="{StaticResource ThemeShadow}">
+            <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.5" Width="320" Height="230" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20" Shadow="{StaticResource ThemeShadow}">
                 <Grid RowSpacing="12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -200,14 +228,14 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE104;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NeonPrimary}" FontSize="18"/>
-                        <TextBlock Text="Incoming Request" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
+                        <FontIcon Glyph="&#xE104;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NeonPrimary}" FontSize="16"/>
+                        <TextBlock Text="Incoming Request" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
                     </StackPanel>
 
                     <StackPanel Grid.Row="1" Spacing="6" Margin="0,4,0,0">
-                        <TextBlock x:Name="IncomingDeviceText" Text="Device 'Pixel 8 Pro' wants to send files." FontSize="13.5" Foreground="{StaticResource TextBody}" TextWrapping="Wrap"/>
-                        <TextBlock x:Name="IncomingDetailsText" Text="Total Size: 48.5 MB" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text="Accept the incoming transfer?" FontSize="12.5" Foreground="{StaticResource TextBody}" Margin="0,4,0,0"/>
+                        <TextBlock x:Name="IncomingDeviceText" Text="Device 'Pixel 8 Pro' wants to send files." FontSize="12" Foreground="{StaticResource TextBody}" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="IncomingDetailsText" Text="Total Size: 48.5 MB" FontSize="10" Foreground="{StaticResource TextSecondary}"/>
+                        <TextBlock Text="Accept the incoming transfer?" FontSize="11.5" Foreground="{StaticResource TextBody}" Margin="0,4,0,0"/>
                     </StackPanel>
 
                     <Grid Grid.Row="2" ColumnSpacing="10">
@@ -215,8 +243,16 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Content="Reject" Click="RejectIncoming_Click" HorizontalAlignment="Stretch" Height="36" Background="{StaticResource BgSurface}" Foreground="{StaticResource ColorError}" BorderBrush="{StaticResource BorderSubtle}"/>
-                        <Button Grid.Column="1" Content="Accept" Click="AcceptIncoming_Click" HorizontalAlignment="Stretch" Height="36" Background="{StaticResource NeonPrimary}" Foreground="{StaticResource TextStrong}" BorderThickness="0"/>
+                        <Button Grid.Column="0" Content="Reject" Click="RejectIncoming_Click" HorizontalAlignment="Stretch" Height="32" Background="{StaticResource BgSurface}" Foreground="{StaticResource ColorError}" BorderBrush="{StaticResource BorderSubtle}" FontSize="12.5" common:MouseCursorHelper.HandCursor="True">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
+                            </Button.Resources>
+                        </Button>
+                        <Button Grid.Column="1" Content="Accept" Click="AcceptIncoming_Click" HorizontalAlignment="Stretch" Height="32" Background="{StaticResource NeonPrimary}" Foreground="{StaticResource TextStrong}" BorderThickness="0" FontSize="12.5" common:MouseCursorHelper.HandCursor="True">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource NeonPrimaryColor}" Opacity="0.85" />
+                            </Button.Resources>
+                        </Button>
                     </Grid>
                 </Grid>
             </Border>

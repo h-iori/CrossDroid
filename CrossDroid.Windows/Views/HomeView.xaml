@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:common="using:CrossDroid.Windows"
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
@@ -39,13 +40,14 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
-                    <TextBlock Text="Discovery Mode" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
-                    <TextBlock x:Name="VisibilityStatusText" Text="Visible to nearby devices" FontSize="12" Foreground="{StaticResource ColorSuccess}"/>
+                    <TextBlock Text="Discovery Mode" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
+                    <TextBlock x:Name="VisibilityStatusText" Text="Visible to nearby devices" FontSize="11" Foreground="{StaticResource ColorSuccess}"/>
                 </StackPanel>
                 <ToggleSwitch x:Name="VisibilityToggle" Grid.Column="1" IsOn="True" 
-                              OnContent="ON" OffContent="OFF" 
-                              Header="" MinWidth="0" VerticalAlignment="Center" 
-                              Toggled="VisibilityToggle_Toggled" Foreground="{StaticResource TextBody}"/>
+                               OnContent="ON" OffContent="OFF" 
+                               Header="" MinWidth="0" VerticalAlignment="Center" 
+                               Toggled="VisibilityToggle_Toggled" Foreground="{StaticResource TextBody}"
+                               common:MouseCursorHelper.HandCursor="True" FontSize="12.5"/>
             </Grid>
         </Border>
 
@@ -72,17 +74,21 @@
 
                 <!-- Secure verification PIN -->
                 <StackPanel Spacing="8" HorizontalAlignment="Center">
-                    <TextBlock Text="SECURE PAIRING PIN" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="80"/>
+                    <TextBlock Text="SECURE PAIRING PIN" FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="80"/>
                     <Border Background="{StaticResource BgElevated}" CornerRadius="12" Padding="16,10" BorderThickness="1.2" BorderBrush="{StaticResource BorderSubtle}" HorizontalAlignment="Center" Width="160">
-                        <TextBlock x:Name="PinTextBlock" Text="8429" FontSize="26" FontWeight="Bold" Foreground="{StaticResource NeonPrimary}" HorizontalAlignment="Center" CharacterSpacing="80" />
+                        <TextBlock x:Name="PinTextBlock" Text="8429" FontSize="22" FontWeight="Bold" Foreground="{StaticResource NeonPrimary}" HorizontalAlignment="Center" CharacterSpacing="80" />
                     </Border>
                 </StackPanel>
 
                 <!-- Regenerate Refresh Button -->
-                <Button Click="RefreshButton_Click" HorizontalAlignment="Center" Height="40" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="16,0">
+                <Button Click="RefreshButton_Click" HorizontalAlignment="Center" Height="40" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="16,0" common:MouseCursorHelper.HandCursor="True">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1D27D7E7" />
+                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="{StaticResource AccentCyan}" />
+                    </Button.Resources>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource TextBody}"/>
-                        <TextBlock Text="Regenerate PIN" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextBody}"/>
+                        <FontIcon Glyph="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{StaticResource TextBody}"/>
+                        <TextBlock Text="Regenerate PIN" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextBody}"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -92,12 +98,12 @@
                 
                 <!-- Muted privacy/signal-off icon in cyber neon error colors -->
                 <Border Width="90" Height="90" CornerRadius="45" Background="#1D12121A" BorderBrush="{StaticResource ColorError}" BorderThickness="1.5" HorizontalAlignment="Center">
-                    <FontIcon Glyph="&#xE814;" FontFamily="Segoe MDL2 Assets" FontSize="36" Foreground="{StaticResource ColorError}"/>
+                    <FontIcon Glyph="&#xE814;" FontFamily="Segoe MDL2 Assets" FontSize="32" Foreground="{StaticResource ColorError}"/>
                 </Border>
 
                 <StackPanel Spacing="6" HorizontalAlignment="Center">
-                    <TextBlock Text="DISCOVERY DISABLED" FontSize="12" FontWeight="Bold" Foreground="{StaticResource ColorError}" HorizontalAlignment="Center" CharacterSpacing="100"/>
-                    <TextBlock Text="You are not visible to nearby devices" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="DISCOVERY DISABLED" FontSize="11" FontWeight="Bold" Foreground="{StaticResource ColorError}" HorizontalAlignment="Center" CharacterSpacing="100"/>
+                    <TextBlock Text="You are not visible to nearby devices" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
                 </StackPanel>
             </StackPanel>
         </Grid>
