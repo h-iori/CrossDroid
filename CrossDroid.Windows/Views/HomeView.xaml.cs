@@ -7,94 +7,81 @@ namespace CrossDroid.Windows.Views
 {
     public sealed partial class HomeView : Page
     {
+        private Storyboard? _scanLineStoryboard;
+        private readonly Random _random = new();
+
         public HomeView()
         {
             this.InitializeComponent();
             this.Loaded += HomeView_Loaded;
+            this.Unloaded += HomeView_Unloaded;
         }
 
         private void HomeView_Loaded(object sender, RoutedEventArgs e)
         {
-            if (RadarGrid.Resources.TryGetValue("RadarPulseStoryboard", out object storyboardObj) && 
+            // Initialize with a random PIN
+            GenerateNewPin();
+
+            // Retrieve and start the laser scan line animation
+            if (this.Resources.TryGetValue("ScanLineAnim", out object storyboardObj) && 
                 storyboardObj is Storyboard storyboard)
             {
-                storyboard.Begin();
+                _scanLineStoryboard = storyboard;
+                if (VisibilityToggle.IsOn)
+                {
+                    _scanLineStoryboard.Begin();
+                }
             }
         }
 
-        private void DiscoverableToggle_Toggled(object sender, RoutedEventArgs e)
+        private void HomeView_Unloaded(object sender, RoutedEventArgs e)
         {
-            if (DiscoverableToggle == null || RadarGrid == null) return;
-
-            if (DiscoverableToggle.IsOn)
+            if (_scanLineStoryboard != null)
             {
-                if (RadarGrid.Resources.TryGetValue("RadarPulseStoryboard", out object storyboardObj) && 
-                    storyboardObj is Storyboard storyboard)
+                _scanLineStoryboard.Stop();
+            }
+        }
+
+        private void VisibilityToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (VisibilityToggle == null || DiscoveryPanel == null || HiddenPanel == null || VisibilityStatusText == null) 
+                return;
+
+            if (VisibilityToggle.IsOn)
+            {
+                DiscoveryPanel.Visibility = Visibility.Visible;
+                HiddenPanel.Visibility = Visibility.Collapsed;
+                VisibilityStatusText.Text = "Visible to nearby devices";
+                VisibilityStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ColorSuccess"];
+
+                if (_scanLineStoryboard != null)
                 {
-                    storyboard.Begin();
+                    _scanLineStoryboard.Begin();
                 }
             }
             else
             {
-                if (RadarGrid.Resources.TryGetValue("RadarPulseStoryboard", out object storyboardObj) && 
-                    storyboardObj is Storyboard storyboard)
+                DiscoveryPanel.Visibility = Visibility.Collapsed;
+                HiddenPanel.Visibility = Visibility.Visible;
+                VisibilityStatusText.Text = "Hidden from nearby devices";
+                VisibilityStatusText.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ColorError"];
+
+                if (_scanLineStoryboard != null)
                 {
-                    storyboard.Stop();
+                    _scanLineStoryboard.Stop();
                 }
             }
         }
 
-        private async void SendFilesButton_Click(object sender, RoutedEventArgs e)
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            App.MainWindowInstance.IsPickingFile = true;
-            try
-            {
-                var picker = new global::Windows.Storage.Pickers.FileOpenPicker();
-                
-                // Get the Window's HWND (Required in WinUI 3)
-                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindowInstance);
-                WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
-
-                picker.ViewMode = global::Windows.Storage.Pickers.PickerViewMode.List;
-                picker.SuggestedStartLocation = global::Windows.Storage.Pickers.PickerLocationId.ComputerFolder;
-                picker.FileTypeFilter.Add("*");
-
-                var files = await picker.PickMultipleFilesAsync();
-                if (files != null && files.Count > 0)
-                {
-                    // Stage selected files
-                    App.MainWindowInstance.StageTransfers(files);
-                }
-            }
-            finally
-            {
-                App.MainWindowInstance.IsPickingFile = false;
-            }
+            GenerateNewPin();
         }
 
-        private async void SendFolderButton_Click(object sender, RoutedEventArgs e)
+        private void GenerateNewPin()
         {
-            App.MainWindowInstance.IsPickingFile = true;
-            try
-            {
-                var picker = new global::Windows.Storage.Pickers.FolderPicker();
-
-                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindowInstance);
-                WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
-
-                picker.SuggestedStartLocation = global::Windows.Storage.Pickers.PickerLocationId.ComputerFolder;
-                picker.FileTypeFilter.Add("*");
-
-                var folder = await picker.PickSingleFolderAsync();
-                if (folder != null)
-                {
-                    App.MainWindowInstance.StageFolder(folder);
-                }
-            }
-            finally
-            {
-                App.MainWindowInstance.IsPickingFile = false;
-            }
+            int pin = _random.Next(1000, 10000);
+            PinTextBlock.Text = pin.ToString();
         }
     }
 }

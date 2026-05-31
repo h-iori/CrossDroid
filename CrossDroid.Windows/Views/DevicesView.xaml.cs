@@ -9,7 +9,6 @@ namespace CrossDroid.Windows.Views
     public sealed partial class DevicesView : Page
     {
         public ObservableCollection<DeviceViewModel> PairedDevices { get; set; } = new();
-        public ObservableCollection<NearbyDeviceViewModel> NearbyDevices { get; set; } = new();
 
         public DevicesView()
         {
@@ -17,7 +16,6 @@ namespace CrossDroid.Windows.Views
             LoadMockData();
             
             PairedDevicesList.ItemsSource = PairedDevices;
-            NearbyDevicesList.ItemsSource = NearbyDevices;
         }
 
         private void LoadMockData()
@@ -50,15 +48,6 @@ namespace CrossDroid.Windows.Views
                 StatusBackground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102)), // ErrorRed translucent
                 StatusForeground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102))
             });
-
-            NearbyDevices.Clear();
-            NearbyDevices.Add(new NearbyDeviceViewModel { Name = "iPhone 15 Pro", Address = "192.168.1.12 • Tap to pair", IconGlyph = "\xE8EA" });
-            NearbyDevices.Add(new NearbyDeviceViewModel { Name = "MacBook Pro M3", Address = "192.168.1.75 • Tap to pair", IconGlyph = "\xE7F4" });
-        }
-
-        private void RefreshPaired_Click(object sender, RoutedEventArgs e)
-        {
-            LoadMockData();
         }
 
         private void BlockDevice_Click(object sender, RoutedEventArgs e)
@@ -109,82 +98,6 @@ namespace CrossDroid.Windows.Views
                 PairedDevices.Remove(vm);
             }
         }
-
-        private void PairDevice_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.DataContext is NearbyDeviceViewModel vm)
-            {
-                // Put address PIN numbers in boxes for mock typing
-                PinBox1.Text = "8";
-                PinBox2.Text = "4";
-                PinBox3.Text = "2";
-                PinBox4.Text = "9";
-            }
-        }
-
-        private void PinBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (sender is TextBox currentBox && currentBox.Text.Length == 1)
-            {
-                // Advance focus to next pin text box
-                if (currentBox == PinBox1) PinBox2.Focus(FocusState.Programmatic);
-                else if (currentBox == PinBox2) PinBox3.Focus(FocusState.Programmatic);
-                else if (currentBox == PinBox3) PinBox4.Focus(FocusState.Programmatic);
-            }
-        }
-
-        private async void VerifyPin_Click(object sender, RoutedEventArgs e)
-        {
-            string pin = $"{PinBox1.Text}{PinBox2.Text}{PinBox3.Text}{PinBox4.Text}";
-            if (pin == "8429")
-            {
-                var dialog = new ContentDialog
-                {
-                    Title = "Pairing Successful",
-                    Content = "The connection is established. This device is now trusted.",
-                    CloseButtonText = "OK",
-                    XamlRoot = this.XamlRoot
-                };
-                await dialog.ShowAsync();
-
-                // Add to paired devices
-                PairedDevices.Add(new DeviceViewModel
-                {
-                    Name = "New Paired Device",
-                    IconGlyph = "\xE8EA",
-                    Status = "TRUSTED",
-                    Info = "Last seen: Just now • Fingerprint: F4:22:AA...",
-                    StatusBackground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136)),
-                    StatusForeground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136))
-                });
-
-                // Clear fields
-                PinBox1.Text = PinBox2.Text = PinBox3.Text = PinBox4.Text = string.Empty;
-            }
-            else
-            {
-                var dialog = new ContentDialog
-                {
-                    Title = "Pairing Failed",
-                    Content = "The entered PIN is incorrect. Please try again.",
-                    CloseButtonText = "OK",
-                    XamlRoot = this.XamlRoot
-                };
-                await dialog.ShowAsync();
-            }
-        }
-
-        private async void OpenCamera_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new ContentDialog
-            {
-                Title = "Camera Scanner",
-                Content = "Scanning for QR codes... (Simulated camera preview pane)",
-                CloseButtonText = "Cancel",
-                XamlRoot = this.XamlRoot
-            };
-            await dialog.ShowAsync();
-        }
     }
 
     public class DeviceViewModel : System.ComponentModel.INotifyPropertyChanged
@@ -223,12 +136,5 @@ namespace CrossDroid.Windows.Views
 
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged(string prop) => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(prop));
-    }
-
-    public class NearbyDeviceViewModel
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
-        public string IconGlyph { get; set; } = string.Empty;
     }
 }

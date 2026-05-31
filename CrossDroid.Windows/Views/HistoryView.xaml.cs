@@ -2,7 +2,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace CrossDroid.Windows.Views
 {
@@ -21,74 +20,12 @@ namespace CrossDroid.Windows.Views
             if (App.MainWindowInstance == null) return;
             var records = App.MainWindowInstance.HistoryRecords;
             
-            // Apply Search filter
-            var query = SearchBox?.Text?.Trim().ToLower() ?? "";
-            var filtered = string.IsNullOrEmpty(query) 
-                ? records 
-                : records.Where(r => r.FileName.ToLower().Contains(query) || r.DetailMessage.ToLower().Contains(query));
-
-            // Apply Sort
-            if (SortCombo != null)
-            {
-                if (SortCombo.SelectedIndex == 1) // Size
-                {
-                    // Parse size string roughly for sorting, e.g. "12 MB" vs "45 MB"
-                    filtered = filtered.OrderByDescending(r => ParseSize(r.FileSize));
-                }
-                else if (SortCombo.SelectedIndex == 2) // Name
-                {
-                    filtered = filtered.OrderBy(r => r.FileName);
-                }
-                else // Date
-                {
-                    // Records are naturally added in order, reverse for newest
-                    filtered = filtered.Reverse();
-                }
-            }
-            else
-            {
-                filtered = filtered.Reverse();
-            }
-
             DisplayedItems.Clear();
-            foreach (var item in filtered)
+            // Display items in reverse order (newest first)
+            for (int i = records.Count - 1; i >= 0; i--)
             {
-                DisplayedItems.Add(item);
+                DisplayedItems.Add(records[i]);
             }
-        }
-
-        private double ParseSize(string sizeStr)
-        {
-            try
-            {
-                var parts = sizeStr.Split(' ');
-                if (parts.Length >= 1 && double.TryParse(parts[0], out double val))
-                {
-                    if (parts.Length >= 2 && parts[1].Equals("GB", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return val * 1024;
-                    }
-                    return val;
-                }
-            }
-            catch {}
-            return 0;
-        }
-
-        private void SearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
-        {
-            RefreshList();
-        }
-
-        private void SortCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            RefreshList();
-        }
-
-        private void ClearHistory_Click(object sender, RoutedEventArgs e)
-        {
-            App.MainWindowInstance.HistoryRecords.Clear();
-            RefreshList();
         }
 
         private async void OpenFile_Click(object sender, RoutedEventArgs e)

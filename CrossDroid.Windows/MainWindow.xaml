@@ -82,7 +82,6 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <!-- Home Tab -->
@@ -107,19 +106,8 @@
                 </Grid>
             </Button>
 
-            <!-- Transfers Tab -->
-            <Button Grid.Column="2" Click="NavTab_Click" Tag="Transfers" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
-                <Grid>
-                    <StackPanel VerticalAlignment="Center" Spacing="2">
-                        <FontIcon x:Name="TransfersIcon" Glyph="&#xE8D7;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextSecondary}" />
-                        <TextBlock x:Name="TransfersText" Text="Transfers" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" />
-                    </StackPanel>
-                    <Border x:Name="TransfersIndicator" Height="3" Width="36" Background="{StaticResource NeonPrimary}" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2" Visibility="Collapsed" />
-                </Grid>
-            </Button>
-
             <!-- History Tab -->
-            <Button Grid.Column="3" Click="NavTab_Click" Tag="History" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+            <Button Grid.Column="2" Click="NavTab_Click" Tag="History" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
                 <Grid>
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                         <FontIcon x:Name="HistoryIcon" Glyph="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextSecondary}" />
@@ -130,7 +118,7 @@
             </Button>
 
             <!-- Settings Tab -->
-            <Button Grid.Column="4" Click="NavTab_Click" Tag="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
+            <Button Grid.Column="3" Click="NavTab_Click" Tag="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
                 <Grid>
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                         <FontIcon x:Name="SettingsIcon" Glyph="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextSecondary}" />

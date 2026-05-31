@@ -7,190 +7,99 @@
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
+    <Page.Resources>
+        <!-- Storyboard for QR code scanning line laser -->
+        <Storyboard x:Key="ScanLineAnim" RepeatBehavior="Forever">
+            <DoubleAnimation 
+                Storyboard.TargetName="ScanLineTransform"
+                Storyboard.TargetProperty="Y"
+                From="0" To="135"
+                Duration="0:0:2"
+                AutoReverse="True" />
+        </Storyboard>
+    </Page.Resources>
+
     <Page.Transitions>
         <TransitionCollection>
             <EntranceThemeTransition FromHorizontalOffset="0" FromVerticalOffset="28"/>
         </TransitionCollection>
     </Page.Transitions>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Padding="16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+    <Grid Padding="24" RowSpacing="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-            <!-- Pairing Widget Card -->
-            <Border Grid.Row="0" CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.5" Padding="16" Margin="0,0,0,16">
-                <StackPanel Spacing="12" HorizontalAlignment="Center">
-                    <TextBlock Text="Pair with Mobile" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" />
-                    <TextBlock Text="Scan QR or enter PIN on your phone" FontSize="12" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" Margin="0,-4,0,0" />
+        <!-- Top Section: Visibility Toggle Switch Card -->
+        <Border Grid.Row="0" CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Padding="16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="Discovery Mode" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
+                    <TextBlock x:Name="VisibilityStatusText" Text="Visible to nearby devices" FontSize="12" Foreground="{StaticResource ColorSuccess}"/>
+                </StackPanel>
+                <ToggleSwitch x:Name="VisibilityToggle" Grid.Column="1" IsOn="True" 
+                              OnContent="ON" OffContent="OFF" 
+                              Header="" MinWidth="0" VerticalAlignment="Center" 
+                              Toggled="VisibilityToggle_Toggled" Foreground="{StaticResource TextBody}"/>
+            </Grid>
+        </Border>
 
-                    <!-- QR Code Border Box -->
-                    <Border Background="#FFFFFF" CornerRadius="8" Padding="12" Height="140" Width="140" HorizontalAlignment="Center">
-                        <Grid Background="#FFFFFF">
-                            <Path Data="M0,0 h40 v20 h-20 v20 h-20 Z M100,0 h40 v40 h-20 v-20 h-20 Z M0,100 h20 v20 h20 v20 h-40 Z M20,20 h20 v20 h-20 Z M100,20 h20 v20 h-20 Z M20,100 h20 v20 h-20 Z M50,50 h40 v40 h-40 Z" Fill="#000000" Stretch="Uniform"/>
-                        </Grid>
+        <!-- Main Display Panel Area -->
+        <Grid Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+            
+            <!-- PANEL A: ACTIVE DISCOVERY (Visible when Toggled On) -->
+            <StackPanel x:Name="DiscoveryPanel" Spacing="24" Visibility="Visible" HorizontalAlignment="Center">
+                
+                <!-- QR Code Display Box with Neon Cyan borders and moving laser scanline -->
+                <Border CornerRadius="16" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1.5" Padding="16" Height="170" Width="170" HorizontalAlignment="Center">
+                    <Grid>
+                        <!-- Cyberpunk cyan-glowing vector QR Code representation -->
+                        <Path Data="M0,0 h40 v20 h-20 v20 h-20 Z M100,0 h40 v40 h-20 v-20 h-20 Z M0,100 h20 v20 h20 v20 h-40 Z M20,20 h20 v20 h-20 Z M100,20 h20 v20 h-20 Z M20,100 h20 v20 h-20 Z M50,50 h40 v40 h-40 Z" Fill="{StaticResource AccentCyan}" Stretch="Uniform"/>
+                        
+                        <!-- Glow Laser Scan line -->
+                        <Rectangle x:Name="ScanLine" Height="3" VerticalAlignment="Top" Fill="{StaticResource NeonHighlight}" Opacity="0.85">
+                            <Rectangle.RenderTransform>
+                                <TranslateTransform x:Name="ScanLineTransform" Y="0" />
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+                    </Grid>
+                </Border>
+
+                <!-- Secure verification PIN -->
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                    <TextBlock Text="SECURE PAIRING PIN" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="80"/>
+                    <Border Background="{StaticResource BgElevated}" CornerRadius="12" Padding="16,10" BorderThickness="1.2" BorderBrush="{StaticResource BorderSubtle}" HorizontalAlignment="Center" Width="160">
+                        <TextBlock x:Name="PinTextBlock" Text="8429" FontSize="26" FontWeight="Bold" Foreground="{StaticResource NeonPrimary}" HorizontalAlignment="Center" CharacterSpacing="80" />
                     </Border>
+                </StackPanel>
 
-                    <!-- Verification PIN -->
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="VERIFICATION PIN" FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="50"/>
-                        <Border Background="{StaticResource BgSurface}" CornerRadius="8" Padding="8,6" BorderThickness="1" BorderBrush="{StaticResource BorderSubtle}" HorizontalAlignment="Center" Width="120">
-                            <TextBlock Text="8429" FontSize="20" FontWeight="Bold" Foreground="{StaticResource NeonPrimary}" HorizontalAlignment="Center" CharacterSpacing="100" />
-                        </Border>
+                <!-- Regenerate Refresh Button -->
+                <Button Click="RefreshButton_Click" HorizontalAlignment="Center" Height="40" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="16,0">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource TextBody}"/>
+                        <TextBlock Text="Regenerate PIN" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextBody}"/>
                     </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <!-- Connection Details Card -->
-            <Border Grid.Row="1" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="12" Margin="0,0,0,16">
-                <StackPanel Spacing="8">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <FontIcon Glyph="&#xE701;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource AccentBlue}" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center" />
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="Device:" FontSize="11" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" />
-                            <TextBlock Text="WINDOWS-DESKTOP" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextBody}" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Grid>
-
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <FontIcon Glyph="&#xE774;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource AccentGreen}" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center" />
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="Network:" FontSize="11" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" />
-                            <TextBlock Text="Secure_LAN_5G" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextBody}" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- Radar Widget Card -->
-            <Border Grid.Row="2" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="12" Margin="0,0,0,16">
-                <Grid Height="160" Width="100%">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <Grid Grid.Row="0">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                            <FontIcon Glyph="&#xE104;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource AccentCyan}" FontSize="14" Margin="0,0,6,0" />
-                            <TextBlock Text="Radar Scanner" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" />
-                        </StackPanel>
-                        <ToggleSwitch x:Name="DiscoverableToggle" Header="" OnContent="On" OffContent="Off" 
-                                      IsOn="True" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource TextBody}"
-                                      Toggled="DiscoverableToggle_Toggled" Margin="0,-8,0,0" MinWidth="0" />
-                    </Grid>
-
-                    <!-- Radial concentric circles -->
-                    <Viewbox Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,8,0,0">
-                        <Grid x:Name="RadarGrid" Width="120" Height="120">
-                            <Grid.Resources>
-                                <!-- Pulse animation for Radar concentric circles -->
-                                <Storyboard x:Key="RadarPulseStoryboard" RepeatBehavior="Forever">
-                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RadarRing1" Storyboard.TargetProperty="Opacity">
-                                        <EasingDoubleKeyFrame KeyTime="0:0:0" Value="1.0" />
-                                        <EasingDoubleKeyFrame KeyTime="0:0:1.5" Value="0.4" />
-                                        <EasingDoubleKeyFrame KeyTime="0:0:3" Value="1.0" />
-                                    </DoubleAnimationUsingKeyFrames>
-                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RadarRing2" Storyboard.TargetProperty="Opacity">
-                                        <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.4" />
-                                        <EasingDoubleKeyFrame KeyTime="0:0:1.5" Value="1.0" />
-                                        <EasingDoubleKeyFrame KeyTime="0:0:3" Value="0.4" />
-                                    </DoubleAnimationUsingKeyFrames>
-                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RadarRing3" Storyboard.TargetProperty="Opacity">
-                                        <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.1" />
-                                        <EasingDoubleKeyFrame KeyTime="0:0:1.5" Value="0.6" />
-                                        <EasingDoubleKeyFrame KeyTime="0:0:3" Value="0.1" />
-                                    </DoubleAnimationUsingKeyFrames>
-                                    <DoubleAnimation Storyboard.TargetName="RadarSweep" Storyboard.TargetProperty="(StackPanel.RenderTransform).(RotateTransform.Angle)"
-                                                     From="0" To="360" Duration="0:0:4" RepeatBehavior="Forever" />
-                                </Storyboard>
-                            </Grid.Resources>
-                            <!-- Center Core -->
-                            <Ellipse Width="16" Height="16" Fill="{StaticResource NeonPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            <!-- Concentric Rings -->
-                            <Ellipse x:Name="RadarRing1" Width="50" Height="50" Stroke="{StaticResource NeonGlow}" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            <Ellipse x:Name="RadarRing2" Width="85" Height="85" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            <Ellipse x:Name="RadarRing3" Width="120" Height="120" Stroke="{StaticResource BorderSubtle}" StrokeThickness="1.5" StrokeDashArray="3 3" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            
-                            <!-- Sweep Panel -->
-                            <StackPanel x:Name="RadarSweep" RenderTransformOrigin="0.5,0.5" Width="120" Height="120">
-                                <StackPanel.RenderTransform>
-                                    <RotateTransform Angle="0" />
-                                </StackPanel.RenderTransform>
-                                <Rectangle Width="60" Height="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="60,59,0,0">
-                                    <Rectangle.Fill>
-                                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                            <GradientStop Color="#009B30FF" Offset="0.0" />
-                                            <GradientStop Color="#FFBF00FF" Offset="1.0" />
-                                        </LinearGradientBrush>
-                                    </Rectangle.Fill>
-                                </Rectangle>
-                            </StackPanel>
-
-                            <!-- Mock Device Dot -->
-                            <Ellipse Width="8" Height="8" Fill="{StaticResource ColorSuccess}" Margin="20,25,0,0" ToolTipService.ToolTip="Pixel 8 Pro (Online)" />
-                            <Ellipse Width="8" Height="8" Fill="{StaticResource AccentBlue}" Margin="90,70,0,0" ToolTipService.ToolTip="Galaxy Tab S9 (Online)" />
-                        </Grid>
-                    </Viewbox>
-                </Grid>
-            </Border>
-
-            <!-- Send Action Buttons Stack (Restyled as Premium Gradient Cards) -->
-            <StackPanel Grid.Row="3" Spacing="12" Margin="0,0,0,10">
-                <!-- Send Files Action Card -->
-                <Button HorizontalAlignment="Stretch" Height="62" CornerRadius="16" Background="{StaticResource SendCardBg}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.2" Click="SendFilesButton_Click" Padding="12,0">
-                    <Grid HorizontalAlignment="Stretch" Width="100%">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <!-- Rounded Icon Box -->
-                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="10" Background="#33BF00FF" BorderThickness="1" BorderBrush="#88D455FF" Margin="0,0,12,0" VerticalAlignment="Center">
-                            <FontIcon Glyph="&#xE105;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left">
-                            <TextBlock Text="Send Files" FontSize="14.5" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
-                            <TextBlock Text="Select files from local drive" FontSize="10.5" Foreground="{StaticResource TextSecondary}" />
-                        </StackPanel>
-                        <!-- Chevron Right Arrow -->
-                        <FontIcon Grid.Column="2" Glyph="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
-                    </Grid>
-                </Button>
-
-                <!-- Send Folder Action Card -->
-                <Button HorizontalAlignment="Stretch" Height="62" CornerRadius="16" Background="{StaticResource ReceiveCardBg}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1.2" Click="SendFolderButton_Click" Padding="12,0">
-                    <Grid HorizontalAlignment="Stretch" Width="100%">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <!-- Rounded Icon Box -->
-                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="10" Background="#3327D7E7" BorderThickness="1" BorderBrush="#888AF7FF" Margin="0,0,12,0" VerticalAlignment="Center">
-                            <FontIcon Glyph="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left">
-                            <TextBlock Text="Send Folder" FontSize="14.5" FontWeight="Bold" Foreground="{StaticResource TextStrong}" />
-                            <TextBlock Text="Preserve hierarchy &amp; structure" FontSize="10.5" Foreground="{StaticResource TextSecondary}" />
-                        </StackPanel>
-                        <!-- Chevron Right Arrow -->
-                        <FontIcon Grid.Column="2" Glyph="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
-                    </Grid>
                 </Button>
             </StackPanel>
+
+            <!-- PANEL B: INACTIVE DISCOVERY (Visible when Toggled Off) -->
+            <StackPanel x:Name="HiddenPanel" Spacing="20" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                
+                <!-- Muted privacy/signal-off icon in cyber neon error colors -->
+                <Border Width="90" Height="90" CornerRadius="45" Background="#1D12121A" BorderBrush="{StaticResource ColorError}" BorderThickness="1.5" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE814;" FontFamily="Segoe MDL2 Assets" FontSize="36" Foreground="{StaticResource ColorError}"/>
+                </Border>
+
+                <StackPanel Spacing="6" HorizontalAlignment="Center">
+                    <TextBlock Text="DISCOVERY DISABLED" FontSize="12" FontWeight="Bold" Foreground="{StaticResource ColorError}" HorizontalAlignment="Center" CharacterSpacing="100"/>
+                    <TextBlock Text="You are not visible to nearby devices" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
         </Grid>
-    </ScrollViewer>
+    </Grid>
 </Page>

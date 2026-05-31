@@ -268,7 +268,6 @@ namespace CrossDroid.Windows
 
             SetState(HomeIcon, HomeText, HomeIndicator, selectedTag == "Home");
             SetState(DevicesIcon, DevicesText, DevicesIndicator, selectedTag == "Devices");
-            SetState(TransfersIcon, TransfersText, TransfersIndicator, selectedTag == "Transfers");
             SetState(HistoryIcon, HistoryText, HistoryIndicator, selectedTag == "History");
             SetState(SettingsIcon, SettingsText, SettingsIndicator, selectedTag == "Settings");
         }
