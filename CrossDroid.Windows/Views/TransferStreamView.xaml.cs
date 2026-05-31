@@ -32,7 +32,7 @@ namespace CrossDroid.Windows.Views
             TotalSpeedText.Text = "12.4 MB/s";
 
             LoadMockData();
-            SimulateProgress();
+            StartProgressSimulation();
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
@@ -98,32 +98,47 @@ namespace CrossDroid.Windows.Views
             });
         }
 
-        private async void SimulateProgress()
+        private DispatcherTimer? _progressTimer;
+
+        private void StartProgressSimulation()
         {
-            // Simple simulation for the active items
-            while (true)
+            _progressTimer = new DispatcherTimer();
+            _progressTimer.Interval = TimeSpan.FromSeconds(1);
+            _progressTimer.Tick += DispatcherTimer_Tick;
+            _progressTimer.Start();
+        }
+
+        private void DispatcherTimer_Tick(object? sender, object e)
+        {
+            foreach (var bubble in ChatBubbles)
             {
-                await Task.Delay(1000);
-                
-                foreach (var bubble in ChatBubbles)
+                if (bubble.IsActive && bubble.ProgressValue < 100)
                 {
-                    if (bubble.IsActive && bubble.ProgressValue < 100)
+                    bubble.ProgressValue += 5;
+                    if (bubble.ProgressValue >= 100)
                     {
-                        bubble.ProgressValue += 5;
-                        if (bubble.ProgressValue >= 100)
-                        {
-                            bubble.ProgressValue = 100;
-                            bubble.IsActive = false;
-                            bubble.IsCompleted = true;
-                            bubble.StatusText = "Completed";
-                            bubble.SpeedText = "";
-                        }
-                        else
-                        {
-                            bubble.StatusText = (bubble.IsOutgoing ? "Sending " : "Receiving ") + bubble.ProgressValue + "%";
-                        }
+                        bubble.ProgressValue = 100;
+                        bubble.IsActive = false;
+                        bubble.IsCompleted = true;
+                        bubble.StatusText = "Completed";
+                        bubble.SpeedText = "";
+                    }
+                    else
+                    {
+                        bubble.StatusText = (bubble.IsOutgoing ? "Sending " : "Receiving ") + bubble.ProgressValue + "%";
                     }
                 }
+            }
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+            if (_progressTimer != null)
+            {
+                _progressTimer.Stop();
+                _progressTimer.Tick -= DispatcherTimer_Tick;
+                _progressTimer = null;
             }
         }
     }
