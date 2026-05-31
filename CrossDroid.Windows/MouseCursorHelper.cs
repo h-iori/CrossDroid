@@ -41,6 +41,13 @@ namespace CrossDroid.Windows
         private static readonly InputCursor s_handCursor =
             InputSystemCursor.Create(InputSystemCursorShape.Hand);
 
+        // FIX: A dedicated arrow cursor is used to reset the cursor on PointerExited.
+        // Passing null to the native ProtectedCursor setter invokes the COM setter with
+        // a null pointer, which raises an AccessViolationException — a corrupted-state
+        // exception that bypasses the managed try/catch block entirely, crashing the app.
+        private static readonly InputCursor s_arrowCursor =
+            InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+
         // ------------------------------------------------------------------
         //  Property changed callback – wire up events, NEVER set cursor here
         // ------------------------------------------------------------------
@@ -74,8 +81,19 @@ namespace CrossDroid.Windows
 
         private static void Element_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            if (sender is UIElement element)
-                SetCursor(element, null);
+            // FIX: PointerExited has a bubbling routing strategy in WinUI 3.
+            // When the mouse moves between child elements inside a Button (e.g.
+            // StackPanel → FontIcon → TextBlock), each child fires its own
+            // PointerExited which bubbles up to the Button — even though the mouse
+            // never actually left the button's visible bounds. Without this guard,
+            // SetCursor is called with s_arrowCursor (formerly null) on every
+            // inter-child transition, both disrupting the hand cursor mid-hover and
+            // previously crashing the app via the null/AccessViolationException path.
+            //
+            // e.OriginalSource is the element the pointer physically left.
+            // We only reset the cursor when the pointer truly exits THIS element.
+            if (sender is UIElement element && ReferenceEquals(e.OriginalSource, sender))
+                SetCursor(element, s_arrowCursor);
         }
 
         private static void SetCursor(UIElement element, InputCursor? cursor)

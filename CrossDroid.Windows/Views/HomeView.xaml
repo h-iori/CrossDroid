@@ -84,7 +84,7 @@
                 <Button Click="RefreshButton_Click" HorizontalAlignment="Center" Height="40" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="16,0" common:MouseCursorHelper.HandCursor="True">
                     <Button.Resources>
                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1D27D7E7" />
-                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="{StaticResource AccentCyan}" />
+                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="{StaticResource AccentCyanColor}" />
                     </Button.Resources>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{StaticResource TextBody}"/>
