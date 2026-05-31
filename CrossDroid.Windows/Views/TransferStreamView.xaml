@@ -186,7 +186,7 @@
 
         <!-- Bottom Elegant Send Bar -->
         <Border Grid.Row="2" CornerRadius="12,12,4,4" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,1,0,0" Padding="8" Margin="-12,0,-12,-12">
-            <Button HorizontalAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" CornerRadius="20" Padding="10,6" common:MouseCursorHelper.HandCursor="True">
+            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" CornerRadius="20" Padding="10,6" common:MouseCursorHelper.HandCursor="True">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
