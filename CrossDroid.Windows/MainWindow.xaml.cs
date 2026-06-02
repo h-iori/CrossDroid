@@ -101,8 +101,7 @@ namespace CrossDroid.Windows
                 System.Diagnostics.Debug.WriteLine($"Failed to load tray icon: {ex.Message}");
             }
 
-            // Hook window activated event for auto-hiding when losing focus
-            this.Activated += MainWindow_Activated;
+            // Auto-hide feature removed per user request
 
             // Load initial history items
             LoadMockHistory();
@@ -125,17 +124,6 @@ namespace CrossDroid.Windows
             PositionWindowNearTray();
         }
 
-        private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
-        {
-            if (args.WindowActivationState == WindowActivationState.Deactivated)
-            {
-                // Auto-hide the window when focus is lost, unless we are currently picking a file/folder
-                if (!IsPickingFile)
-                {
-                    this.AppWindow.Hide();
-                }
-            }
-        }
 
         private void PositionWindowNearTray()
         {

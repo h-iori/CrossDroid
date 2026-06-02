@@ -60,5 +60,47 @@ namespace CrossDroid.Windows.Views
             int pin = _random.Next(1000, 10000);
             PinTextBlock.Text = pin.ToString();
         }
+
+        private async void TempSendButton_Click(object sender, RoutedEventArgs e)
+        {
+            var window = App.MainWindowInstance;
+            if (window == null) return;
+
+            var picker = new global::Windows.Storage.Pickers.FileOpenPicker();
+            picker.ViewMode = global::Windows.Storage.Pickers.PickerViewMode.Thumbnail;
+            picker.SuggestedStartLocation = global::Windows.Storage.Pickers.PickerLocationId.PicturesLibrary;
+            picker.FileTypeFilter.Add("*");
+
+            // Initialize the picker with the window handle
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+            var files = await picker.PickMultipleFilesAsync();
+            if (files != null && files.Count > 0)
+            {
+                var selectedFiles = new System.Collections.Generic.List<StorageFileItem>();
+                foreach (var file in files)
+                {
+                    var props = await file.GetBasicPropertiesAsync();
+                    selectedFiles.Add(new StorageFileItem 
+                    { 
+                        Name = file.Name, 
+                        Size = props.Size 
+                    });
+                }
+                
+                // Navigate to Radar Screen with selected files (ensure UI thread)
+                this.DispatcherQueue.TryEnqueue(() =>
+                {
+                    this.Frame.Navigate(typeof(RadarView), selectedFiles);
+                });
+            }
+        }
+    }
+
+    public class StorageFileItem
+    {
+        public string Name { get; set; }
+        public ulong Size { get; set; }
     }
 }

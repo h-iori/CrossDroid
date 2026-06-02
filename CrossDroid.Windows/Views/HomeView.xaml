@@ -20,6 +20,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Top Section: Visibility Toggle Switch Card -->
@@ -92,5 +93,16 @@
                 </StackPanel>
             </StackPanel>
         </Grid>
+
+        <!-- Temporary Send Button -->
+        <Button Grid.Row="2" Click="TempSendButton_Click" HorizontalAlignment="Stretch" Height="48" CornerRadius="12" Background="{StaticResource AccentCyan}" BorderThickness="0" common:MouseCursorHelper.HandCursor="True">
+            <Button.Resources>
+                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource AccentCyanColor}" Opacity="0.8" />
+            </Button.Resources>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <FontIcon Glyph="&#xE724;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextStrong}"/>
+                <TextBlock Text="Temporary Send Button" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
+            </StackPanel>
+        </Button>
     </Grid>
 </Page>

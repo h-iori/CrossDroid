@@ -22,16 +22,30 @@ namespace CrossDroid.Windows.Views
             base.OnNavigatedTo(e);
 
             string deviceName = "Unknown Device";
-            if (e.Parameter is HistoryItemViewModel historyItem)
+            int totalFiles = 0;
+
+            if (e.Parameter is TransferNavParameter navParam)
+            {
+                deviceName = navParam.TargetDeviceName;
+                LoadSelectedFiles(navParam.Files);
+                totalFiles = navParam.Files?.Count ?? 0;
+            }
+            else if (e.Parameter is HistoryItemViewModel historyItem)
             {
                 deviceName = historyItem.DeviceName;
+                LoadMockData();
+                totalFiles = ChatBubbles.Count;
+            }
+            else
+            {
+                LoadMockData();
+                totalFiles = ChatBubbles.Count;
             }
 
             PeerDeviceNameText.Text = deviceName;
-            PeerStatusText.Text = "Transferring 2 of 4 files";
+            PeerStatusText.Text = $"Transferring 0 of {totalFiles} files";
             TotalSpeedText.Text = "12.4 MB/s";
 
-            LoadMockData();
             StartProgressSimulation();
         }
 
@@ -40,6 +54,32 @@ namespace CrossDroid.Windows.Views
             if (this.Frame.CanGoBack)
             {
                 this.Frame.GoBack();
+            }
+        }
+
+        private void LoadSelectedFiles(System.Collections.Generic.List<StorageFileItem> files)
+        {
+            ChatBubbles.Clear();
+            if (files != null)
+            {
+                foreach (var file in files)
+                {
+                    double sizeInMb = file.Size / 1024.0 / 1024.0;
+                    string sizeStr = sizeInMb > 1000 ? $"{(sizeInMb / 1024.0):F2} GB" : $"{sizeInMb:F2} MB";
+
+                    ChatBubbles.Add(new TransferBubbleViewModel
+                    {
+                        IsOutgoing = true,
+                        FileName = file.Name,
+                        FileSize = sizeStr,
+                        ProgressValue = 0,
+                        StatusText = "Pending...",
+                        SpeedText = "0.0 MB/s",
+                        IconGlyph = "\xE7C3", // Document/File icon
+                        IsActive = true,
+                        IsCompleted = false
+                    });
+                }
             }
         }
 
@@ -110,11 +150,15 @@ namespace CrossDroid.Windows.Views
 
         private void DispatcherTimer_Tick(object? sender, object e)
         {
+            int completedCount = 0;
+            int totalActive = 0;
+
             foreach (var bubble in ChatBubbles)
             {
                 if (bubble.IsActive && bubble.ProgressValue < 100)
                 {
                     bubble.ProgressValue += 5;
+                    bubble.SpeedText = "12.4 MB/s"; // Mock speed
                     if (bubble.ProgressValue >= 100)
                     {
                         bubble.ProgressValue = 100;
@@ -127,6 +171,20 @@ namespace CrossDroid.Windows.Views
                     {
                         bubble.StatusText = (bubble.IsOutgoing ? "Sending " : "Receiving ") + bubble.ProgressValue + "%";
                     }
+                }
+
+                if (bubble.IsCompleted) completedCount++;
+                if (bubble.IsActive) totalActive++;
+            }
+
+            PeerStatusText.Text = $"Transferring {completedCount} of {ChatBubbles.Count} files";
+
+            if (totalActive == 0 && completedCount == ChatBubbles.Count)
+            {
+                TotalSpeedText.Text = "0.0 MB/s";
+                if (_progressTimer != null)
+                {
+                    _progressTimer.Stop();
                 }
             }
         }
