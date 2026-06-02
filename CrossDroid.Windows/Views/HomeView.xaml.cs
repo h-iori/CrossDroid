@@ -100,7 +100,7 @@ namespace CrossDroid.Windows.Views
 
     public class StorageFileItem
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public ulong Size { get; set; }
     }
 }

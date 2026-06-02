@@ -7,7 +7,7 @@ namespace CrossDroid.Windows.Views
 {
     public sealed partial class RadarView : Page
     {
-        private List<StorageFileItem> _selectedFiles;
+        private List<StorageFileItem> _selectedFiles = new();
 
         public RadarView()
         {
@@ -83,7 +83,7 @@ namespace CrossDroid.Windows.Views
 
     public class TransferNavParameter
     {
-        public string TargetDeviceName { get; set; }
-        public List<StorageFileItem> Files { get; set; }
+        public string TargetDeviceName { get; set; } = string.Empty;
+        public List<StorageFileItem> Files { get; set; } = new();
     }
 }

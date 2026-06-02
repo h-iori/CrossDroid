@@ -14,7 +14,7 @@
         </TransitionCollection>
     </Page.Transitions>
 
-    <Grid Padding="24" RowSpacing="24">
+    <Grid Padding="16" RowSpacing="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -23,99 +23,188 @@
 
         <!-- Top App Bar Area -->
         <Grid Grid.Row="0">
-            <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-                <Button Background="Transparent" BorderThickness="0" Click="BackButton_Click" Padding="8" common:MouseCursorHelper.HandCursor="True">
-                    <FontIcon Glyph="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{StaticResource TextStrong}"/>
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Button Background="Transparent" BorderThickness="0" Click="BackButton_Click" Padding="6" common:MouseCursorHelper.HandCursor="True">
+                    <FontIcon Glyph="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextStrong}"/>
                 </Button>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Radar Discovery" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
-                    <TextBlock Text="Nearby peer terminals" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                    <TextBlock Text="Radar Discovery" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
+                    <TextBlock Text="Nearby peer terminals" FontSize="10.5" Foreground="{StaticResource TextSecondary}"/>
                 </StackPanel>
             </StackPanel>
         </Grid>
 
         <!-- Radar Display Area -->
-        <Border Grid.Row="1" CornerRadius="24" Background="{StaticResource BgPanel}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1" Padding="16" Margin="16,0" HorizontalAlignment="Center" VerticalAlignment="Center" Width="360" Height="360">
+        <Border Grid.Row="1" CornerRadius="20" Background="{StaticResource BgPanel}" BorderThickness="1" Padding="12" Margin="12,0" HorizontalAlignment="Center" VerticalAlignment="Center" Width="320" Height="320">
+            <Border.BorderBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#6127D7E7" Offset="0.0" />
+                    <GradientStop Color="#59BF00FF" Offset="0.5" />
+                    <GradientStop Color="#33FFFFFF" Offset="1.0" />
+                </LinearGradientBrush>
+            </Border.BorderBrush>
             <Grid x:Name="RadarCanvas">
                 <Grid.Resources>
                     <Storyboard x:Name="RadarSweepAnimation" RepeatBehavior="Forever">
                         <DoubleAnimation Storyboard.TargetName="RadarSweepTransform" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:3"/>
                     </Storyboard>
+
+                    <Style x:Key="RadarDeviceButtonStyle" TargetType="Button">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderBrush" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Grid x:Name="RootGrid" Background="Transparent" RenderTransformOrigin="0.5,0.5">
+                                        <Grid.RenderTransform>
+                                            <ScaleTransform x:Name="ContentScaleTransform" ScaleX="1.0" ScaleY="1.0"/>
+                                        </Grid.RenderTransform>
+                                        <VisualStateManager.VisualStateGroups>
+                                            <VisualStateGroup x:Name="CommonStates">
+                                                <VisualState x:Name="Normal">
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="ContentScaleTransform" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.15"/>
+                                                        <DoubleAnimation Storyboard.TargetName="ContentScaleTransform" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.15"/>
+                                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.9" Duration="0:0:0.15"/>
+                                                    </Storyboard>
+                                                </VisualState>
+                                                <VisualState x:Name="PointerOver">
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="ContentScaleTransform" Storyboard.TargetProperty="ScaleX" To="1.08" Duration="0:0:0.15"/>
+                                                        <DoubleAnimation Storyboard.TargetName="ContentScaleTransform" Storyboard.TargetProperty="ScaleY" To="1.08" Duration="0:0:0.15"/>
+                                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.15"/>
+                                                    </Storyboard>
+                                                </VisualState>
+                                                <VisualState x:Name="Pressed">
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="ContentScaleTransform" Storyboard.TargetProperty="ScaleX" To="0.95" Duration="0:0:0.1"/>
+                                                        <DoubleAnimation Storyboard.TargetName="ContentScaleTransform" Storyboard.TargetProperty="ScaleY" To="0.95" Duration="0:0:0.1"/>
+                                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.8" Duration="0:0:0.1"/>
+                                                    </Storyboard>
+                                                </VisualState>
+                                                <VisualState x:Name="Disabled">
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.15"/>
+                                                    </Storyboard>
+                                                </VisualState>
+                                            </VisualStateGroup>
+                                        </VisualStateManager.VisualStateGroups>
+                                        <ContentPresenter x:Name="ContentPresenter"
+                                                          Background="Transparent"
+                                                          BorderBrush="Transparent"
+                                                          BorderThickness="0"
+                                                          Content="{TemplateBinding Content}"
+                                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                          Padding="{TemplateBinding Padding}"
+                                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
                 </Grid.Resources>
 
                 <!-- Radar Circles -->
-                <Ellipse Width="300" Height="300" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" Opacity="0.1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Ellipse Width="200" Height="200" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" Opacity="0.2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Ellipse Width="100" Height="100" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" Opacity="0.3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Ellipse Width="280" Height="280" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" Opacity="0.1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Ellipse Width="180" Height="180" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" Opacity="0.2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Ellipse Width="90" Height="90" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" Opacity="0.3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 
                 <!-- Crosshairs -->
-                <Line X1="160" Y1="0" X2="160" Y2="320" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" Opacity="0.2"/>
-                <Line X1="0" Y1="160" X2="320" Y2="160" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" Opacity="0.2"/>
+                <Line X1="148" Y1="0" X2="148" Y2="296" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" Opacity="0.2"/>
+                <Line X1="0" Y1="148" X2="296" Y2="148" Stroke="{StaticResource AccentCyan}" StrokeThickness="1" Opacity="0.2"/>
 
                 <!-- Sweeping Radar Line (Mocked via RenderTransform animation) -->
-                <Grid Width="300" Height="300" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid Width="280" Height="280" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Grid.RenderTransform>
-                        <RotateTransform x:Name="RadarSweepTransform" CenterX="150" CenterY="150" Angle="0"/>
+                        <RotateTransform x:Name="RadarSweepTransform" CenterX="140" CenterY="140" Angle="0"/>
                     </Grid.RenderTransform>
                     <!-- A cone-like shape for the radar sweep could be drawn here, we'll use a simple wedge/line for now -->
-                    <Path Data="M 150,150 L 150,0 A 150,150 0 0 1 256,44 Z" Fill="{StaticResource AccentCyan}" Opacity="0.15" />
-                    <Line X1="150" Y1="150" X2="150" Y2="0" Stroke="{StaticResource AccentCyan}" StrokeThickness="2" Opacity="0.8"/>
+                    <Path Data="M 140,140 L 140,0 A 140,140 0 0 1 239,41 Z" Fill="{StaticResource AccentCyan}" Opacity="0.15" />
+                    <Line X1="140" Y1="140" X2="140" Y2="0" Stroke="{StaticResource AccentCyan}" StrokeThickness="2" Opacity="0.8"/>
                 </Grid>
+
+                <!-- Coordinate Labels -->
+                <TextBlock Text="N" FontWeight="Bold" FontSize="8.5" Foreground="#9427D7E7" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,3,0,0"/>
+                <TextBlock Text="S" FontWeight="Bold" FontSize="8.5" Foreground="#9427D7E7" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3"/>
+                <TextBlock Text="W" FontWeight="Bold" FontSize="8.5" Foreground="#9427D7E7" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="3,0,0,0"/>
+                <TextBlock Text="E" FontWeight="Bold" FontSize="8.5" Foreground="#9427D7E7" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,3,0"/>
+
+                <!-- Discovery Mesh Overlay -->
+                <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" CornerRadius="8" Background="#A31C1C1E" BorderBrush="#CC3A3A3C" BorderThickness="1" Padding="8,4" Margin="4">
+                    <StackPanel>
+                        <TextBlock Text="DISCOVERY MESH" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource TextMuted}" CharacterSpacing="80"/>
+                        <TextBlock Text="Tap a terminal to connect" FontSize="7.0" Foreground="{StaticResource TextSecondary}"/>
+                    </StackPanel>
+                </Border>
 
                 <!-- Mock Devices -->
                 <!-- Device 1: Android Phone -->
-                <Button Click="Device_Click" Tag="Pixel 8 Pro" Margin="-120,-80,0,0" Background="Transparent" BorderThickness="0" Padding="0" HorizontalAlignment="Center" VerticalAlignment="Center" common:MouseCursorHelper.HandCursor="True">
-                    <StackPanel Spacing="4">
-                        <Border Width="44" Height="44" CornerRadius="14" Background="#1A1ED455" BorderBrush="#4D1ED455" BorderThickness="1">
-                            <FontIcon Glyph="&#xE8EA;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{StaticResource ColorSuccess}"/>
+                <Button Style="{StaticResource RadarDeviceButtonStyle}" Click="Device_Click" Tag="Pixel 8 Pro" Margin="-112,-75,0,0" common:MouseCursorHelper.HandCursor="True">
+                    <StackPanel Spacing="2">
+                        <Border Width="30" Height="30" CornerRadius="9" Background="#1A1ED455" BorderBrush="#4D1ED455" BorderThickness="1">
+                            <FontIcon Glyph="&#xE8EA;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource ColorSuccess}"/>
                         </Border>
-                        <TextBlock Text="Pixel 8 Pro" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"/>
+                        <Border Background="#1A1ED455" BorderBrush="#331ED455" BorderThickness="1" CornerRadius="6" Padding="4,1" HorizontalAlignment="Center">
+                            <TextBlock Text="ANDROID" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource ColorSuccess}"/>
+                        </Border>
+                        <TextBlock Text="Pixel 8 Pro" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
 
                 <!-- Device 2: Windows PC -->
-                <Button Click="Device_Click" Tag="Desktop-PC" Margin="140,60,0,0" Background="Transparent" BorderThickness="0" Padding="0" HorizontalAlignment="Center" VerticalAlignment="Center" common:MouseCursorHelper.HandCursor="True">
-                    <StackPanel Spacing="4">
-                        <Border Width="44" Height="44" CornerRadius="14" Background="#1A27D7E7" BorderBrush="#4D27D7E7" BorderThickness="1">
-                            <FontIcon Glyph="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{StaticResource AccentCyan}"/>
+                <Button Style="{StaticResource RadarDeviceButtonStyle}" Click="Device_Click" Tag="Desktop-PC" Margin="130,56,0,0" common:MouseCursorHelper.HandCursor="True">
+                    <StackPanel Spacing="2">
+                        <Border Width="30" Height="30" CornerRadius="9" Background="#1A27D7E7" BorderBrush="#4D27D7E7" BorderThickness="1">
+                            <FontIcon Glyph="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource AccentCyan}"/>
                         </Border>
-                        <TextBlock Text="Desktop-PC" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"/>
+                        <Border Background="#1A27D7E7" BorderBrush="#3327D7E7" BorderThickness="1" CornerRadius="6" Padding="4,1" HorizontalAlignment="Center">
+                            <TextBlock Text="WINDOWS" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource AccentCyan}"/>
+                        </Border>
+                        <TextBlock Text="Desktop-PC" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
 
                 <!-- Device 3: Another Phone -->
-                <Button Click="Device_Click" Tag="Galaxy S23" Margin="-40,160,0,0" Background="Transparent" BorderThickness="0" Padding="0" HorizontalAlignment="Center" VerticalAlignment="Center" common:MouseCursorHelper.HandCursor="True">
-                    <StackPanel Spacing="4">
-                        <Border Width="44" Height="44" CornerRadius="14" Background="#1A1ED455" BorderBrush="#4D1ED455" BorderThickness="1">
-                            <FontIcon Glyph="&#xE8EA;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{StaticResource ColorSuccess}"/>
+                <Button Style="{StaticResource RadarDeviceButtonStyle}" Click="Device_Click" Tag="Galaxy S23" Margin="-37,128,0,0" common:MouseCursorHelper.HandCursor="True">
+                    <StackPanel Spacing="2">
+                        <Border Width="30" Height="30" CornerRadius="9" Background="#1A1ED455" BorderBrush="#4D1ED455" BorderThickness="1">
+                            <FontIcon Glyph="&#xE8EA;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource ColorSuccess}"/>
                         </Border>
-                        <TextBlock Text="Galaxy S23" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"/>
+                        <Border Background="#1A1ED455" BorderBrush="#331ED455" BorderThickness="1" CornerRadius="6" Padding="4,1" HorizontalAlignment="Center">
+                            <TextBlock Text="ANDROID" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource ColorSuccess}"/>
+                        </Border>
+                        <TextBlock Text="Galaxy S23" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </Grid>
         </Border>
 
         <!-- Bottom PIN Input Section -->
-        <Border Grid.Row="2" CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1.2" Padding="20">
-            <StackPanel Spacing="12">
-                <TextBlock Text="Connect via PIN" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
-                <TextBlock Text="Enter the 4-digit PIN of a hidden or distant terminal to connect manually." FontSize="11.5" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
+        <Border Grid.Row="2" CornerRadius="10" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1.2" Padding="10">
+            <StackPanel Spacing="6">
+                <TextBlock Text="Connect via PIN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
+                <TextBlock Text="Enter the 4-digit PIN of a hidden or distant terminal to connect manually." FontSize="9.5" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
                 
-                <Grid ColumnSpacing="12">
+                <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     
-                    <TextBox x:Name="PinTextBox" Grid.Column="0" PlaceholderText="0000" MaxLength="4" FontSize="18" FontWeight="Bold" CharacterSpacing="200" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center" Background="{StaticResource BgSurface}"/>
+                    <TextBox x:Name="PinTextBox" Grid.Column="0" PlaceholderText="0000" MaxLength="4" FontSize="12" FontWeight="Bold" CharacterSpacing="200" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center" Background="{StaticResource BgSurface}"/>
                     
-                    <Button Grid.Column="1" Click="ConnectPin_Click" Height="40" Padding="16,0" CornerRadius="8" Background="{StaticResource NeonPrimary}" BorderThickness="0" common:MouseCursorHelper.HandCursor="True">
+                    <Button Grid.Column="1" Click="ConnectPin_Click" Height="28" Padding="10,0" CornerRadius="5" Background="{StaticResource NeonPrimary}" BorderThickness="0" common:MouseCursorHelper.HandCursor="True">
                         <Button.Resources>
                             <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource NeonPrimaryColor}" Opacity="0.8" />
                         </Button.Resources>
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="&#xE724;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextStrong}"/>
-                            <TextBlock Text="Connect" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
+                            <FontIcon Glyph="&#xE724;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="{StaticResource TextStrong}"/>
+                            <TextBlock Text="Connect" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
                         </StackPanel>
                     </Button>
                 </Grid>
