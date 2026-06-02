@@ -13,6 +13,7 @@ namespace CrossDroid.Windows.Views
     public sealed partial class TransferStreamView : Page
     {
         public ObservableCollection<TransferBubbleViewModel> ChatBubbles { get; set; } = new();
+        private DispatcherTimer? _refreshTimer;
 
         public TransferStreamView()
         {
@@ -29,8 +30,18 @@ namespace CrossDroid.Windows.Views
             if (e.Parameter is TransferNavParameter navParam)
             {
                 deviceName = navParam.TargetDeviceName;
-                LoadSelectedFiles(navParam.Files);
-                totalFiles = navParam.Files?.Count ?? 0;
+                
+                var targetDevice = App.Backend.Devices.TrustedDevices.FirstOrDefault(d => d.AliasOrName == deviceName)
+                    ?? App.Backend.Devices.Devices.FirstOrDefault(d => d.AliasOrName == deviceName);
+
+                if (targetDevice != null && App.Backend.Staging.Items.Count > 0)
+                {
+                    _ = App.Backend.Transfers.StartSendAsync(targetDevice, App.Backend.Staging.Items.ToList());
+                    App.Backend.Staging.Clear();
+                }
+
+                LoadActiveQueueData();
+                totalFiles = ChatBubbles.Count;
             }
             else if (e.Parameter is HistoryItemViewModel historyItem)
             {
@@ -43,6 +54,16 @@ namespace CrossDroid.Windows.Views
                 LoadActiveQueueData();
                 totalFiles = ChatBubbles.Count;
             }
+
+            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _refreshTimer.Tick += (_, _) => 
+            {
+                if (e.Parameter is HistoryItemViewModel) return;
+                LoadActiveQueueData();
+                PeerStatusText.Text = $"Transferring... {ChatBubbles.Count(c => c.IsCompleted)} of {ChatBubbles.Count} files";
+                TotalSpeedText.Text = $"{StagedTransferItem.FormatBytes((long)App.Backend.Transfers.Queue.Sum(q => q.SpeedBytesPerSecond))}/s";
+            };
+            _refreshTimer.Start();
 
             PeerDeviceNameText.Text = deviceName;
             PeerStatusText.Text = $"Transferring 0 of {totalFiles} files";
@@ -105,27 +126,52 @@ namespace CrossDroid.Windows.Views
 
         private void LoadActiveQueueData()
         {
-            ChatBubbles.Clear();
-            foreach (var record in App.Backend.Transfers.Queue.OrderBy(q => q.CreatedUtc))
+            var activeItems = App.Backend.Transfers.Queue.OrderBy(q => q.CreatedUtc).ToList();
+            
+            // Remove old bubbles
+            for (int i = ChatBubbles.Count - 1; i >= 0; i--)
             {
-                ChatBubbles.Add(new TransferBubbleViewModel
+                if (!activeItems.Any(a => a.FileName == ChatBubbles[i].FileName))
                 {
-                    IsOutgoing = record.Direction == TransferDirection.Outgoing,
-                    FileName = record.FileName,
-                    FileSize = record.SizeText,
-                    ProgressValue = record.ProgressPercent,
-                    StatusText = record.StatusText,
-                    SpeedText = record.SpeedText,
-                    IconGlyph = record.IsFolder ? "\xE8B7" : "\xE7C3",
-                    IsActive = record.Status is TransferStatus.Transferring or TransferStatus.Paused or TransferStatus.Queued,
-                    IsCompleted = record.Status == TransferStatus.Completed
-                });
+                    ChatBubbles.RemoveAt(i);
+                }
+            }
+
+            // Update or Add
+            foreach (var record in activeItems)
+            {
+                var existing = ChatBubbles.FirstOrDefault(b => b.FileName == record.FileName);
+                if (existing != null)
+                {
+                    existing.ProgressValue = record.ProgressPercent;
+                    existing.StatusText = record.StatusText;
+                    existing.SpeedText = record.SpeedText;
+                    existing.IsActive = record.Status is TransferStatus.Transferring or TransferStatus.Paused or TransferStatus.Queued;
+                    existing.IsCompleted = record.Status == TransferStatus.Completed;
+                }
+                else
+                {
+                    ChatBubbles.Add(new TransferBubbleViewModel
+                    {
+                        IsOutgoing = record.Direction == TransferDirection.Outgoing,
+                        FileName = record.FileName,
+                        FileSize = record.SizeText,
+                        ProgressValue = record.ProgressPercent,
+                        StatusText = record.StatusText,
+                        SpeedText = record.SpeedText,
+                        IconGlyph = record.IsFolder ? "\xE8B7" : "\xE7C3",
+                        IsActive = record.Status is TransferStatus.Transferring or TransferStatus.Paused or TransferStatus.Queued,
+                        IsCompleted = record.Status == TransferStatus.Completed
+                    });
+                }
             }
         }
 
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             base.OnNavigatedFrom(e);
+            _refreshTimer?.Stop();
+            _refreshTimer = null;
         }
     }
 

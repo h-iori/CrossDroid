@@ -78,6 +78,21 @@ namespace CrossDroid.Windows.Views
         private void GenerateNewPin()
         {
             PinTextBlock.Text = App.Backend.Pairing.GenerateTemporaryPin();
+            
+            _ = Task.Run(async () =>
+            {
+                var bmp = await App.Backend.Pairing.GenerateQrCodeAsync();
+                
+                this.DispatcherQueue.TryEnqueue(async () =>
+                {
+                    if (bmp != null && QrCodeImage != null)
+                    {
+                        var source = new Microsoft.UI.Xaml.Media.Imaging.SoftwareBitmapSource();
+                        await source.SetBitmapAsync(bmp);
+                        QrCodeImage.Source = source;
+                    }
+                });
+            });
         }
 
         private async void TempSendButton_Click(object sender, RoutedEventArgs e)

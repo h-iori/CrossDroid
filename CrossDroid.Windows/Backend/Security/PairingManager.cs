@@ -12,6 +12,8 @@ public class PairingManager
 {
     private readonly IdentityService _identity;
 
+    public string CurrentPin { get; private set; } = string.Empty;
+
     public PairingManager(IdentityService identity)
     {
         _identity = identity;
@@ -22,6 +24,10 @@ public class PairingManager
         var device = _identity.LocalDevice;
         var encodedName = Uri.EscapeDataString(device.DisplayName);
         var uri = $"crossdroid://pair?id={device.DeviceId}&fp={device.PublicFingerprint}&name={encodedName}&type=Windows";
+        if (!string.IsNullOrEmpty(CurrentPin))
+        {
+            uri += $"&pin={CurrentPin}";
+        }
         return uri;
     }
 
@@ -54,8 +60,9 @@ public class PairingManager
 
     public string GenerateTemporaryPin()
     {
-        // Simple 4-digit PIN for demonstration
+        // 6-digit PIN for improved entropy
         var random = new Random();
-        return random.Next(1000, 9999).ToString();
+        CurrentPin = random.Next(100000, 999999).ToString();
+        return CurrentPin;
     }
 }

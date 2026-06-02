@@ -66,7 +66,6 @@ public sealed class CrossDroidBackend
         var state = await AppStateStore.LoadAsync(statePath);
         var backend = new CrossDroidBackend(state, statePath);
         backend.Identity.EnsureLocalIdentity();
-        backend.Devices.EnsureLocalReferenceReceiver(backend.Identity.LocalDevice);
         backend.History.LoadFromState();
         backend.Devices.LoadFromState();
         
@@ -960,23 +959,25 @@ public sealed class TransferQueueService
     private static async Task CopyFileAsync(TransferRecord record, string source, string destination, TransferRuntime runtime)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-        await using var input = File.Open(source, FileMode.Open, FileAccess.Read, FileShare.Read);
-        await using var output = File.Open(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        var buffer = new byte[1024 * 256];
-        int read;
-        while ((read = await input.ReadAsync(buffer, runtime.Cancellation.Token)) > 0)
+        await using (var input = File.Open(source, FileMode.Open, FileAccess.Read, FileShare.Read))
+        await using (var output = File.Open(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None))
         {
-            while (runtime.IsPaused)
+            var buffer = new byte[1024 * 256];
+            int read;
+            while ((read = await input.ReadAsync(buffer, runtime.Cancellation.Token)) > 0)
             {
-                record.Status = TransferStatus.Paused;
-                runtime.PauseEvent.Reset();
-                runtime.PauseEvent.Wait(runtime.Cancellation.Token);
-                record.Status = TransferStatus.Transferring;
-            }
+                while (runtime.IsPaused)
+                {
+                    record.Status = TransferStatus.Paused;
+                    runtime.PauseEvent.Reset();
+                    runtime.PauseEvent.Wait(runtime.Cancellation.Token);
+                    record.Status = TransferStatus.Transferring;
+                }
 
-            await output.WriteAsync(buffer.AsMemory(0, read), runtime.Cancellation.Token);
-            record.BytesTransferred += read;
-            record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
+                await output.WriteAsync(buffer.AsMemory(0, read), runtime.Cancellation.Token);
+                record.BytesTransferred += read;
+                record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
+            }
         }
 
         record.DestinationPath = destination;

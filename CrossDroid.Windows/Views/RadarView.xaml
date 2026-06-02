@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:common="using:CrossDroid.Windows"
+    xmlns:views="using:CrossDroid.Windows.Views"
     mc:Ignorable="d"
     Background="{StaticResource BgMain}">
 
@@ -142,45 +143,29 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Mock Devices -->
-                <!-- Device 1: Android Phone -->
-                <Button Style="{StaticResource RadarDeviceButtonStyle}" Click="Device_Click" Tag="Pixel 8 Pro" Margin="-112,-75,0,0" common:MouseCursorHelper.HandCursor="True">
-                    <StackPanel Spacing="2">
-                        <Border Width="30" Height="30" CornerRadius="9" Background="#1A1ED455" BorderBrush="#4D1ED455" BorderThickness="1">
-                            <FontIcon Glyph="&#xE8EA;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource ColorSuccess}"/>
-                        </Border>
-                        <Border Background="#1A1ED455" BorderBrush="#331ED455" BorderThickness="1" CornerRadius="6" Padding="4,1" HorizontalAlignment="Center">
-                            <TextBlock Text="ANDROID" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource ColorSuccess}"/>
-                        </Border>
-                        <TextBlock Text="Pixel 8 Pro" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-
-                <!-- Device 2: Windows PC -->
-                <Button Style="{StaticResource RadarDeviceButtonStyle}" Click="Device_Click" Tag="Desktop-PC" Margin="130,56,0,0" common:MouseCursorHelper.HandCursor="True">
-                    <StackPanel Spacing="2">
-                        <Border Width="30" Height="30" CornerRadius="9" Background="#1A27D7E7" BorderBrush="#4D27D7E7" BorderThickness="1">
-                            <FontIcon Glyph="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource AccentCyan}"/>
-                        </Border>
-                        <Border Background="#1A27D7E7" BorderBrush="#3327D7E7" BorderThickness="1" CornerRadius="6" Padding="4,1" HorizontalAlignment="Center">
-                            <TextBlock Text="WINDOWS" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource AccentCyan}"/>
-                        </Border>
-                        <TextBlock Text="Desktop-PC" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-
-                <!-- Device 3: Another Phone -->
-                <Button Style="{StaticResource RadarDeviceButtonStyle}" Click="Device_Click" Tag="Galaxy S23" Margin="-37,128,0,0" common:MouseCursorHelper.HandCursor="True">
-                    <StackPanel Spacing="2">
-                        <Border Width="30" Height="30" CornerRadius="9" Background="#1A1ED455" BorderBrush="#4D1ED455" BorderThickness="1">
-                            <FontIcon Glyph="&#xE8EA;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource ColorSuccess}"/>
-                        </Border>
-                        <Border Background="#1A1ED455" BorderBrush="#331ED455" BorderThickness="1" CornerRadius="6" Padding="4,1" HorizontalAlignment="Center">
-                            <TextBlock Text="ANDROID" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource ColorSuccess}"/>
-                        </Border>
-                        <TextBlock Text="Galaxy S23" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
+                <!-- Discovered Devices -->
+                <ItemsControl ItemsSource="{x:Bind RadarItems}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <Grid />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="views:RadarItem">
+                            <Button Style="{StaticResource RadarDeviceButtonStyle}" Click="Device_Click" Margin="{x:Bind Margin}" common:MouseCursorHelper.HandCursor="True">
+                                <StackPanel Spacing="2">
+                                    <Border Width="30" Height="30" CornerRadius="9" Background="#1A27D7E7" BorderBrush="#4D27D7E7" BorderThickness="1">
+                                        <FontIcon Glyph="{x:Bind IconGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource AccentCyan}"/>
+                                    </Border>
+                                    <Border Background="#1A27D7E7" BorderBrush="#3327D7E7" BorderThickness="1" CornerRadius="6" Padding="4,1" HorizontalAlignment="Center">
+                                        <TextBlock Text="{x:Bind DeviceTypeLabel}" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource AccentCyan}"/>
+                                    </Border>
+                                    <TextBlock Text="{x:Bind Device.DisplayName}" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Grid>
         </Border>
 
@@ -188,7 +173,7 @@
         <Border Grid.Row="2" CornerRadius="10" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1.2" Padding="10">
             <StackPanel Spacing="6">
                 <TextBlock Text="Connect via PIN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
-                <TextBlock Text="Enter the 4-digit PIN of a hidden or distant terminal to connect manually." FontSize="9.5" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
+                <TextBlock Text="Enter the 6-digit PIN of a hidden or distant terminal to connect manually." FontSize="9.5" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap"/>
                 
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
@@ -196,7 +181,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     
-                    <TextBox x:Name="PinTextBox" Grid.Column="0" PlaceholderText="0000" MaxLength="4" FontSize="12" FontWeight="Bold" CharacterSpacing="200" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center" Background="{StaticResource BgSurface}"/>
+                    <TextBox x:Name="PinTextBox" Grid.Column="0" PlaceholderText="000000" MaxLength="6" FontSize="12" FontWeight="Bold" CharacterSpacing="200" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center" Background="{StaticResource BgSurface}"/>
                     
                     <Button Grid.Column="1" Click="ConnectPin_Click" Height="28" Padding="10,0" CornerRadius="5" Background="{StaticResource NeonPrimary}" BorderThickness="0" common:MouseCursorHelper.HandCursor="True">
                         <Button.Resources>

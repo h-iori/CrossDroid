@@ -3,3 +3,4 @@ app/build
 /.vs
 debug.log
 test_app.ps1
+/CrossDroid.Tests

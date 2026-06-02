@@ -451,8 +451,7 @@ namespace CrossDroid.Windows
         private void TrayExit_Click(object sender, RoutedEventArgs e)
         {
             App.CloseToTray = false;
-            TrayIcon.Dispose();
-            this.Close();
+            Environment.Exit(0);
         }
 
         public void RestoreWindow()
