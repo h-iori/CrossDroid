@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Windows.Storage;
+using CrossDroid.Windows.Backend;
 
 namespace CrossDroid.Windows
 {
@@ -103,8 +104,7 @@ namespace CrossDroid.Windows
 
             // Auto-hide feature removed per user request
 
-            // Load initial history items
-            LoadMockHistory();
+            LoadBackendHistory();
 
             // Start bottom bar pulsing animation
             try
@@ -189,55 +189,32 @@ namespace CrossDroid.Windows
             }
         }
 
-        private void LoadMockHistory()
+        private void LoadBackendHistory()
         {
-            // Pixel 8 Pro
-            HistoryRecords.Add(new Views.HistoryItemViewModel
+            HistoryRecords.Clear();
+            foreach (var group in App.Backend.History.Records.GroupBy(h => h.DeviceName))
             {
-                DeviceName = "Pixel 8 Pro",
-                DeviceType = "PHONE",
-                DeviceIconGlyph = "\xE8EA", // CellPhone
-                FileCount = 8,
-                TotalBytesText = "248.5 MB",
-                Status = "Success",
-                DateText = "Today, 10:15 AM",
-                LastTransferInfo = "Last: photo_gallery.zip (Success)",
-                StatusGlyph = "\xE73E", // Checkmark
-                StatusBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136)),
-                IconBg = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136))
-            });
-
-            // Galaxy Tab S9
-            HistoryRecords.Add(new Views.HistoryItemViewModel
-            {
-                DeviceName = "Galaxy Tab S9",
-                DeviceType = "TABLET",
-                DeviceIconGlyph = "\xE70B", // Tablet
-                FileCount = 3,
-                TotalBytesText = "14.2 MB",
-                Status = "Success",
-                DateText = "Yesterday, 3:30 PM",
-                LastTransferInfo = "Last: Presentation.pdf (Success)",
-                StatusGlyph = "\xE73E",
-                StatusBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136)),
-                IconBg = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136))
-            });
-
-            // Unknown Device (Failed attempt)
-            HistoryRecords.Add(new Views.HistoryItemViewModel
-            {
-                DeviceName = "Unknown Device",
-                DeviceType = "PHONE",
-                DeviceIconGlyph = "\xE8EA",
-                FileCount = 1,
-                TotalBytesText = "1.8 GB",
-                Status = "Failed",
-                DateText = "May 28, 11:20 AM",
-                LastTransferInfo = "Last: raw_video_footage.mov (Failed)",
-                StatusGlyph = "\xE10A", // Cancel
-                StatusBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102)),
-                IconBg = new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102))
-            });
+                var latest = group.OrderByDescending(h => h.CompletedUtc ?? h.CreatedUtc).First();
+                var isSuccess = latest.Status == TransferStatus.Completed;
+                HistoryRecords.Add(new Views.HistoryItemViewModel
+                {
+                    DeviceName = group.Key,
+                    DeviceType = "DEVICE",
+                    DeviceIconGlyph = "\xE8EA",
+                    FileCount = group.Count(),
+                    TotalBytesText = StagedTransferItem.FormatBytes(group.Sum(h => h.TotalBytes)),
+                    Status = latest.Status.ToString(),
+                    DateText = (latest.CompletedUtc ?? latest.CreatedUtc).ToLocalTime().ToString("g"),
+                    LastTransferInfo = $"Last: {latest.FileName} ({latest.Status})",
+                    StatusGlyph = isSuccess ? "\xE73E" : "\xE10A",
+                    StatusBrush = isSuccess
+                        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136))
+                        : new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102)),
+                    IconBg = isSuccess
+                        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136))
+                        : new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102))
+                });
+            }
         }
 
         public void AddHistoryRecord(string deviceName, string fileName, string fileSize, string status, string message)
@@ -419,6 +396,7 @@ namespace CrossDroid.Windows
         public void StageTransfers(IReadOnlyList<IStorageItem> items)
         {
             StagedFilesList.AddRange(items);
+            _ = App.Backend.Staging.StageStorageItemsAsync(items);
             NavigateToPage("Transfers");
 
             // If we are currently showing the Transfers view, reload the list
@@ -431,6 +409,7 @@ namespace CrossDroid.Windows
         public void StageFolder(IStorageFolder folder)
         {
             StagedFolderInstance = folder;
+            _ = App.Backend.Staging.StagePathAsync(folder.Path);
             NavigateToPage("Transfers");
 
             if (ContentFrame.Content is Views.TransfersView transfersView)

@@ -2,6 +2,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using System.Collections.Generic;
+using System.Linq;
+using CrossDroid.Windows.Backend;
 
 namespace CrossDroid.Windows.Views
 {
@@ -54,7 +56,22 @@ namespace CrossDroid.Windows.Views
             string pin = PinTextBox.Text;
             if (pin.Length == 4)
             {
-                NavigateToTransfer($"Device PIN-{pin}");
+                var trusted = App.Backend.Devices.TrustedDevices.FirstOrDefault();
+                if (trusted != null)
+                {
+                    NavigateToTransfer(trusted.AliasOrName);
+                }
+                else
+                {
+                    var dialog = new ContentDialog
+                    {
+                        Title = "No trusted device",
+                        Content = "Manual PIN entry is ready, but no trusted backend device is available yet. Use the local reference receiver from Devices or pair a peer first.",
+                        CloseButtonText = "OK",
+                        XamlRoot = this.XamlRoot
+                    };
+                    await dialog.ShowAsync();
+                }
             }
             else
             {
@@ -72,9 +89,11 @@ namespace CrossDroid.Windows.Views
 
         private void NavigateToTransfer(string targetDeviceName)
         {
+            var trusted = App.Backend.Devices.TrustedDevices.FirstOrDefault(d => d.AliasOrName == targetDeviceName)
+                ?? App.Backend.Devices.TrustedDevices.FirstOrDefault();
             var parameter = new TransferNavParameter
             {
-                TargetDeviceName = targetDeviceName,
+                TargetDeviceName = trusted?.AliasOrName ?? targetDeviceName,
                 Files = _selectedFiles
             };
             this.Frame.Navigate(typeof(TransferStreamView), parameter);

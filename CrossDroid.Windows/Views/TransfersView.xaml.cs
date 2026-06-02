@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using CrossDroid.Windows.Backend;
 
 namespace CrossDroid.Windows.Views
 {
@@ -11,100 +12,57 @@ namespace CrossDroid.Windows.Views
     {
         public ObservableCollection<TransferItemViewModel> QueueItems { get; set; } = new();
         public ObservableCollection<StagedItemViewModel> StagedItems { get; set; } = new();
-        
-        private DispatcherTimer? _simTimer;
-        private Random _rand = new();
-        private bool _isPaused = false;
+
+        private DispatcherTimer? _refreshTimer;
+        private IncomingTransferRequest? _currentIncomingRequest;
 
         public TransfersView()
         {
             this.InitializeComponent();
-            
+
             QueueItemsList.ItemsSource = QueueItems;
             StagedItemsList.ItemsSource = StagedItems;
-            
+
             this.Loaded += TransfersView_Loaded;
             this.Unloaded += TransfersView_Unloaded;
+        }
 
-            TargetDeviceCombo.ItemsSource = new string[] { "Pixel 8 Pro (Active)", "Galaxy Tab S9 (Offline)" };
+        private void TransfersView_Loaded(object sender, RoutedEventArgs e)
+        {
+            RefreshDeviceTargets();
+            LoadStagedItems();
+            RefreshQueueItems();
+
+            _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _refreshTimer.Tick += (_, _) => RefreshQueueItems();
+            _refreshTimer.Start();
+        }
+
+        private void TransfersView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _refreshTimer?.Stop();
+            _refreshTimer = null;
+        }
+
+        private void RefreshDeviceTargets()
+        {
+            TargetDeviceCombo.ItemsSource = App.Backend.Devices.TrustedDevices.Select(d => d.AliasOrName).ToArray();
             if (TargetDeviceCombo.Items.Count > 0)
             {
                 TargetDeviceCombo.SelectedIndex = 0;
             }
         }
 
-        private void TransfersView_Loaded(object sender, RoutedEventArgs e)
-        {
-            // Load app staged files
-            LoadStagedItems();
-            
-            // Set up simulator timer
-            _simTimer = new DispatcherTimer();
-            _simTimer.Interval = TimeSpan.FromMilliseconds(500);
-            _simTimer.Tick += SimTimer_Tick;
-
-            if (QueueItems.Count == 0 && StagedItems.Count == 0)
-            {
-                QueueItems.Add(new TransferItemViewModel
-                {
-                    FileName = "work_presentation.pptx",
-                    FileSize = "24.5 MB",
-                    BytesTotal = 24 * 1024 * 1024 + 500 * 1024,
-                    ProgressValue = 68,
-                    Status = "Transferring",
-                    IconGlyph = "\xE7C3", 
-                    StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231)), 
-                    PauseGlyph = "\xE103",
-                    DeviceName = "Galaxy Tab S9"
-                });
-                QueueItems.Add(new TransferItemViewModel
-                {
-                    FileName = "family_photo_39.jpg",
-                    FileSize = "3.2 MB",
-                    BytesTotal = 3 * 1024 * 1024 + 200 * 1024,
-                    ProgressValue = 100,
-                    Status = "Completed",
-                    IconGlyph = "\xE114", 
-                    StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136)), 
-                    PauseGlyph = "\xE768",
-                    DeviceName = "Pixel 8 Pro"
-                });
-                QueueItems.Add(new TransferItemViewModel
-                {
-                    FileName = "crossdroid_archive.zip",
-                    FileSize = "340.8 MB",
-                    BytesTotal = 340 * 1024 * 1024 + 800 * 1024,
-                    ProgressValue = 15,
-                    Status = "Paused",
-                    IconGlyph = "\xE838", 
-                    StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 248, 184, 78)), 
-                    PauseGlyph = "\xE768",
-                    DeviceName = "Pixel 8 Pro"
-                });
-                
-                // Start simulator timer automatically
-                _simTimer.Start();
-            }
-        }
-
-        private void TransfersView_Unloaded(object sender, RoutedEventArgs e)
-        {
-            _simTimer?.Stop();
-        }
-
         public void LoadStagedItems()
         {
             StagedItems.Clear();
-            foreach (var item in App.MainWindowInstance.StagedFilesList)
+            foreach (var item in App.Backend.Staging.Items)
             {
-                StagedItems.Add(new StagedItemViewModel { Name = item.Name, Path = item.Path });
-            }
-            if (App.MainWindowInstance.StagedFolderInstance != null)
-            {
-                StagedItems.Add(new StagedItemViewModel 
-                { 
-                    Name = $"[Folder] {App.MainWindowInstance.StagedFolderInstance.Name}", 
-                    Path = App.MainWindowInstance.StagedFolderInstance.Path 
+                StagedItems.Add(new StagedItemViewModel
+                {
+                    Name = item.IsFolder ? $"[Folder] {item.Name}" : item.Name,
+                    Path = item.Path,
+                    SizeText = item.SizeText
                 });
             }
 
@@ -114,178 +72,134 @@ namespace CrossDroid.Windows.Views
             }
         }
 
-        private void SimTimer_Tick(object? sender, object e)
+        private void RefreshQueueItems()
         {
-            if (_isPaused) return;
-
-            bool anyActive = false;
-            long totalBytes = 0;
-            long totalTransferred = 0;
-
-            foreach (var item in QueueItems)
+            QueueItems.Clear();
+            foreach (var item in App.Backend.Transfers.Queue.OrderByDescending(q => q.CreatedUtc))
             {
-                if (item.Status == "Transferring")
-                {
-                    anyActive = true;
-                    item.ProgressValue += _rand.Next(2, 8);
-                    if (item.ProgressValue >= 100)
-                    {
-                        item.ProgressValue = 100;
-                        item.Status = "Completed";
-                        item.StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136));
-                        item.PauseGlyph = "\xE768"; // Play (shows it can't pause anymore)
-                        
-                        // Add to history list in App
-                        App.MainWindowInstance.AddHistoryRecord(item.DeviceName, item.FileName, item.FileSize, "Success", "Transferred successfully");
-                    }
-                }
-
-                totalBytes += item.BytesTotal;
-                totalTransferred += (long)(item.BytesTotal * (item.ProgressValue / 100.0));
+                QueueItems.Add(TransferItemViewModel.FromRecord(item));
             }
 
-            if (anyActive)
-            {
-                double overallPercent = (double)totalTransferred / totalBytes * 100.0;
-                OverallProgressBar.Value = overallPercent;
-                OverallProgressText.Text = $"{overallPercent:F0}%";
-                QueueStatusText.Text = "Sending...";
-                SpeedText.Text = $"Speed: {(_rand.NextDouble() * 12 + 18):F1} MB/s";
-                
-                int remainingSeconds = (int)((totalBytes - totalTransferred) / (25 * 1024 * 1024)); // Assume 25MB/s
-                TimeRemainingText.Text = $"Time remaining: {remainingSeconds}s";
-                TransferredItemsText.Text = $"Items: {QueueItems.Count(i => i.Status == "Completed")} / {QueueItems.Count}";
-            }
-            else
-            {
-                _simTimer?.Stop();
-                QueueStatusText.Text = "Idle";
-                SpeedText.Text = "Speed: 0.0 MB/s";
-                TimeRemainingText.Text = "Time remaining: --:--";
-                OverallProgressBar.Value = QueueItems.Count > 0 ? 100 : 0;
-                OverallProgressText.Text = QueueItems.Count > 0 ? "100%" : "0%";
-            }
+            long totalBytes = App.Backend.Transfers.Queue.Sum(q => q.TotalBytes);
+            long transferred = App.Backend.Transfers.Queue.Sum(q => q.BytesTransferred);
+            double overall = totalBytes > 0 ? transferred * 100d / totalBytes : 0;
+            OverallProgressBar.Value = overall;
+            OverallProgressText.Text = $"{overall:F0}%";
+            QueueStatusText.Text = App.Backend.Transfers.Queue.Any(q => q.Status == TransferStatus.Transferring)
+                ? "Transferring"
+                : App.Backend.Transfers.Queue.Any(q => q.Status == TransferStatus.Paused) ? "Paused" : "Idle";
+            SpeedText.Text = $"Speed: {StagedTransferItem.FormatBytes((long)App.Backend.Transfers.Queue.Sum(q => q.SpeedBytesPerSecond))}/s";
+            TimeRemainingText.Text = "Time remaining: calculated per active transfer";
+            TransferredItemsText.Text = $"Items: {App.Backend.Transfers.Queue.Count(q => q.Status == TransferStatus.Completed)} / {App.Backend.Transfers.Queue.Count}";
         }
 
-        private void SimulateIncoming_Click(object sender, RoutedEventArgs e)
+        private async void SimulateIncoming_Click(object sender, RoutedEventArgs e)
         {
+            var source = App.Backend.Devices.TrustedDevices.FirstOrDefault();
+            if (source == null || App.Backend.Staging.Items.Count == 0)
+            {
+                var dialog = new ContentDialog
+                {
+                    Title = "Incoming test requires staged files",
+                    Content = "Stage one or more files first. The local reference receiver will use those real files to create an incoming transfer request.",
+                    CloseButtonText = "OK",
+                    XamlRoot = this.XamlRoot
+                };
+                await dialog.ShowAsync();
+                return;
+            }
+
+            await App.Backend.Transfers.CreateIncomingRequestAsync(source, App.Backend.Staging.Items.ToList());
+            _currentIncomingRequest = App.Backend.Transfers.IncomingRequests.LastOrDefault();
+            IncomingDeviceText.Text = _currentIncomingRequest == null
+                ? "Incoming request unavailable."
+                : $"Device '{_currentIncomingRequest.Device.AliasOrName}' wants to send {_currentIncomingRequest.Items.Count} item(s).";
             IncomingOverlay.Visibility = Visibility.Visible;
         }
 
         private void PauseAll_Click(object sender, RoutedEventArgs e)
         {
-            _isPaused = !_isPaused;
-            if (_isPaused)
+            bool anyTransferring = App.Backend.Transfers.Queue.Any(q => q.Status == TransferStatus.Transferring);
+            foreach (var item in App.Backend.Transfers.Queue)
             {
-                QueueStatusText.Text = "Paused";
-                SpeedText.Text = "Speed: 0.0 MB/s";
-                foreach (var item in QueueItems)
+                if (anyTransferring && item.Status == TransferStatus.Transferring)
                 {
-                    if (item.Status == "Transferring")
-                    {
-                        item.Status = "Paused";
-                        item.StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 248, 184, 78));
-                    }
+                    App.Backend.Transfers.Pause(item.TransferId);
+                }
+                else if (!anyTransferring && item.Status == TransferStatus.Paused)
+                {
+                    App.Backend.Transfers.Resume(item.TransferId);
                 }
             }
-            else
-            {
-                foreach (var item in QueueItems)
-                {
-                    if (item.Status == "Paused")
-                    {
-                        item.Status = "Transferring";
-                        item.StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231));
-                    }
-                }
-                _simTimer?.Start();
-            }
+            RefreshQueueItems();
         }
 
         private void CancelAll_Click(object sender, RoutedEventArgs e)
         {
-            _simTimer?.Stop();
-            QueueItems.Clear();
-            OverallProgressBar.Value = 0;
-            OverallProgressText.Text = "0%";
-            QueueStatusText.Text = "Idle";
-            SpeedText.Text = "Speed: 0.0 MB/s";
-            TimeRemainingText.Text = "Time remaining: --:--";
-            TransferredItemsText.Text = "Items: 0 / 0";
+            foreach (var item in App.Backend.Transfers.Queue.Where(q => q.Status is TransferStatus.Transferring or TransferStatus.Paused or TransferStatus.Queued).ToList())
+            {
+                App.Backend.Transfers.Cancel(item.TransferId);
+            }
+            RefreshQueueItems();
         }
 
         private void RejectIncoming_Click(object sender, RoutedEventArgs e)
         {
+            if (_currentIncomingRequest != null)
+            {
+                App.Backend.Transfers.RejectIncoming(_currentIncomingRequest);
+            }
+
+            _currentIncomingRequest = null;
             IncomingOverlay.Visibility = Visibility.Collapsed;
         }
 
-        private void AcceptIncoming_Click(object sender, RoutedEventArgs e)
+        private async void AcceptIncoming_Click(object sender, RoutedEventArgs e)
         {
-            IncomingOverlay.Visibility = Visibility.Collapsed;
-            
-            // Add a mock incoming download
-            var item = new TransferItemViewModel
+            if (_currentIncomingRequest != null)
             {
-                FileName = "vacation_video.mp4",
-                FileSize = "45.0 MB",
-                BytesTotal = 45 * 1024 * 1024,
-                ProgressValue = 0,
-                Status = "Transferring",
-                IconGlyph = "\xE714", // Video
-                StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231)), // Cyan
-                DeviceName = "Pixel 8 Pro"
-            };
-            QueueItems.Add(item);
-            _simTimer?.Start();
+                await App.Backend.Transfers.AcceptIncomingAsync(_currentIncomingRequest);
+            }
+
+            _currentIncomingRequest = null;
+            IncomingOverlay.Visibility = Visibility.Collapsed;
+            RefreshQueueItems();
         }
 
-        private void StartTransfer_Click(object sender, RoutedEventArgs e)
+        private async void StartTransfer_Click(object sender, RoutedEventArgs e)
         {
-            string targetDevice = TargetDeviceCombo.SelectedItem as string ?? "Pixel 8 Pro";
-            if (targetDevice.Contains(" ("))
+            var selectedName = TargetDeviceCombo.SelectedItem as string;
+            var targetDevice = App.Backend.Devices.TrustedDevices.FirstOrDefault(d => d.AliasOrName == selectedName)
+                ?? App.Backend.Devices.TrustedDevices.FirstOrDefault();
+            if (targetDevice == null)
             {
-                targetDevice = targetDevice.Substring(0, targetDevice.IndexOf(" ("));
+                await ShowErrorAsync("No trusted device", "Pair or enable a trusted receiver before starting a transfer.");
+                return;
             }
 
-            foreach (var staged in StagedItems)
+            if (App.Backend.Staging.Items.Count == 0)
             {
-                bool isFolder = staged.Name.StartsWith("[Folder]");
-                QueueItems.Add(new TransferItemViewModel
-                {
-                    FileName = staged.Name,
-                    FileSize = isFolder ? "Folder Struct" : "12.4 MB",
-                    BytesTotal = 12 * 1024 * 1024,
-                    ProgressValue = 0,
-                    Status = "Transferring",
-                    IconGlyph = isFolder ? "\xE8B7" : "\xE8A5", // Folder vs File icon
-                    StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231)),
-                    DeviceName = targetDevice
-                });
+                await ShowErrorAsync("Nothing staged", "Choose files or folders before starting a transfer.");
+                return;
             }
 
-            // Clear staged
-            StagedItems.Clear();
-            App.MainWindowInstance.StagedFilesList.Clear();
-            App.MainWindowInstance.StagedFolderInstance = null;
-
-            if (TransfersPivot != null)
-            {
-                TransfersPivot.SelectedIndex = 0;
-            }
-
-            _simTimer?.Start();
+            await App.Backend.Transfers.StartSendAsync(targetDevice, App.Backend.Staging.Items.ToList());
+            App.Backend.Staging.Clear();
+            LoadStagedItems();
+            TransfersPivot.SelectedIndex = 0;
+            RefreshQueueItems();
         }
 
         private void RemoveStaged_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is StagedItemViewModel vm)
             {
-                StagedItems.Remove(vm);
-                
-                // Clear from main window state as well
-                var f = App.MainWindowInstance.StagedFilesList.FirstOrDefault(x => x.Path == vm.Path);
-                if (f != null) App.MainWindowInstance.StagedFilesList.Remove(f);
-                if (App.MainWindowInstance.StagedFolderInstance?.Path == vm.Path) App.MainWindowInstance.StagedFolderInstance = null;
+                var item = App.Backend.Staging.Items.FirstOrDefault(x => x.Path == vm.Path);
+                if (item != null)
+                {
+                    App.Backend.Staging.Remove(item);
+                }
+                LoadStagedItems();
             }
         }
 
@@ -293,18 +207,15 @@ namespace CrossDroid.Windows.Views
         {
             if (sender is Button btn && btn.DataContext is TransferItemViewModel vm)
             {
-                if (vm.Status == "Transferring")
+                var transfer = App.Backend.Transfers.Queue.FirstOrDefault(q => q.TransferId == vm.TransferId);
+                if (transfer == null) return;
+                if (transfer.Status == TransferStatus.Paused)
                 {
-                    vm.Status = "Paused";
-                    vm.StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 248, 184, 78));
-                    vm.PauseGlyph = "\xE768"; // Play icon
+                    App.Backend.Transfers.Resume(transfer.TransferId);
                 }
-                else if (vm.Status == "Paused")
+                else if (transfer.Status == TransferStatus.Transferring)
                 {
-                    vm.Status = "Transferring";
-                    vm.StatusBrush = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231));
-                    vm.PauseGlyph = "\xE103"; // Pause icon
-                    _simTimer?.Start();
+                    App.Backend.Transfers.Pause(transfer.TransferId);
                 }
             }
         }
@@ -313,17 +224,26 @@ namespace CrossDroid.Windows.Views
         {
             if (sender is Button btn && btn.DataContext is TransferItemViewModel vm)
             {
-                QueueItems.Remove(vm);
-                if (vm.Status != "Completed")
-                {
-                    App.MainWindowInstance.AddHistoryRecord(vm.DeviceName, vm.FileName, vm.FileSize, "Cancelled", "User cancelled transfer");
-                }
+                App.Backend.Transfers.Cancel(vm.TransferId);
             }
+        }
+
+        private async System.Threading.Tasks.Task ShowErrorAsync(string title, string message)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = title,
+                Content = message,
+                CloseButtonText = "OK",
+                XamlRoot = this.XamlRoot
+            };
+            await dialog.ShowAsync();
         }
     }
 
     public class TransferItemViewModel : System.ComponentModel.INotifyPropertyChanged
     {
+        public string TransferId { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
         public string FileSize { get; set; } = string.Empty;
         public long BytesTotal { get; set; }
@@ -358,18 +278,46 @@ namespace CrossDroid.Windows.Views
 
         public string IconGlyph { get; set; } = string.Empty;
 
-        private string pauseGlyph = "\xE103"; // Pause icon
+        private string pauseGlyph = "\xE103";
         public string PauseGlyph
         {
             get => pauseGlyph;
             set { pauseGlyph = value; OnPropertyChanged(nameof(PauseGlyph)); }
         }
 
-        private string deviceName = "Pixel 8 Pro";
+        private string deviceName = "";
         public string DeviceName
         {
             get => deviceName;
             set { deviceName = value; OnPropertyChanged(nameof(DeviceName)); }
+        }
+
+        public static TransferItemViewModel FromRecord(TransferRecord record)
+        {
+            return new TransferItemViewModel
+            {
+                TransferId = record.TransferId,
+                FileName = record.FileName,
+                FileSize = record.SizeText,
+                BytesTotal = record.TotalBytes,
+                ProgressValue = record.ProgressPercent,
+                Status = record.StatusText,
+                IconGlyph = record.IsFolder ? "\xE8B7" : "\xE8A5",
+                StatusBrush = StatusToBrush(record.Status),
+                PauseGlyph = record.Status == TransferStatus.Paused ? "\xE768" : "\xE103",
+                DeviceName = record.DeviceName
+            };
+        }
+
+        private static Brush StatusToBrush(TransferStatus status)
+        {
+            return status switch
+            {
+                TransferStatus.Completed => new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136)),
+                TransferStatus.Failed or TransferStatus.Cancelled => new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102)),
+                TransferStatus.Paused => new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 248, 184, 78)),
+                _ => new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 39, 215, 231))
+            };
         }
 
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
@@ -380,5 +328,6 @@ namespace CrossDroid.Windows.Views
     {
         public string Name { get; set; } = string.Empty;
         public string Path { get; set; } = string.Empty;
+        public string SizeText { get; set; } = string.Empty;
     }
 }

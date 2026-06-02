@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
+using CrossDroid.Windows.Backend;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -24,16 +25,17 @@ namespace CrossDroid.Windows;
     {
         public static MainWindow MainWindowInstance { get; private set; } = null!;
 
-        // Global Configuration Settings (Stored in memory for the UI shell)
-        public static bool AutoStartEnabled { get; set; } = true;
-        public static bool StartMinimized { get; set; } = false;
-        public static bool CloseToTray { get; set; } = true;
-        public static bool AutoAcceptTrusted { get; set; } = true;
-        public static bool WifiOnly { get; set; } = true;
-        public static bool P2pFallback { get; set; } = true;
-        public static bool ToastNotify { get; set; } = true;
-        public static bool SoundNotify { get; set; } = true;
-        public static string DownloadsDirectory { get; set; } = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "CrossDroid");
+        public static CrossDroidBackend Backend => CrossDroidBackend.Current;
+
+        public static bool AutoStartEnabled { get => Backend.Settings.Current.AutoStartEnabled; set => Backend.Settings.Current.AutoStartEnabled = value; }
+        public static bool StartMinimized { get => Backend.Settings.Current.StartMinimized; set => Backend.Settings.Current.StartMinimized = value; }
+        public static bool CloseToTray { get => Backend.Settings.Current.CloseToTray; set => Backend.Settings.Current.CloseToTray = value; }
+        public static bool AutoAcceptTrusted { get => Backend.Settings.Current.AutoAcceptTrusted; set => Backend.Settings.Current.AutoAcceptTrusted = value; }
+        public static bool WifiOnly { get => Backend.Settings.Current.WifiOnly; set => Backend.Settings.Current.WifiOnly = value; }
+        public static bool P2pFallback { get => Backend.Settings.Current.P2pFallback; set => Backend.Settings.Current.P2pFallback = value; }
+        public static bool ToastNotify { get => Backend.Settings.Current.ToastNotify; set => Backend.Settings.Current.ToastNotify = value; }
+        public static bool SoundNotify { get => Backend.Settings.Current.SoundNotify; set => Backend.Settings.Current.SoundNotify = value; }
+        public static string DownloadsDirectory { get => Backend.Settings.Current.DownloadsDirectory; set => Backend.Settings.Current.DownloadsDirectory = value; }
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -50,6 +52,7 @@ namespace CrossDroid.Windows;
         /// <param name="args">Details about the launch request and process.</param>
         protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
+            CrossDroidBackend.InitializeAsync().GetAwaiter().GetResult();
             MainWindowInstance = new MainWindow();
             
             // Check command line arguments
@@ -70,7 +73,6 @@ namespace CrossDroid.Windows;
 
             if (filesToShare.Count > 0)
             {
-                // Stage files for sharing
                 var storageItems = new List<IStorageItem>();
                 foreach (var path in filesToShare)
                 {
@@ -79,7 +81,7 @@ namespace CrossDroid.Windows;
                         if (System.IO.Directory.Exists(path))
                         {
                             var folder = await StorageFolder.GetFolderFromPathAsync(path);
-                            MainWindowInstance.StageFolder(folder);
+                            await Backend.Staging.StagePathAsync(folder.Path);
                         }
                         else
                         {

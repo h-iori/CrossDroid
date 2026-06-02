@@ -4,7 +4,9 @@ using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
+using CrossDroid.Windows.Backend;
 
 namespace CrossDroid.Windows.Views
 {
@@ -33,20 +35,18 @@ namespace CrossDroid.Windows.Views
             else if (e.Parameter is HistoryItemViewModel historyItem)
             {
                 deviceName = historyItem.DeviceName;
-                LoadMockData();
+                LoadHistoryData(deviceName);
                 totalFiles = ChatBubbles.Count;
             }
             else
             {
-                LoadMockData();
+                LoadActiveQueueData();
                 totalFiles = ChatBubbles.Count;
             }
 
             PeerDeviceNameText.Text = deviceName;
             PeerStatusText.Text = $"Transferring 0 of {totalFiles} files";
-            TotalSpeedText.Text = "12.4 MB/s";
-
-            StartProgressSimulation();
+            TotalSpeedText.Text = $"{StagedTransferItem.FormatBytes((long)App.Backend.Transfers.Queue.Sum(q => q.SpeedBytesPerSecond))}/s";
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
@@ -73,7 +73,7 @@ namespace CrossDroid.Windows.Views
                         FileName = file.Name,
                         FileSize = sizeStr,
                         ProgressValue = 0,
-                        StatusText = "Pending...",
+                        StatusText = "Staged",
                         SpeedText = "0.0 MB/s",
                         IconGlyph = "\xE7C3", // Document/File icon
                         IsActive = true,
@@ -83,121 +83,49 @@ namespace CrossDroid.Windows.Views
             }
         }
 
-        private void LoadMockData()
+        private void LoadHistoryData(string deviceName)
         {
-            ChatBubbles.Add(new TransferBubbleViewModel
+            ChatBubbles.Clear();
+            foreach (var record in App.Backend.History.Records.Where(h => h.DeviceName == deviceName).OrderBy(h => h.CreatedUtc))
             {
-                IsOutgoing = true,
-                FileName = "cyberpunk_assets.zip",
-                FileSize = "1.2 GB",
-                ProgressValue = 100,
-                StatusText = "Completed",
-                SpeedText = "",
-                IconGlyph = "\xE814", // Folder/Zip
-                IsActive = false,
-                IsCompleted = true
-            });
-
-            ChatBubbles.Add(new TransferBubbleViewModel
-            {
-                IsOutgoing = false,
-                FileName = "IMG_8842.JPG",
-                FileSize = "4.5 MB",
-                ProgressValue = 100,
-                StatusText = "Completed",
-                SpeedText = "",
-                IconGlyph = "\xEB9F", // Image
-                IsActive = false,
-                IsCompleted = true
-            });
-
-            ChatBubbles.Add(new TransferBubbleViewModel
-            {
-                IsOutgoing = true,
-                FileName = "NeonCity_4K_Render.mp4",
-                FileSize = "850 MB",
-                ProgressValue = 45,
-                StatusText = "Sending 45%",
-                SpeedText = "8.2 MB/s",
-                IconGlyph = "\xE714", // Video
-                IsActive = true,
-                IsCompleted = false
-            });
-
-            ChatBubbles.Add(new TransferBubbleViewModel
-            {
-                IsOutgoing = false,
-                FileName = "Project_Specs.pdf",
-                FileSize = "12 MB",
-                ProgressValue = 12,
-                StatusText = "Receiving 12%",
-                SpeedText = "4.2 MB/s",
-                IconGlyph = "\xEA90", // Document
-                IsActive = true,
-                IsCompleted = false
-            });
-        }
-
-        private DispatcherTimer? _progressTimer;
-
-        private void StartProgressSimulation()
-        {
-            _progressTimer = new DispatcherTimer();
-            _progressTimer.Interval = TimeSpan.FromSeconds(1);
-            _progressTimer.Tick += DispatcherTimer_Tick;
-            _progressTimer.Start();
-        }
-
-        private void DispatcherTimer_Tick(object? sender, object e)
-        {
-            int completedCount = 0;
-            int totalActive = 0;
-
-            foreach (var bubble in ChatBubbles)
-            {
-                if (bubble.IsActive && bubble.ProgressValue < 100)
+                ChatBubbles.Add(new TransferBubbleViewModel
                 {
-                    bubble.ProgressValue += 5;
-                    bubble.SpeedText = "12.4 MB/s"; // Mock speed
-                    if (bubble.ProgressValue >= 100)
-                    {
-                        bubble.ProgressValue = 100;
-                        bubble.IsActive = false;
-                        bubble.IsCompleted = true;
-                        bubble.StatusText = "Completed";
-                        bubble.SpeedText = "";
-                    }
-                    else
-                    {
-                        bubble.StatusText = (bubble.IsOutgoing ? "Sending " : "Receiving ") + bubble.ProgressValue + "%";
-                    }
-                }
-
-                if (bubble.IsCompleted) completedCount++;
-                if (bubble.IsActive) totalActive++;
+                    IsOutgoing = record.Direction == TransferDirection.Outgoing,
+                    FileName = record.FileName,
+                    FileSize = StagedTransferItem.FormatBytes(record.TotalBytes),
+                    ProgressValue = record.Status == TransferStatus.Completed ? 100 : 0,
+                    StatusText = record.Status.ToString(),
+                    SpeedText = "",
+                    IconGlyph = record.IsFolder ? "\xE8B7" : "\xE7C3",
+                    IsActive = false,
+                    IsCompleted = record.Status == TransferStatus.Completed
+                });
             }
+        }
 
-            PeerStatusText.Text = $"Transferring {completedCount} of {ChatBubbles.Count} files";
-
-            if (totalActive == 0 && completedCount == ChatBubbles.Count)
+        private void LoadActiveQueueData()
+        {
+            ChatBubbles.Clear();
+            foreach (var record in App.Backend.Transfers.Queue.OrderBy(q => q.CreatedUtc))
             {
-                TotalSpeedText.Text = "0.0 MB/s";
-                if (_progressTimer != null)
+                ChatBubbles.Add(new TransferBubbleViewModel
                 {
-                    _progressTimer.Stop();
-                }
+                    IsOutgoing = record.Direction == TransferDirection.Outgoing,
+                    FileName = record.FileName,
+                    FileSize = record.SizeText,
+                    ProgressValue = record.ProgressPercent,
+                    StatusText = record.StatusText,
+                    SpeedText = record.SpeedText,
+                    IconGlyph = record.IsFolder ? "\xE8B7" : "\xE7C3",
+                    IsActive = record.Status is TransferStatus.Transferring or TransferStatus.Paused or TransferStatus.Queued,
+                    IsCompleted = record.Status == TransferStatus.Completed
+                });
             }
         }
 
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             base.OnNavigatedFrom(e);
-            if (_progressTimer != null)
-            {
-                _progressTimer.Stop();
-                _progressTimer.Tick -= DispatcherTimer_Tick;
-                _progressTimer = null;
-            }
         }
     }
 

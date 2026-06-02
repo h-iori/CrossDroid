@@ -2,13 +2,14 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
+using CrossDroid.Windows.Backend;
 
 namespace CrossDroid.Windows.Views
 {
     public sealed partial class HomeView : Page
     {
-
-        private readonly Random _random = new();
 
         public HomeView()
         {
@@ -18,10 +19,27 @@ namespace CrossDroid.Windows.Views
 
         private void HomeView_Loaded(object sender, RoutedEventArgs e)
         {
-            // Initialize with a random PIN
             GenerateNewPin();
+            
+            _ = Task.Run(async () =>
+            {
+                var bmp = await App.Backend.Pairing.GenerateQrCodeAsync();
+                
+                this.DispatcherQueue.TryEnqueue(async () =>
+                {
+                    if (bmp != null && QrCodeImage != null)
+                    {
+                        var source = new Microsoft.UI.Xaml.Media.Imaging.SoftwareBitmapSource();
+                        await source.SetBitmapAsync(bmp);
+                        QrCodeImage.Source = source;
+                    }
 
-
+                    if (VisibilityToggle != null)
+                    {
+                        VisibilityToggle.IsOn = App.Backend.Settings.Current.Discoverable;
+                    }
+                });
+            });
         }
 
 
@@ -32,6 +50,7 @@ namespace CrossDroid.Windows.Views
 
             if (VisibilityToggle.IsOn)
             {
+                App.Backend.Settings.Current.Discoverable = true;
                 DiscoveryPanel.Visibility = Visibility.Visible;
                 HiddenPanel.Visibility = Visibility.Collapsed;
                 VisibilityStatusText.Text = "Visible to nearby devices";
@@ -41,6 +60,7 @@ namespace CrossDroid.Windows.Views
             }
             else
             {
+                App.Backend.Settings.Current.Discoverable = false;
                 DiscoveryPanel.Visibility = Visibility.Collapsed;
                 HiddenPanel.Visibility = Visibility.Visible;
                 VisibilityStatusText.Text = "Hidden from nearby devices";
@@ -57,8 +77,7 @@ namespace CrossDroid.Windows.Views
 
         private void GenerateNewPin()
         {
-            int pin = _random.Next(1000, 10000);
-            PinTextBlock.Text = pin.ToString();
+            PinTextBlock.Text = App.Backend.Pairing.GenerateTemporaryPin();
         }
 
         private async void TempSendButton_Click(object sender, RoutedEventArgs e)
@@ -85,9 +104,12 @@ namespace CrossDroid.Windows.Views
                     selectedFiles.Add(new StorageFileItem 
                     { 
                         Name = file.Name, 
-                        Size = props.Size 
+                        Size = props.Size,
+                        Path = file.Path
                     });
                 }
+
+                await App.Backend.Staging.StageStorageItemsAsync(files);
                 
                 // Navigate to Radar Screen with selected files (ensure UI thread)
                 this.DispatcherQueue.TryEnqueue(() =>
@@ -102,5 +124,6 @@ namespace CrossDroid.Windows.Views
     {
         public string Name { get; set; } = string.Empty;
         public ulong Size { get; set; }
+        public string Path { get; set; } = string.Empty;
     }
 }

@@ -2,6 +2,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
+using CrossDroid.Windows.Backend;
 
 namespace CrossDroid.Windows.Views
 {
@@ -17,13 +19,29 @@ namespace CrossDroid.Windows.Views
 
         private void RefreshList()
         {
-            if (App.MainWindowInstance == null) return;
-            var records = App.MainWindowInstance.HistoryRecords;
-            
             DisplayedItems.Clear();
-            foreach (var item in records)
+            foreach (var group in App.Backend.History.Records.GroupBy(h => h.DeviceName))
             {
-                DisplayedItems.Add(item);
+                var latest = group.OrderByDescending(h => h.CompletedUtc ?? h.CreatedUtc).First();
+                bool isSuccess = latest.Status == TransferStatus.Completed;
+                DisplayedItems.Add(new HistoryItemViewModel
+                {
+                    DeviceName = group.Key,
+                    DeviceType = "DEVICE",
+                    DeviceIconGlyph = "\xE8EA",
+                    FileCount = group.Count(),
+                    TotalBytesText = StagedTransferItem.FormatBytes(group.Sum(h => h.TotalBytes)),
+                    LastTransferInfo = $"Last: {latest.FileName} ({latest.Status})",
+                    DateText = (latest.CompletedUtc ?? latest.CreatedUtc).ToLocalTime().ToString("g"),
+                    Status = latest.Status.ToString(),
+                    StatusGlyph = isSuccess ? "\xE73E" : "\xE10A",
+                    StatusBrush = isSuccess
+                        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136))
+                        : new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102)),
+                    IconBg = isSuccess
+                        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136))
+                        : new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102))
+                });
             }
         }
 

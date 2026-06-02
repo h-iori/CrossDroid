@@ -3,6 +3,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
+using CrossDroid.Windows.Backend;
 
 namespace CrossDroid.Windows.Views
 {
@@ -13,59 +15,30 @@ namespace CrossDroid.Windows.Views
         public DevicesView()
         {
             this.InitializeComponent();
-            LoadMockData();
-            
             PairedDevicesList.ItemsSource = PairedDevices;
+            LoadBackendData();
         }
 
-        private void LoadMockData()
+        private void LoadBackendData()
         {
+            App.Backend.Devices.RefreshPresenceAsync().GetAwaiter().GetResult();
             PairedDevices.Clear();
-            PairedDevices.Add(new DeviceViewModel
+            foreach (var device in App.Backend.Devices.Devices
+                .OrderByDescending(d => d.Presence == DevicePresence.Online)
+                .ThenBy(d => d.AliasOrName))
             {
-                Name = "Pixel 8 Pro",
-                IconGlyph = "\xE8EA", // Phone
-                Status = "TRUSTED",
-                Info = "Last seen: Active on 192.168.1.50 • Fingerprint: E8:4B:92...",
-                StatusBackground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136)), // SuccessGreen translucent
-                StatusForeground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136))
-            });
-            PairedDevices.Add(new DeviceViewModel
-            {
-                Name = "Galaxy Tab S9",
-                IconGlyph = "\xE90A", // Tablet
-                Status = "TRUSTED",
-                Info = "Last seen: 2 hours ago • Fingerprint: 4A:9C:23...",
-                StatusBackground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136)),
-                StatusForeground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136))
-            });
-            PairedDevices.Add(new DeviceViewModel
-            {
-                Name = "Desktop-Office",
-                IconGlyph = "\xE7F4", // Computer
-                Status = "BLOCKED",
-                Info = "Fingerprint: 12:FF:A9...",
-                StatusBackground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102)), // ErrorRed translucent
-                StatusForeground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102))
-            });
+                PairedDevices.Add(DeviceViewModel.FromDevice(device));
+            }
         }
 
-        private void BlockDevice_Click(object sender, RoutedEventArgs e)
+        private async void BlockDevice_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is DeviceViewModel vm)
             {
-                if (vm.Status == "TRUSTED")
-                {
-                    vm.Status = "BLOCKED";
-                    vm.StatusBackground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102));
-                    vm.StatusForeground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102));
-                }
-                else
-                {
-                    vm.Status = "TRUSTED";
-                    vm.StatusBackground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136));
-                    vm.StatusForeground = new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136));
-                }
+                var device = App.Backend.Devices.Devices.FirstOrDefault(d => d.DeviceId == vm.DeviceId);
+                if (device == null) return;
+                await App.Backend.Devices.SetBlockedAsync(device, !device.IsBlocked);
+                LoadBackendData();
             }
         }
 
@@ -86,53 +59,80 @@ namespace CrossDroid.Windows.Views
                 var res = await dialog.ShowAsync();
                 if (res == ContentDialogResult.Primary && !string.IsNullOrWhiteSpace(input.Text))
                 {
-                    vm.Name = input.Text;
+                    var device = App.Backend.Devices.Devices.FirstOrDefault(d => d.DeviceId == vm.DeviceId);
+                    if (device == null) return;
+                    await App.Backend.Devices.RenameAsync(device, input.Text);
+                    LoadBackendData();
                 }
             }
         }
 
-        private void DeleteDevice_Click(object sender, RoutedEventArgs e)
+        private async void DeleteDevice_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is DeviceViewModel vm)
             {
-                PairedDevices.Remove(vm);
+                var device = App.Backend.Devices.Devices.FirstOrDefault(d => d.DeviceId == vm.DeviceId);
+                if (device == null) return;
+                await App.Backend.Devices.RemoveAsync(device);
+                LoadBackendData();
             }
         }
     }
 
     public class DeviceViewModel : System.ComponentModel.INotifyPropertyChanged
     {
+        public string DeviceId { get; set; } = string.Empty;
+
         private string name = string.Empty;
-        public string Name 
-        { 
-            get => name; 
-            set { name = value; OnPropertyChanged(nameof(Name)); } 
+        public string Name
+        {
+            get => name;
+            set { name = value; OnPropertyChanged(nameof(Name)); }
         }
 
         public string IconGlyph { get; set; } = string.Empty;
 
         private string status = string.Empty;
-        public string Status 
-        { 
-            get => status; 
-            set { status = value; OnPropertyChanged(nameof(Status)); } 
+        public string Status
+        {
+            get => status;
+            set { status = value; OnPropertyChanged(nameof(Status)); }
         }
 
         private Brush? statusBackground;
-        public Brush? StatusBackground 
-        { 
-            get => statusBackground; 
-            set { statusBackground = value; OnPropertyChanged(nameof(StatusBackground)); } 
+        public Brush? StatusBackground
+        {
+            get => statusBackground;
+            set { statusBackground = value; OnPropertyChanged(nameof(StatusBackground)); }
         }
 
         private Brush? statusForeground;
-        public Brush? StatusForeground 
-        { 
-            get => statusForeground; 
-            set { statusForeground = value; OnPropertyChanged(nameof(StatusForeground)); } 
+        public Brush? StatusForeground
+        {
+            get => statusForeground;
+            set { statusForeground = value; OnPropertyChanged(nameof(StatusForeground)); }
         }
 
         public string Info { get; set; } = string.Empty;
+
+        public static DeviceViewModel FromDevice(DeviceRecord device)
+        {
+            bool blocked = device.IsBlocked || device.TrustState == DeviceTrustState.Blocked;
+            return new DeviceViewModel
+            {
+                DeviceId = device.DeviceId,
+                Name = device.AliasOrName,
+                IconGlyph = device.DeviceType.Contains("PC", StringComparison.OrdinalIgnoreCase) ? "\xE7F4" : "\xE8EA",
+                Status = blocked ? "BLOCKED" : device.TrustState.ToString().ToUpperInvariant(),
+                Info = $"Presence: {device.Presence} - Connection: {device.ConnectionStatus} - Encryption: {device.EncryptionStatus} - Last seen: {device.LastSeenUtc.LocalDateTime:g} - Fingerprint: {device.Fingerprint}",
+                StatusBackground = blocked
+                    ? new SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 255, 51, 102))
+                    : new SolidColorBrush(global::Windows.UI.Color.FromArgb(51, 0, 255, 136)),
+                StatusForeground = blocked
+                    ? new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 255, 51, 102))
+                    : new SolidColorBrush(global::Windows.UI.Color.FromArgb(255, 0, 255, 136))
+            };
+        }
 
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged(string prop) => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(prop));

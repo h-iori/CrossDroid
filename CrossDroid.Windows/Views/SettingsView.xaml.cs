@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using CrossDroid.Windows.Backend;
 
 namespace CrossDroid.Windows.Views
 {
@@ -50,7 +51,7 @@ namespace CrossDroid.Windows.Views
                 var folder = await picker.PickSingleFolderAsync();
                 if (folder != null)
                 {
-                    App.DownloadsDirectory = folder.Path;
+                    await App.Backend.Settings.SetDownloadsDirectoryAsync(folder.Path);
                     DownloadPathBox.Text = folder.Path;
                 }
             }

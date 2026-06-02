@@ -52,9 +52,7 @@
                 <Border CornerRadius="16" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource AccentCyanBorderBrush}" BorderThickness="1.5" Padding="16" Height="170" Width="170" HorizontalAlignment="Center">
                     <Grid>
                         <!-- Cyberpunk cyan-glowing vector QR Code representation -->
-                        <Path Data="M0,0 h40 v20 h-20 v20 h-20 Z M100,0 h40 v40 h-20 v-20 h-20 Z M0,100 h20 v20 h20 v20 h-40 Z M20,20 h20 v20 h-20 Z M100,20 h20 v20 h-20 Z M20,100 h20 v20 h-20 Z M50,50 h40 v40 h-40 Z" Fill="{StaticResource AccentCyan}" Stretch="Uniform"/>
-                        
-
+                        <Image x:Name="QrCodeImage" Stretch="Uniform" />
                     </Grid>
                 </Border>
 
