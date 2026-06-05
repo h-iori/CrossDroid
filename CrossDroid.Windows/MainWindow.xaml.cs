@@ -16,6 +16,11 @@ namespace CrossDroid.Windows
         public ObservableCollection<Views.HistoryItemViewModel> HistoryRecords { get; } = new();
         public bool IsPickingFile { get; set; } = false;
 
+        public System.Windows.Input.ICommand OpenCommand { get; }
+        public System.Windows.Input.ICommand ToggleReceiveCommand { get; }
+        public System.Windows.Input.ICommand DevicesCommand { get; }
+        public System.Windows.Input.ICommand ExitCommand { get; }
+
         public MainWindow()
         {
             this.InitializeComponent();
@@ -84,9 +89,14 @@ namespace CrossDroid.Windows
             // Register window closing event
             appWindow.Closing += AppWindow_Closing;
 
-            // Bind tray commands to left click and double click
-            TrayIcon.LeftClickCommand = new RelayCommand(ToggleOrRestoreWindow);
-            TrayIcon.DoubleClickCommand = new RelayCommand(ToggleOrRestoreWindow);
+            // Bind tray commands
+            OpenCommand = new RelayCommand(() => this.DispatcherQueue.TryEnqueue(RestoreWindow));
+            ToggleReceiveCommand = new RelayCommand(() => this.DispatcherQueue.TryEnqueue(ToggleReceiveMode));
+            DevicesCommand = new RelayCommand(() => this.DispatcherQueue.TryEnqueue(ShowDevices));
+            ExitCommand = new RelayCommand(() => this.DispatcherQueue.TryEnqueue(ExitApplication));
+
+            TrayIcon.LeftClickCommand = OpenCommand;
+            TrayIcon.DoubleClickCommand = OpenCommand;
 
             // Load tray icon programmatically to avoid H.NotifyIcon thread-marshalling COMException bug
             try
@@ -424,12 +434,7 @@ namespace CrossDroid.Windows
             ToggleOrRestoreWindow();
         }
 
-        private void TrayOpen_Click(object sender, RoutedEventArgs e)
-        {
-            RestoreWindow();
-        }
-
-        private async void TrayToggleReceive_Click(object sender, RoutedEventArgs e)
+        private void ToggleReceiveMode()
         {
             App.AutoAcceptTrusted = !App.AutoAcceptTrusted;
             var dialog = new ContentDialog
@@ -439,18 +444,19 @@ namespace CrossDroid.Windows
                 CloseButtonText = "OK",
                 XamlRoot = this.ContentFrame.XamlRoot
             };
-            await dialog.ShowAsync();
+            _ = dialog.ShowAsync();
         }
 
-        private void TrayDevices_Click(object sender, RoutedEventArgs e)
+        private void ShowDevices()
         {
             NavigateToPage("Devices");
             RestoreWindow();
         }
 
-        private void TrayExit_Click(object sender, RoutedEventArgs e)
+        private void ExitApplication()
         {
             App.CloseToTray = false;
+            TrayIcon.Dispose();
             Environment.Exit(0);
         }
 

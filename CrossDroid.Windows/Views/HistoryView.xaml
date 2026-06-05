@@ -41,7 +41,7 @@
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="local:HistoryItemViewModel">
                     <Grid ColumnSpacing="12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />

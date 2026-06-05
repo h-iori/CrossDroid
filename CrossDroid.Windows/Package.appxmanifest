@@ -3,10 +3,13 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop3="http://schemas.microsoft.com/appx/manifest/desktop/windows10/3"
+  xmlns:desktop6="http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   xmlns:systemai="http://schemas.microsoft.com/appx/manifest/systemai/windows10"
-  IgnorableNamespaces="uap desktop rescap systemai">
+  IgnorableNamespaces="uap uap5 desktop desktop3 desktop6 rescap systemai">
 
   <Identity
     Name="CrossDroid.Windows.App"
@@ -19,6 +22,7 @@
     <DisplayName>CrossDroid Companion</DisplayName>
     <PublisherDisplayName>Iori Studios</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
+    <desktop6:RegistryWriteVirtualization>disabled</desktop6:RegistryWriteVirtualization>
   </Properties>
 
   <Dependencies>
@@ -56,9 +60,16 @@
         </uap:Extension>
 
         <!-- Windows Startup Task for Auto-Start -->
-        <desktop:Extension Category="windows.startupTask" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
+        <desktop:Extension Category="windows.startupTask" Executable="CrossDroid.Windows.exe" EntryPoint="Windows.FullTrustApplication">
           <desktop:StartupTask TaskId="CrossDroidStartup" Enabled="false" DisplayName="CrossDroid Companion" />
         </desktop:Extension>
+
+        <!-- App Execution Alias for Context Menu activation -->
+        <uap5:Extension Category="windows.appExecutionAlias" Executable="CrossDroid.Windows.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:AppExecutionAlias>
+            <uap5:ExecutionAlias Alias="crossdroid.exe" />
+          </uap5:AppExecutionAlias>
+        </uap5:Extension>
       </Extensions>
 
     </Application>
@@ -66,6 +77,7 @@
 
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
+    <rescap:Capability Name="unvirtualizedResources" />
     <Capability Name="privateNetworkClientServer" />
     <Capability Name="internetClient" />
   </Capabilities>

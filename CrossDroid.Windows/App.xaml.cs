@@ -59,9 +59,24 @@ namespace CrossDroid.Windows;
             string[] cmdArgs = Environment.GetCommandLineArgs();
             bool runMinimized = cmdArgs.Contains("--minimized") || cmdArgs.Contains("-m") || cmdArgs.Contains("--hidden") || StartMinimized;
             
+            if (runMinimized)
+            {
+                // Start minimized to system tray: create window but do not call Activate/Show
+                MainWindowInstance.AppWindow.Hide();
+            }
+            else
+            {
+                MainWindowInstance.Activate();
+            }
+
+            await ProcessCommandLineArgsAsync(cmdArgs.Skip(1).ToArray());
+        }
+
+        public static async Task ProcessCommandLineArgsAsync(string[] cmdArgs)
+        {
             // Collect any file paths passed via explorer context menu (--send "filepath" or bare paths)
             var filesToShare = new List<string>();
-            for (int i = 1; i < cmdArgs.Length; i++) // Skip executable path
+            for (int i = 0; i < cmdArgs.Length; i++)
             {
                 var arg = cmdArgs[i];
                 if (arg == "--minimized" || arg == "-m" || arg == "--hidden" || arg == "--verbose") continue;
@@ -119,15 +134,6 @@ namespace CrossDroid.Windows;
                 // Show the window and navigate to transfers since user explicitly started a share action
                 MainWindowInstance.Activate();
                 MainWindowInstance.NavigateToPage("Transfers");
-            }
-            else if (runMinimized)
-            {
-                // Start minimized to system tray: create window but do not call Activate/Show
-                MainWindowInstance.AppWindow.Hide();
-            }
-            else
-            {
-                MainWindowInstance.Activate();
             }
         }
     }

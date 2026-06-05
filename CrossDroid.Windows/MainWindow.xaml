@@ -1,4 +1,4 @@
-﻿<Window
+<Window
     x:Class="CrossDroid.Windows.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -31,23 +31,23 @@
             ToolTipText="CrossDroid Desktop Companion">
             <tb:TaskbarIcon.ContextFlyout>
                 <MenuFlyout>
-                    <MenuFlyoutItem Text="Open CrossDroid" Click="TrayOpen_Click">
+                    <MenuFlyoutItem Text="Open CrossDroid" Command="{x:Bind OpenCommand}">
                         <MenuFlyoutItem.Icon>
                             <FontIcon Glyph="&#xE7F4;" FontFamily="Segoe MDL2 Assets"/>
                         </MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
-                    <MenuFlyoutItem Text="Receive Mode (Toggle)" Click="TrayToggleReceive_Click">
+                    <MenuFlyoutItem Text="Receive Mode (Toggle)" Command="{x:Bind ToggleReceiveCommand}">
                         <MenuFlyoutItem.Icon>
                             <FontIcon Glyph="&#xE104;" FontFamily="Segoe MDL2 Assets"/>
                         </MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
-                    <MenuFlyoutItem Text="Show Paired Devices" Click="TrayDevices_Click">
+                    <MenuFlyoutItem Text="Show Paired Devices" Command="{x:Bind DevicesCommand}">
                         <MenuFlyoutItem.Icon>
                             <FontIcon Glyph="&#xE776;" FontFamily="Segoe MDL2 Assets"/>
                         </MenuFlyoutItem.Icon>
                     </MenuFlyoutItem>
                     <MenuFlyoutSeparator/>
-                    <MenuFlyoutItem Text="Exit App" Click="TrayExit_Click">
+                    <MenuFlyoutItem Text="Exit App" Command="{x:Bind ExitCommand}">
                         <MenuFlyoutItem.Icon>
                             <FontIcon Glyph="&#xE711;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource ColorError}"/>
                         </MenuFlyoutItem.Icon>

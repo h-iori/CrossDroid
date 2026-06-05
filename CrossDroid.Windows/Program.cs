@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Activation;
 
 namespace CrossDroid.Windows
 {
@@ -68,9 +69,30 @@ namespace CrossDroid.Windows
         {
             if (App.MainWindowInstance != null)
             {
-                // Enqueue on UI thread
-                App.MainWindowInstance.DispatcherQueue.TryEnqueue(() =>
+                string[] cmdArgs = Array.Empty<string>();
+                if (args.Kind == ExtendedActivationKind.Launch)
                 {
+                    if (args.Data is global::Windows.ApplicationModel.Activation.LaunchActivatedEventArgs launchArgs)
+                    {
+                        cmdArgs = SplitCommandLine(launchArgs.Arguments);
+                    }
+                }
+                else if (args.Kind == ExtendedActivationKind.CommandLineLaunch)
+                {
+                    if (args.Data is global::Windows.ApplicationModel.Activation.CommandLineActivatedEventArgs cmdLineArgs)
+                    {
+                        cmdArgs = SplitCommandLine(cmdLineArgs.Operation.Arguments);
+                    }
+                }
+
+                // Enqueue on UI thread
+                App.MainWindowInstance.DispatcherQueue.TryEnqueue(async () =>
+                {
+                    if (cmdArgs.Length > 0)
+                    {
+                        await App.ProcessCommandLineArgsAsync(cmdArgs);
+                    }
+
                     // Bring main window to front
                     App.MainWindowInstance.AppWindow.Show();
                     var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindowInstance);
@@ -79,6 +101,39 @@ namespace CrossDroid.Windows
                     // If files were shared, we navigate to the transfers queue view
                     App.MainWindowInstance.NavigateToPage("Transfers");
                 });
+            }
+        }
+
+        [DllImport("shell32.dll", SetLastError = true)]
+        private static extern IntPtr CommandLineToArgvW(
+            [MarshalAs(UnmanagedType.LPWStr)] string lpCmdLine,
+            out int pNumArgs);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr LocalFree(IntPtr hMem);
+
+        private static string[] SplitCommandLine(string commandLine)
+        {
+            if (string.IsNullOrWhiteSpace(commandLine))
+                return Array.Empty<string>();
+
+            IntPtr argv = CommandLineToArgvW(commandLine, out int argc);
+            if (argv == IntPtr.Zero)
+                return Array.Empty<string>();
+
+            try
+            {
+                var args = new string[argc];
+                for (int i = 0; i < argc; i++)
+                {
+                    IntPtr p = Marshal.ReadIntPtr(argv, i * IntPtr.Size);
+                    args[i] = Marshal.PtrToStringUni(p)!;
+                }
+                return args;
+            }
+            finally
+            {
+                LocalFree(argv);
             }
         }
     }

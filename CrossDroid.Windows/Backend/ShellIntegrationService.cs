@@ -95,29 +95,54 @@ public sealed class ShellIntegrationService
 
     public void EnsureContextMenu(bool enable)
     {
-        try
+        string[] keys = new[] { @"Software\Classes\*\shell\CrossDroid", @"Software\Classes\Folder\shell\CrossDroid" };
+        foreach (var keyPath in keys)
         {
-            var baseKey = Registry.CurrentUser.CreateSubKey(@"Software\Classes\*\shell\CrossDroid");
-            if (enable)
+            try
             {
-                baseKey.SetValue("", "Share using CrossDroid");
-                baseKey.SetValue("Icon", Process.GetCurrentProcess().MainModule?.FileName ?? "");
-                var cmdKey = baseKey.CreateSubKey("command");
-                
-                var exePath = Process.GetCurrentProcess().MainModule?.FileName;
-                if (!string.IsNullOrEmpty(exePath))
+                if (enable)
                 {
-                    cmdKey.SetValue("", $"\"{exePath}\" --send \"%1\"");
+                    var baseKey = Registry.CurrentUser.CreateSubKey(keyPath);
+                    baseKey.SetValue("", "Share using CrossDroid");
+
+                    string exePath;
+                    if (IsPackaged())
+                    {
+                        exePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\WindowsApps\crossdroid.exe");
+                    }
+                    else
+                    {
+                        exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
+                    }
+
+                    if (!string.IsNullOrEmpty(exePath))
+                    {
+                        baseKey.SetValue("Icon", exePath);
+                        var cmdKey = baseKey.CreateSubKey("command");
+                        cmdKey.SetValue("", $"\"{exePath}\" --send \"%1\"");
+                    }
+                }
+                else
+                {
+                    Registry.CurrentUser.DeleteSubKeyTree(keyPath, false);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                Registry.CurrentUser.DeleteSubKeyTree(@"Software\Classes\*\shell\CrossDroid", false);
+                Debug.WriteLine($"Failed to update Context Menu for {keyPath}: {ex.Message}");
             }
         }
-        catch (Exception ex)
+    }
+
+    private static bool IsPackaged()
+    {
+        try
         {
-            Debug.WriteLine($"Failed to update Context Menu: {ex.Message}");
+            return Package.Current != null && Package.Current.Id != null;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
         }
     }
 }

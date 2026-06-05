@@ -41,7 +41,7 @@
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="local:DeviceViewModel">
                     <Grid RowSpacing="12">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
