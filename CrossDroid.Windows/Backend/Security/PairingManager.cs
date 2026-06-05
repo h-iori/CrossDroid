@@ -3,7 +3,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Threading.Tasks;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace CrossDroid.Windows.Backend.Security;
@@ -13,6 +13,9 @@ public class PairingManager
     private readonly IdentityService _identity;
 
     public string CurrentPin { get; private set; } = string.Empty;
+    public DateTimeOffset PinExpiresUtc { get; private set; } = DateTimeOffset.MinValue;
+    public bool IsPinValid => !string.IsNullOrEmpty(CurrentPin) && DateTimeOffset.UtcNow < PinExpiresUtc;
+    public TimeSpan PinRemainingTime => IsPinValid ? PinExpiresUtc - DateTimeOffset.UtcNow : TimeSpan.Zero;
 
     public PairingManager(IdentityService identity)
     {
@@ -24,7 +27,7 @@ public class PairingManager
         var device = _identity.LocalDevice;
         var encodedName = Uri.EscapeDataString(device.DisplayName);
         var uri = $"crossdroid://pair?id={device.DeviceId}&fp={device.PublicFingerprint}&name={encodedName}&type=Windows";
-        if (!string.IsNullOrEmpty(CurrentPin))
+        if (!string.IsNullOrEmpty(CurrentPin) && IsPinValid)
         {
             uri += $"&pin={CurrentPin}";
         }
@@ -60,9 +63,23 @@ public class PairingManager
 
     public string GenerateTemporaryPin()
     {
-        // 6-digit PIN for improved entropy
-        var random = new Random();
-        CurrentPin = random.Next(100000, 999999).ToString();
+        // Cryptographically secure 6-digit PIN
+        CurrentPin = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+        PinExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(5);
         return CurrentPin;
+    }
+
+    /// <summary>
+    /// Checks if the PIN has expired and auto-regenerates if needed.
+    /// Returns true if a new PIN was generated.
+    /// </summary>
+    public bool RefreshIfExpired()
+    {
+        if (!string.IsNullOrEmpty(CurrentPin) && !IsPinValid)
+        {
+            GenerateTemporaryPin();
+            return true;
+        }
+        return false;
     }
 }

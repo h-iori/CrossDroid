@@ -57,13 +57,29 @@ namespace CrossDroid.Windows;
             
             // Check command line arguments
             string[] cmdArgs = Environment.GetCommandLineArgs();
-            bool runMinimized = cmdArgs.Contains("--minimized") || cmdArgs.Contains("-m") || StartMinimized;
+            bool runMinimized = cmdArgs.Contains("--minimized") || cmdArgs.Contains("-m") || cmdArgs.Contains("--hidden") || StartMinimized;
             
-            // Collect any file paths passed via explorer context menu
+            // Collect any file paths passed via explorer context menu (--send "filepath" or bare paths)
             var filesToShare = new List<string>();
-            foreach (var arg in cmdArgs.Skip(1)) // Skip executable path
+            for (int i = 1; i < cmdArgs.Length; i++) // Skip executable path
             {
-                if (arg == "--minimized" || arg == "-m") continue;
+                var arg = cmdArgs[i];
+                if (arg == "--minimized" || arg == "-m" || arg == "--hidden" || arg == "--verbose") continue;
+                
+                if (arg == "--send")
+                {
+                    // Next arg is the file path
+                    if (i + 1 < cmdArgs.Length)
+                    {
+                        i++;
+                        var sendPath = cmdArgs[i];
+                        if (System.IO.File.Exists(sendPath) || System.IO.Directory.Exists(sendPath))
+                        {
+                            filesToShare.Add(sendPath);
+                        }
+                    }
+                    continue;
+                }
                 
                 if (System.IO.File.Exists(arg) || System.IO.Directory.Exists(arg))
                 {
@@ -100,8 +116,9 @@ namespace CrossDroid.Windows;
                     MainWindowInstance.StageTransfers(storageItems);
                 }
                 
-                // Show the window since the user explicitly started a share action
+                // Show the window and navigate to transfers since user explicitly started a share action
                 MainWindowInstance.Activate();
+                MainWindowInstance.NavigateToPage("Transfers");
             }
             else if (runMinimized)
             {

@@ -17,7 +17,7 @@
 
     <Page.Resources>
         <!-- Outgoing Bubble Template -->
-        <DataTemplate x:Key="OutgoingBubbleTemplate" x:DataType="local:TransferBubbleViewModel">
+        <DataTemplate x:Key="OutgoingBubbleTemplate">
             <Grid HorizontalAlignment="Right" Margin="32,0,0,10" MinWidth="220" MaxWidth="360">
                 <Border CornerRadius="12,12,4,12" Background="{StaticResource SendCardBg}" BorderBrush="#55D455FF" BorderThickness="1" Padding="8,8,8,6">
                     <Grid RowSpacing="6">
@@ -36,37 +36,37 @@
                             </Grid.ColumnDefinitions>
 
                             <Border Grid.Column="0" Width="28" Height="28" CornerRadius="6" Background="#1ED455FF" BorderBrush="#40D455FF" BorderThickness="1">
-                                <FontIcon Glyph="{x:Bind IconGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource NeonHighlight}"/>
+                                <FontIcon Glyph="{Binding IconGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource NeonHighlight}"/>
                             </Border>
 
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
-                                <TextBlock Text="{x:Bind FileName}" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{x:Bind FileSize}" FontSize="9" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Text="{Binding FileName}" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding FileSize}" FontSize="9" Foreground="{StaticResource TextSecondary}"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Visibility="{x:Bind ActiveUIVisibility}">
-                                <Button Width="24" Height="24" Padding="0" CornerRadius="12" Background="#1CD455FF" BorderBrush="#3DD455FF" BorderThickness="1" common:MouseCursorHelper.HandCursor="True">
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Visibility="{Binding ActiveUIVisibility}">
+                                <Button Width="24" Height="24" Padding="0" CornerRadius="12" Background="#1CD455FF" BorderBrush="#3DD455FF" BorderThickness="1">
                                     <FontIcon Glyph="&#xE769;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="{StaticResource NeonHighlight}"/>
                                 </Button>
-                                <Button Width="24" Height="24" Padding="0" CornerRadius="12" Background="#1CFF3366" BorderBrush="#3DFF3366" BorderThickness="1" common:MouseCursorHelper.HandCursor="True">
+                                <Button Width="24" Height="24" Padding="0" CornerRadius="12" Background="#1CFF3366" BorderBrush="#3DFF3366" BorderThickness="1">
                                     <FontIcon Glyph="&#xE10A;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="{StaticResource ColorError}"/>
                                 </Button>
                             </StackPanel>
 
-                            <Border Grid.Column="2" Visibility="{x:Bind InactiveUIVisibility}" Width="20" Height="20" CornerRadius="10" Background="#1C00FF88" VerticalAlignment="Center">
+                            <Border Grid.Column="2" Visibility="{Binding InactiveUIVisibility}" Width="20" Height="20" CornerRadius="10" Background="#1C00FF88" VerticalAlignment="Center">
                                 <FontIcon Glyph="&#xE10B;" FontFamily="Segoe MDL2 Assets" FontSize="9" Foreground="{StaticResource ColorSuccess}"/>
                             </Border>
                         </Grid>
 
                         <!-- Progress Bar (Visible if Active) -->
-                        <Border Grid.Row="1" Height="4" CornerRadius="2" Background="{StaticResource BgSurface}" Visibility="{x:Bind ActiveUIVisibility}">
-                            <ProgressBar Value="{x:Bind ProgressValue, Mode=OneWay}" Maximum="100" Height="4" Foreground="{StaticResource NeonPrimary}" Background="Transparent" />
+                        <Border Grid.Row="1" Height="4" CornerRadius="2" Background="{StaticResource BgSurface}" Visibility="{Binding ActiveUIVisibility}">
+                            <ProgressBar Value="{Binding ProgressValue, Mode=OneWay}" Maximum="100" Height="4" Foreground="{StaticResource NeonPrimary}" Background="Transparent" />
                         </Border>
 
                         <!-- Footer: Status & Speed -->
                         <Grid Grid.Row="2">
-                            <TextBlock Text="{x:Bind StatusText, Mode=OneWay}" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource NeonHighlight}" HorizontalAlignment="Left"/>
-                            <TextBlock Text="{x:Bind SpeedText, Mode=OneWay}" FontSize="9" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Right" Visibility="{x:Bind ActiveUIVisibility}"/>
+                            <TextBlock Text="{Binding StatusText, Mode=OneWay}" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource NeonHighlight}" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{Binding SpeedText, Mode=OneWay}" FontSize="9" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Right" Visibility="{Binding ActiveUIVisibility}"/>
                         </Grid>
                     </Grid>
                 </Border>
@@ -74,7 +74,7 @@
         </DataTemplate>
 
         <!-- Incoming Bubble Template -->
-        <DataTemplate x:Key="IncomingBubbleTemplate" x:DataType="local:TransferBubbleViewModel">
+        <DataTemplate x:Key="IncomingBubbleTemplate">
             <Grid HorizontalAlignment="Left" Margin="0,0,32,10" MinWidth="220" MaxWidth="360">
                 <Border CornerRadius="12,12,12,4" Background="{StaticResource ReceiveCardBg}" BorderBrush="#E6262B38" BorderThickness="1" Padding="8,8,8,6">
                     <Grid RowSpacing="6">
@@ -93,37 +93,37 @@
                             </Grid.ColumnDefinitions>
 
                             <Border Grid.Column="0" Width="28" Height="28" CornerRadius="6" Background="#1E27D7E7" BorderBrush="#4027D7E7" BorderThickness="1">
-                                <FontIcon Glyph="{x:Bind IconGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource AccentCyan}"/>
+                                <FontIcon Glyph="{Binding IconGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource AccentCyan}"/>
                             </Border>
 
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
-                                <TextBlock Text="{x:Bind FileName}" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{x:Bind FileSize}" FontSize="9" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Text="{Binding FileName}" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding FileSize}" FontSize="9" Foreground="{StaticResource TextSecondary}"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Visibility="{x:Bind ActiveUIVisibility}">
-                                <Button Width="24" Height="24" Padding="0" CornerRadius="12" Background="#1C27D7E7" BorderBrush="#3D27D7E7" BorderThickness="1" common:MouseCursorHelper.HandCursor="True">
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Visibility="{Binding ActiveUIVisibility}">
+                                <Button Width="24" Height="24" Padding="0" CornerRadius="12" Background="#1C27D7E7" BorderBrush="#3D27D7E7" BorderThickness="1">
                                     <FontIcon Glyph="&#xE769;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="{StaticResource AccentCyan}"/>
                                 </Button>
-                                <Button Width="24" Height="24" Padding="0" CornerRadius="12" Background="#1CFF3366" BorderBrush="#3DFF3366" BorderThickness="1" common:MouseCursorHelper.HandCursor="True">
+                                <Button Width="24" Height="24" Padding="0" CornerRadius="12" Background="#1CFF3366" BorderBrush="#3DFF3366" BorderThickness="1">
                                     <FontIcon Glyph="&#xE10A;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="{StaticResource ColorError}"/>
                                 </Button>
                             </StackPanel>
 
-                            <Border Grid.Column="2" Visibility="{x:Bind InactiveUIVisibility}" Width="20" Height="20" CornerRadius="10" Background="#1C00FF88" VerticalAlignment="Center">
+                            <Border Grid.Column="2" Visibility="{Binding InactiveUIVisibility}" Width="20" Height="20" CornerRadius="10" Background="#1C00FF88" VerticalAlignment="Center">
                                 <FontIcon Glyph="&#xE10B;" FontFamily="Segoe MDL2 Assets" FontSize="9" Foreground="{StaticResource ColorSuccess}"/>
                             </Border>
                         </Grid>
 
                         <!-- Progress Bar -->
-                        <Border Grid.Row="1" Height="4" CornerRadius="2" Background="{StaticResource BgSurface}" Visibility="{x:Bind ActiveUIVisibility}">
-                            <ProgressBar Value="{x:Bind ProgressValue, Mode=OneWay}" Maximum="100" Height="4" Foreground="{StaticResource AccentCyan}" Background="Transparent" />
+                        <Border Grid.Row="1" Height="4" CornerRadius="2" Background="{StaticResource BgSurface}" Visibility="{Binding ActiveUIVisibility}">
+                            <ProgressBar Value="{Binding ProgressValue, Mode=OneWay}" Maximum="100" Height="4" Foreground="{StaticResource AccentCyan}" Background="Transparent" />
                         </Border>
 
                         <!-- Footer -->
                         <Grid Grid.Row="2">
-                            <TextBlock Text="{x:Bind StatusText, Mode=OneWay}" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource AccentCyan}" HorizontalAlignment="Left"/>
-                            <TextBlock Text="{x:Bind SpeedText, Mode=OneWay}" FontSize="9" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Right" Visibility="{x:Bind ActiveUIVisibility}"/>
+                            <TextBlock Text="{Binding StatusText, Mode=OneWay}" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource AccentCyan}" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{Binding SpeedText, Mode=OneWay}" FontSize="9" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Right" Visibility="{Binding ActiveUIVisibility}"/>
                         </Grid>
                     </Grid>
                 </Border>
@@ -151,7 +151,7 @@
             </Grid.ColumnDefinitions>
             
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Button Background="Transparent" BorderThickness="0" Click="BackButton_Click" Padding="6" common:MouseCursorHelper.HandCursor="True">
+                <Button Background="Transparent" BorderThickness="0" Click="BackButton_Click" Padding="6">
                     <FontIcon Glyph="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource TextStrong}"/>
                 </Button>
                 <Border Width="28" Height="28" CornerRadius="14" Background="#26BF00FF" VerticalAlignment="Center">
@@ -186,7 +186,7 @@
 
         <!-- Bottom Elegant Send Bar -->
         <Border Grid.Row="2" CornerRadius="12,12,4,4" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,1,0,0" Padding="8" Margin="-12,0,-12,-12">
-            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" CornerRadius="20" Padding="10,6" common:MouseCursorHelper.HandCursor="True">
+            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" CornerRadius="20" Padding="10,6">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />

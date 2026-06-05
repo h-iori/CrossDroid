@@ -25,7 +25,7 @@
         <!-- Top App Bar Area -->
         <Grid Grid.Row="0">
             <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                <Button Background="Transparent" BorderThickness="0" Click="BackButton_Click" Padding="6" common:MouseCursorHelper.HandCursor="True">
+                <Button Background="Transparent" BorderThickness="0" Click="BackButton_Click" Padding="6">
                     <FontIcon Glyph="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextStrong}"/>
                 </Button>
                 <StackPanel VerticalAlignment="Center">
@@ -152,7 +152,7 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="views:RadarItem">
-                            <Button Style="{StaticResource RadarDeviceButtonStyle}" Click="Device_Click" Margin="{x:Bind Margin}" common:MouseCursorHelper.HandCursor="True">
+                            <Button Style="{StaticResource RadarDeviceButtonStyle}" Click="Device_Click" Margin="{x:Bind Margin}">
                                 <StackPanel Spacing="2">
                                     <Border Width="30" Height="30" CornerRadius="9" Background="#1A27D7E7" BorderBrush="#4D27D7E7" BorderThickness="1">
                                         <FontIcon Glyph="{x:Bind IconGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource AccentCyan}"/>
@@ -183,7 +183,7 @@
                     
                     <TextBox x:Name="PinTextBox" Grid.Column="0" PlaceholderText="000000" MaxLength="6" FontSize="12" FontWeight="Bold" CharacterSpacing="200" HorizontalAlignment="Stretch" VerticalAlignment="Center" TextAlignment="Center" Background="{StaticResource BgSurface}"/>
                     
-                    <Button Grid.Column="1" Click="ConnectPin_Click" Height="28" Padding="10,0" CornerRadius="5" Background="{StaticResource NeonPrimary}" BorderThickness="0" common:MouseCursorHelper.HandCursor="True">
+                    <Button Grid.Column="1" Click="ConnectPin_Click" Height="28" Padding="10,0" CornerRadius="5" Background="{StaticResource NeonPrimary}" BorderThickness="0">
                         <Button.Resources>
                             <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource NeonPrimaryColor}" Opacity="0.8" />
                         </Button.Resources>

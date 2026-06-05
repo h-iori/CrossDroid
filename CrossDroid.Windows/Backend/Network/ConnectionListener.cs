@@ -106,10 +106,25 @@ public sealed class ConnectionListener : IDisposable
         var request = JsonSerializer.Deserialize<PairRequestPayload>(message.PayloadJson);
         if (request == null) return;
 
-        // Auto-accept pairing for now. In a real app, prompt the user or check PIN.
+        bool accepted = false;
+        var pairing = CrossDroidBackend.Current?.Pairing;
+        var currentPin = pairing?.CurrentPin;
+        if (!string.IsNullOrEmpty(currentPin) && request.Pin == currentPin && (pairing?.IsPinValid ?? false))
+        {
+            accepted = true;
+        }
+        else
+        {
+            var mainWindow = CrossDroid.Windows.App.MainWindowInstance;
+            if (mainWindow != null)
+            {
+                accepted = await mainWindow.ShowPairingPromptAsync(request.DisplayName, request.Pin);
+            }
+        }
+
         var responsePayload = new PairResponsePayload
         {
-            Accepted = true,
+            Accepted = accepted,
             PublicKeyBase64 = _identity.GetCertificate().GetCertHashString()
         };
 
@@ -121,11 +136,22 @@ public sealed class ConnectionListener : IDisposable
 
         await session.WriteMessageAsync(response, null, token);
         
-        var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread() ?? CrossDroid.Windows.App.MainWindowInstance?.DispatcherQueue;
-        dispatcher?.TryEnqueue(() =>
+        if (accepted)
         {
-            _devices.UpdateFromDiscovery(request.DeviceId, request.DisplayName, "Device", session.RemoteFingerprint, "");
-        });
+            var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread() ?? CrossDroid.Windows.App.MainWindowInstance?.DispatcherQueue;
+            dispatcher?.TryEnqueue(() =>
+            {
+                _devices.UpdateFromDiscovery(request.DeviceId, request.DisplayName, "Device", session.RemoteFingerprint, "");
+                var device = _devices.Devices.FirstOrDefault(d => d.DeviceId == request.DeviceId);
+                if (device != null)
+                {
+                    device.TrustState = DeviceTrustState.Trusted;
+                    device.PairingStatus = PairingStatus.Paired;
+                    device.ConnectionStatus = ConnectionStatus.Ready;
+                    device.EncryptionStatus = EncryptionStatus.Negotiated;
+                }
+            });
+        }
     }
 
     private async Task HandleTransferOfferAsync(SecureSession session, ProtocolMessage message, CancellationToken token)
@@ -133,19 +159,73 @@ public sealed class ConnectionListener : IDisposable
         var offer = JsonSerializer.Deserialize<TransferOfferPayload>(message.PayloadJson);
         if (offer == null) return;
 
-        // Auto-accept for now
-        var acceptMsg = new ProtocolMessage
-        {
-            Type = MessageType.TransferAccept,
-            PayloadJson = JsonSerializer.Serialize(new TransferAcceptPayload
+        var device = _devices.Devices.FirstOrDefault(d => d.Fingerprint == session.RemoteFingerprint)
+            ?? new DeviceRecord
             {
-                TransferId = offer.TransferId,
-                Accepted = true
-            })
-        };
-        await session.WriteMessageAsync(acceptMsg, null, token);
+                DeviceId = "TempPeer",
+                DisplayName = "Unknown Device",
+                Fingerprint = session.RemoteFingerprint
+            };
 
-        // Hand off to TransferQueueService
-        await _transfers.ReceiveNetworkTransferAsync(session, offer);
+        // Silently reject transfers from blocked devices
+        if (device.IsBlocked)
+        {
+            var rejectMsg = new ProtocolMessage
+            {
+                Type = MessageType.TransferReject,
+                PayloadJson = JsonSerializer.Serialize(new TransferAcceptPayload
+                {
+                    TransferId = offer.TransferId,
+                    Accepted = false
+                })
+            };
+            await session.WriteMessageAsync(rejectMsg, null, token);
+            Debug.WriteLine($"Silently rejected transfer from blocked device: {device.AliasOrName}");
+            return;
+        }
+
+        bool accepted = false;
+        if (device.TrustState == DeviceTrustState.Trusted && CrossDroidBackend.Current.Settings.Current.AutoAcceptTrusted)
+        {
+            accepted = true;
+        }
+        else
+        {
+            var mainWindow = CrossDroid.Windows.App.MainWindowInstance;
+            if (mainWindow != null)
+            {
+                accepted = await mainWindow.ShowIncomingTransferPromptAsync(device, offer);
+            }
+        }
+
+        if (accepted)
+        {
+            var acceptMsg = new ProtocolMessage
+            {
+                Type = MessageType.TransferAccept,
+                PayloadJson = JsonSerializer.Serialize(new TransferAcceptPayload
+                {
+                    TransferId = offer.TransferId,
+                    Accepted = true
+                })
+            };
+            await session.WriteMessageAsync(acceptMsg, null, token);
+
+            // Hand off to TransferQueueService
+            await _transfers.ReceiveNetworkTransferAsync(session, offer);
+        }
+        else
+        {
+            var rejectMsg = new ProtocolMessage
+            {
+                Type = MessageType.TransferReject,
+                PayloadJson = JsonSerializer.Serialize(new TransferAcceptPayload
+                {
+                    TransferId = offer.TransferId,
+                    Accepted = false
+                })
+            };
+            await session.WriteMessageAsync(rejectMsg, null, token);
+        }
     }
 }

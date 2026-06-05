@@ -57,7 +57,7 @@
 
         <!-- Windows Startup Task for Auto-Start -->
         <desktop:Extension Category="windows.startupTask" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
-          <desktop:StartupTask TaskId="CrossDroidStartupTask" Enabled="true" DisplayName="CrossDroid Startup Companion" />
+          <desktop:StartupTask TaskId="CrossDroidStartup" Enabled="false" DisplayName="CrossDroid Companion" />
         </desktop:Extension>
       </Extensions>
 

@@ -477,6 +477,55 @@ namespace CrossDroid.Windows
                 RestoreWindow();
             }
         }
+
+        private System.Threading.Tasks.TaskCompletionSource<bool>? _incomingPromptTcs;
+
+        public async System.Threading.Tasks.Task<bool> ShowIncomingTransferPromptAsync(DeviceRecord source, Backend.Network.TransferOfferPayload offer)
+        {
+            _incomingPromptTcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
+            this.DispatcherQueue.TryEnqueue(() =>
+            {
+                // Restore window if hidden so user can see the overlay
+                if (!this.AppWindow.IsVisible)
+                {
+                    RestoreWindow();
+                }
+
+                IncomingTitle.Text = "Incoming Transfer";
+                IncomingDetail.Text = $"'{source.AliasOrName}' wants to send you:\n{offer.FileName} ({StagedTransferItem.FormatBytes(offer.TotalBytes)})";
+                IncomingOverlay.Visibility = Visibility.Visible;
+            });
+            return await _incomingPromptTcs.Task;
+        }
+
+        public async System.Threading.Tasks.Task<bool> ShowPairingPromptAsync(string deviceName, string pin)
+        {
+            _incomingPromptTcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
+            this.DispatcherQueue.TryEnqueue(() =>
+            {
+                if (!this.AppWindow.IsVisible)
+                {
+                    RestoreWindow();
+                }
+
+                IncomingTitle.Text = "Pairing Request";
+                IncomingDetail.Text = $"'{deviceName}' wants to pair with PIN: {pin}.\nDo you want to allow pairing?";
+                IncomingOverlay.Visibility = Visibility.Visible;
+            });
+            return await _incomingPromptTcs.Task;
+        }
+
+        private void AcceptIncoming_Click(object sender, RoutedEventArgs e)
+        {
+            IncomingOverlay.Visibility = Visibility.Collapsed;
+            _incomingPromptTcs?.TrySetResult(true);
+        }
+
+        private void RejectIncoming_Click(object sender, RoutedEventArgs e)
+        {
+            IncomingOverlay.Visibility = Visibility.Collapsed;
+            _incomingPromptTcs?.TrySetResult(false);
+        }
     }
 
     // P/Invoke structs and helpers

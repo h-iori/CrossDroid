@@ -28,19 +28,13 @@
             </StackPanel>
             
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="6">
-                <Button Click="SimulateIncoming_Click" Height="30" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" ToolTipService.ToolTip="Simulate Incoming Request" common:MouseCursorHelper.HandCursor="True">
-                    <Button.Resources>
-                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1D27D7E7" />
-                    </Button.Resources>
-                    <FontIcon Glyph="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="{StaticResource TextBody}"/>
-                </Button>
-                <Button Click="PauseAll_Click" Height="30" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" ToolTipService.ToolTip="Pause / Resume All" common:MouseCursorHelper.HandCursor="True">
+                <Button Click="PauseAll_Click" Height="30" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" ToolTipService.ToolTip="Pause / Resume All">
                     <Button.Resources>
                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DBF00FF" />
                     </Button.Resources>
                     <FontIcon Glyph="&#xE103;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="{StaticResource TextBody}"/>
                 </Button>
-                <Button Click="CancelAll_Click" Height="30" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource ColorError}" ToolTipService.ToolTip="Cancel All" common:MouseCursorHelper.HandCursor="True">
+                <Button Click="CancelAll_Click" Height="30" Padding="8,2" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource ColorError}" ToolTipService.ToolTip="Cancel All">
                     <Button.Resources>
                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
                     </Button.Resources>
@@ -136,17 +130,23 @@
 
                                             <!-- Controls -->
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                <Button Click="ItemPause_Click" Background="Transparent" BorderThickness="0" Padding="4" common:MouseCursorHelper.HandCursor="True">
+                                                <Button Click="ItemPause_Click" Background="Transparent" BorderThickness="0" Padding="4">
                                                     <Button.Resources>
                                                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DBF00FF" />
                                                     </Button.Resources>
                                                     <FontIcon Glyph="{Binding PauseGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource TextSecondary}"/>
                                                 </Button>
-                                                <Button Click="ItemCancel_Click" Background="Transparent" BorderThickness="0" Padding="4" common:MouseCursorHelper.HandCursor="True">
+                                                <Button Click="ItemCancel_Click" Background="Transparent" BorderThickness="0" Padding="4">
                                                     <Button.Resources>
                                                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
                                                     </Button.Resources>
                                                     <FontIcon Glyph="&#xE10A;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource ColorError}"/>
+                                                </Button>
+                                                <Button Click="ItemRetry_Click" Background="Transparent" BorderThickness="0" Padding="4" ToolTipService.ToolTip="Retry" Visibility="{Binding RetryVisibility}">
+                                                    <Button.Resources>
+                                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1D27D7E7" />
+                                                    </Button.Resources>
+                                                    <FontIcon Glyph="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{StaticResource AccentCyan}"/>
                                                 </Button>
                                             </StackPanel>
                                         </Grid>
@@ -154,6 +154,12 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
+
+                        <!-- Empty State -->
+                        <StackPanel x:Name="QueueEmptyState" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Visibility="Visible">
+                            <FontIcon Glyph="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="32" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="No active transfers" FontSize="12" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center"/>
+                        </StackPanel>
                     </Grid>
                 </Grid>
             </PivotItem>
@@ -188,7 +194,7 @@
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="11.5" Foreground="{StaticResource TextBody}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="1" Click="RemoveStaged_Click" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" Padding="4" common:MouseCursorHelper.HandCursor="True">
+                                            <Button Grid.Column="1" Click="RemoveStaged_Click" Background="Transparent" BorderThickness="0" VerticalAlignment="Center" Padding="4">
                                                 <Button.Resources>
                                                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
                                                 </Button.Resources>
@@ -205,8 +211,8 @@
                     <Border Grid.Row="1" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="12">
                         <StackPanel Spacing="10">
                             <TextBlock Text="Select Destination Device" FontSize="10.5" Foreground="{StaticResource TextSecondary}"/>
-                            <ComboBox x:Name="TargetDeviceCombo" HorizontalAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" PlaceholderText="Select Device..." SelectedIndex="0" FontSize="12" common:MouseCursorHelper.HandCursor="True"/>
-                            <Button Content="Start Transfer" Click="StartTransfer_Click" HorizontalAlignment="Stretch" Background="{StaticResource AccentCyan}" Foreground="{StaticResource BgMain}" FontWeight="Bold" BorderThickness="0" Height="32" FontSize="12.5" common:MouseCursorHelper.HandCursor="True">
+                            <ComboBox x:Name="TargetDeviceCombo" HorizontalAlignment="Stretch" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" PlaceholderText="Select Device..." SelectedIndex="0" FontSize="12"/>
+                            <Button Content="Start Transfer" Click="StartTransfer_Click" HorizontalAlignment="Stretch" Background="{StaticResource AccentCyan}" Foreground="{StaticResource BgMain}" FontWeight="Bold" BorderThickness="0" Height="32" FontSize="12.5">
                                 <Button.Resources>
                                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource AccentCyanColor}" Opacity="0.85" />
                                 </Button.Resources>
@@ -216,46 +222,5 @@
                 </Grid>
             </PivotItem>
         </Pivot>
-
-        <!-- Simulated Incoming Request Modal Dialog Overlay -->
-        <Grid x:Name="IncomingOverlay" Grid.RowSpan="2" Background="{StaticResource TranslucentBg}" Visibility="Collapsed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <Border CornerRadius="16" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource NeonPrimaryBorderBrush}" BorderThickness="1.5" Width="320" Height="230" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20" Shadow="{StaticResource ThemeShadow}">
-                <Grid RowSpacing="12">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE104;" FontFamily="Segoe MDL2 Assets" Foreground="{StaticResource NeonPrimary}" FontSize="16"/>
-                        <TextBlock Text="Incoming Request" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextStrong}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="1" Spacing="6" Margin="0,4,0,0">
-                        <TextBlock x:Name="IncomingDeviceText" Text="Device 'Pixel 8 Pro' wants to send files." FontSize="12" Foreground="{StaticResource TextBody}" TextWrapping="Wrap"/>
-                        <TextBlock x:Name="IncomingDetailsText" Text="Total Size: 48.5 MB" FontSize="10" Foreground="{StaticResource TextSecondary}"/>
-                        <TextBlock Text="Accept the incoming transfer?" FontSize="11.5" Foreground="{StaticResource TextBody}" Margin="0,4,0,0"/>
-                    </StackPanel>
-
-                    <Grid Grid.Row="2" ColumnSpacing="10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Content="Reject" Click="RejectIncoming_Click" HorizontalAlignment="Stretch" Height="32" Background="{StaticResource BgSurface}" Foreground="{StaticResource ColorError}" BorderBrush="{StaticResource BorderSubtle}" FontSize="12.5" common:MouseCursorHelper.HandCursor="True">
-                            <Button.Resources>
-                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
-                            </Button.Resources>
-                        </Button>
-                        <Button Grid.Column="1" Content="Accept" Click="AcceptIncoming_Click" HorizontalAlignment="Stretch" Height="32" Background="{StaticResource NeonPrimary}" Foreground="{StaticResource TextStrong}" BorderThickness="0" FontSize="12.5" common:MouseCursorHelper.HandCursor="True">
-                            <Button.Resources>
-                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource NeonPrimaryColor}" Opacity="0.85" />
-                            </Button.Resources>
-                        </Button>
-                    </Grid>
-                </Grid>
-            </Border>
-        </Grid>
     </Grid>
 </Page>

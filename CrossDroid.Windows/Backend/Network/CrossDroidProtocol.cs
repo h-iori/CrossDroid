@@ -45,6 +45,7 @@ public class TransferOfferPayload
     public long TotalBytes { get; set; }
     public bool IsFolder { get; set; }
     public int ItemCount { get; set; }
+    public string Hash { get; set; } = "";
 }
 
 public class TransferAcceptPayload

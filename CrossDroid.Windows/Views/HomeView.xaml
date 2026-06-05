@@ -38,7 +38,7 @@
                                OnContent="ON" OffContent="OFF" 
                                Header="" MinWidth="0" VerticalAlignment="Center" 
                                Toggled="VisibilityToggle_Toggled" Foreground="{StaticResource TextBody}"
-                               common:MouseCursorHelper.HandCursor="True" FontSize="12.5"/>
+                               FontSize="12.5"/>
             </Grid>
         </Border>
 
@@ -60,12 +60,13 @@
                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                     <TextBlock Text="SECURE PAIRING PIN" FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" CharacterSpacing="80"/>
                     <Border Background="{StaticResource BgElevated}" CornerRadius="12" Padding="16,10" BorderThickness="1.2" BorderBrush="{StaticResource BorderSubtle}" HorizontalAlignment="Center" Width="160">
-                        <TextBlock x:Name="PinTextBlock" Text="8429" FontSize="22" FontWeight="Bold" Foreground="{StaticResource NeonPrimary}" HorizontalAlignment="Center" CharacterSpacing="80" />
+                        <TextBlock x:Name="PinTextBlock" Text="------" FontSize="22" FontWeight="Bold" Foreground="{StaticResource NeonPrimary}" HorizontalAlignment="Center" CharacterSpacing="80" />
                     </Border>
+                    <TextBlock x:Name="PinCountdownText" Text="" FontSize="10" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Regenerate Refresh Button -->
-                <Button Click="RefreshButton_Click" HorizontalAlignment="Center" Height="40" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="16,0" common:MouseCursorHelper.HandCursor="True">
+                <Button Click="RefreshButton_Click" HorizontalAlignment="Center" Height="40" CornerRadius="12" Background="{StaticResource BgElevated}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" Padding="16,0">
                     <Button.Resources>
                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1D27D7E7" />
                         <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="{StaticResource AccentCyanColor}" />
@@ -93,7 +94,7 @@
         </Grid>
 
         <!-- Temporary Send Button -->
-        <Button Grid.Row="2" Click="TempSendButton_Click" HorizontalAlignment="Stretch" Height="48" CornerRadius="12" Background="{StaticResource AccentCyan}" BorderThickness="0" common:MouseCursorHelper.HandCursor="True">
+        <Button Grid.Row="2" Click="TempSendButton_Click" HorizontalAlignment="Stretch" Height="48" CornerRadius="12" Background="{StaticResource AccentCyan}" BorderThickness="0">
             <Button.Resources>
                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource AccentCyanColor}" Opacity="0.8" />
             </Button.Resources>

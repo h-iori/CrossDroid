@@ -14,7 +14,6 @@ namespace CrossDroid.Windows.Views
         public ObservableCollection<StagedItemViewModel> StagedItems { get; set; } = new();
 
         private DispatcherTimer? _refreshTimer;
-        private IncomingTransferRequest? _currentIncomingRequest;
 
         public TransfersView()
         {
@@ -80,6 +79,9 @@ namespace CrossDroid.Windows.Views
                 QueueItems.Add(TransferItemViewModel.FromRecord(item));
             }
 
+            // Toggle empty state
+            QueueEmptyState.Visibility = QueueItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
             long totalBytes = App.Backend.Transfers.Queue.Sum(q => q.TotalBytes);
             long transferred = App.Backend.Transfers.Queue.Sum(q => q.BytesTransferred);
             double overall = totalBytes > 0 ? transferred * 100d / totalBytes : 0;
@@ -89,32 +91,14 @@ namespace CrossDroid.Windows.Views
                 ? "Transferring"
                 : App.Backend.Transfers.Queue.Any(q => q.Status == TransferStatus.Paused) ? "Paused" : "Idle";
             SpeedText.Text = $"Speed: {StagedTransferItem.FormatBytes((long)App.Backend.Transfers.Queue.Sum(q => q.SpeedBytesPerSecond))}/s";
-            TimeRemainingText.Text = "Time remaining: calculated per active transfer";
+
+            // Calculate aggregate ETA
+            double totalEta = App.Backend.Transfers.Queue
+                .Where(q => q.Status == TransferStatus.Transferring && q.SpeedBytesPerSecond > 0)
+                .Sum(q => q.EstimatedSecondsRemaining);
+            TimeRemainingText.Text = totalEta > 0 ? $"Remaining: {TimeSpan.FromSeconds(totalEta):mm\\:ss}" : "Remaining: --:--";
+
             TransferredItemsText.Text = $"Items: {App.Backend.Transfers.Queue.Count(q => q.Status == TransferStatus.Completed)} / {App.Backend.Transfers.Queue.Count}";
-        }
-
-        private async void SimulateIncoming_Click(object sender, RoutedEventArgs e)
-        {
-            var source = App.Backend.Devices.TrustedDevices.FirstOrDefault();
-            if (source == null || App.Backend.Staging.Items.Count == 0)
-            {
-                var dialog = new ContentDialog
-                {
-                    Title = "Incoming test requires staged files",
-                    Content = "Stage one or more files first. The local reference receiver will use those real files to create an incoming transfer request.",
-                    CloseButtonText = "OK",
-                    XamlRoot = this.XamlRoot
-                };
-                await dialog.ShowAsync();
-                return;
-            }
-
-            await App.Backend.Transfers.CreateIncomingRequestAsync(source, App.Backend.Staging.Items.ToList());
-            _currentIncomingRequest = App.Backend.Transfers.IncomingRequests.LastOrDefault();
-            IncomingDeviceText.Text = _currentIncomingRequest == null
-                ? "Incoming request unavailable."
-                : $"Device '{_currentIncomingRequest.Device.AliasOrName}' wants to send {_currentIncomingRequest.Items.Count} item(s).";
-            IncomingOverlay.Visibility = Visibility.Visible;
         }
 
         private void PauseAll_Click(object sender, RoutedEventArgs e)
@@ -140,29 +124,6 @@ namespace CrossDroid.Windows.Views
             {
                 App.Backend.Transfers.Cancel(item.TransferId);
             }
-            RefreshQueueItems();
-        }
-
-        private void RejectIncoming_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentIncomingRequest != null)
-            {
-                App.Backend.Transfers.RejectIncoming(_currentIncomingRequest);
-            }
-
-            _currentIncomingRequest = null;
-            IncomingOverlay.Visibility = Visibility.Collapsed;
-        }
-
-        private async void AcceptIncoming_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentIncomingRequest != null)
-            {
-                await App.Backend.Transfers.AcceptIncomingAsync(_currentIncomingRequest);
-            }
-
-            _currentIncomingRequest = null;
-            IncomingOverlay.Visibility = Visibility.Collapsed;
             RefreshQueueItems();
         }
 
@@ -225,6 +186,19 @@ namespace CrossDroid.Windows.Views
             if (sender is Button btn && btn.DataContext is TransferItemViewModel vm)
             {
                 App.Backend.Transfers.Cancel(vm.TransferId);
+            }
+        }
+
+        private async void ItemRetry_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is TransferItemViewModel vm)
+            {
+                var record = App.Backend.Transfers.Queue.FirstOrDefault(q => q.TransferId == vm.TransferId);
+                if (record != null)
+                {
+                    await App.Backend.Transfers.RetryAsync(record);
+                    RefreshQueueItems();
+                }
             }
         }
 
@@ -292,8 +266,11 @@ namespace CrossDroid.Windows.Views
             set { deviceName = value; OnPropertyChanged(nameof(DeviceName)); }
         }
 
+        public Visibility RetryVisibility { get; set; } = Visibility.Collapsed;
+
         public static TransferItemViewModel FromRecord(TransferRecord record)
         {
+            var isFailed = record.Status is TransferStatus.Failed or TransferStatus.Cancelled;
             return new TransferItemViewModel
             {
                 TransferId = record.TransferId,
@@ -305,7 +282,8 @@ namespace CrossDroid.Windows.Views
                 IconGlyph = record.IsFolder ? "\xE8B7" : "\xE8A5",
                 StatusBrush = StatusToBrush(record.Status),
                 PauseGlyph = record.Status == TransferStatus.Paused ? "\xE768" : "\xE103",
-                DeviceName = record.DeviceName
+                DeviceName = record.DeviceName,
+                RetryVisibility = isFailed ? Visibility.Visible : Visibility.Collapsed
             };
         }
 

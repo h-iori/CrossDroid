@@ -41,7 +41,7 @@
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="local:DeviceViewModel">
+                <DataTemplate>
                     <Grid RowSpacing="12">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -85,7 +85,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <!-- Trust/Block Toggle Action -->
-                                <Button Grid.Column="0" Click="BlockDevice_Click" Background="Transparent" BorderThickness="0" HorizontalAlignment="Center" Padding="8,4" CornerRadius="8" common:MouseCursorHelper.HandCursor="True">
+                                <Button Grid.Column="0" Click="BlockDevice_Click" Background="Transparent" BorderThickness="0" HorizontalAlignment="Center" Padding="8,4" CornerRadius="8">
                                     <Button.Resources>
                                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1D27D7E7" />
                                         <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{StaticResource AccentCyanColor}" />
@@ -97,7 +97,7 @@
                                 </Button>
 
                                 <!-- Rename Action -->
-                                <Button Grid.Column="1" Click="RenameDevice_Click" Background="Transparent" BorderThickness="0" HorizontalAlignment="Center" Padding="8,4" CornerRadius="8" common:MouseCursorHelper.HandCursor="True">
+                                <Button Grid.Column="1" Click="RenameDevice_Click" Background="Transparent" BorderThickness="0" HorizontalAlignment="Center" Padding="8,4" CornerRadius="8">
                                     <Button.Resources>
                                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1D7A7A8E" />
                                     </Button.Resources>
@@ -108,7 +108,7 @@
                                 </Button>
 
                                 <!-- Remove Action -->
-                                <Button Grid.Column="2" Click="DeleteDevice_Click" Background="Transparent" BorderThickness="0" HorizontalAlignment="Center" Padding="8,4" CornerRadius="8" common:MouseCursorHelper.HandCursor="True">
+                                <Button Grid.Column="2" Click="DeleteDevice_Click" Background="Transparent" BorderThickness="0" HorizontalAlignment="Center" Padding="8,4" CornerRadius="8">
                                     <Button.Resources>
                                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DFF3366" />
                                         <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{StaticResource ColorErrorColor}" />

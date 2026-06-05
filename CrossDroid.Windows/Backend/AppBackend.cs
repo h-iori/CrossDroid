@@ -72,7 +72,7 @@ public sealed class CrossDroidBackend
         backend.Listener.Start();
         backend.Discovery.Start(backend.Listener.Port);
         
-        backend.Shell.EnsureAutoStart(backend.Settings.Current.LaunchOnStartup);
+        await backend.Shell.EnsureAutoStartAsync(backend.Settings.Current.AutoStartEnabled);
         backend.Shell.EnsureContextMenu(backend.Settings.Current.EnableContextMenu);
         
         Current = backend;
@@ -163,7 +163,7 @@ public sealed class PersistentAppState
 
 public sealed class AppSettings : NotifyBase
 {
-    private bool _autoStartEnabled = true;
+    private bool _autoStartEnabled;
     private bool _startMinimized;
     private bool _closeToTray = true;
     private bool _autoAcceptTrusted = true;
@@ -173,6 +173,8 @@ public sealed class AppSettings : NotifyBase
     private bool _soundNotify = true;
     private bool _discoverable = true;
     private string _downloadsDirectory = "";
+    private bool _enableContextMenu = true;
+    private int _preferredNetworkBand = 2; // 0=5GHz, 1=2.4GHz, 2=Auto
 
     public bool AutoStartEnabled { get => _autoStartEnabled; set => SetField(ref _autoStartEnabled, value); }
     public bool StartMinimized { get => _startMinimized; set => SetField(ref _startMinimized, value); }
@@ -184,11 +186,8 @@ public sealed class AppSettings : NotifyBase
     public bool SoundNotify { get => _soundNotify; set => SetField(ref _soundNotify, value); }
     public bool Discoverable { get => _discoverable; set => SetField(ref _discoverable, value); }
     public string DownloadsDirectory { get => _downloadsDirectory; set => SetField(ref _downloadsDirectory, value); }
-    
-    private bool _launchOnStartup = true;
-    private bool _enableContextMenu = true;
-    public bool LaunchOnStartup { get => _launchOnStartup; set => SetField(ref _launchOnStartup, value); }
     public bool EnableContextMenu { get => _enableContextMenu; set => SetField(ref _enableContextMenu, value); }
+    public int PreferredNetworkBand { get => _preferredNetworkBand; set => SetField(ref _preferredNetworkBand, value); }
 
     public static AppSettings CreateDefault()
     {
@@ -396,32 +395,6 @@ public sealed class DeviceService
         }
     }
 
-    public void EnsureLocalReferenceReceiver(LocalDeviceIdentity identity)
-    {
-        const string localPeerId = "crossdroid-local-reference-receiver";
-        if (_store.State.Devices.Any(d => d.DeviceId == localPeerId))
-        {
-            return;
-        }
-
-        _store.State.Devices.Add(new DeviceRecord
-        {
-            DeviceId = localPeerId,
-            DisplayName = "This PC - Local Reference Receiver",
-            Alias = "This PC - Local Reference Receiver",
-            DeviceType = "Windows PC",
-            Endpoint = "loopback",
-            Fingerprint = identity.PublicFingerprint,
-            TrustState = DeviceTrustState.Trusted,
-            Presence = DevicePresence.Online,
-            PairingStatus = PairingStatus.Paired,
-            ConnectionStatus = ConnectionStatus.Ready,
-            EncryptionStatus = EncryptionStatus.LocalProtected,
-            IsReferenceReceiver = true,
-            LastSeenUtc = DateTimeOffset.UtcNow
-        });
-        _store.State.Audit.Add(AuditEvent.Create("ReferenceReceiverEnabled", "Enabled local production reference receiver for pre-Android testing."));
-    }
 
     public async Task RenameAsync(DeviceRecord device, string alias)
     {
@@ -454,12 +427,6 @@ public sealed class DeviceService
             {
                 device.Presence = DevicePresence.Blocked;
                 device.ConnectionStatus = ConnectionStatus.Blocked;
-            }
-            else if (device.IsReferenceReceiver)
-            {
-                device.Presence = DevicePresence.Online;
-                device.ConnectionStatus = ConnectionStatus.Ready;
-                device.LastSeenUtc = DateTimeOffset.UtcNow;
             }
             else if (device.LastSeenUtc < DateTimeOffset.UtcNow.AddMinutes(-5))
             {
@@ -616,15 +583,15 @@ public sealed class TransferQueueService
             var runtime = new TransferRuntime();
             _runtimes[record.TransferId] = runtime;
             
-            // Determine if target is local reference receiver
-            if (target.IsReferenceReceiver || string.IsNullOrEmpty(target.Endpoint))
+            if (string.IsNullOrEmpty(target.Endpoint))
             {
-                _ = RunLocalReferenceTransferAsync(record, runtime);
+                record.Status = TransferStatus.Failed;
+                record.ErrorMessage = "Device has no network endpoint. Ensure the device is online and discoverable.";
+                record.CompletedUtc = DateTimeOffset.UtcNow;
+                await _history.RecordAsync(record);
+                continue;
             }
-            else
-            {
-                _ = RunNetworkTransferAsync(record, target, runtime);
-            }
+            _ = RunNetworkTransferAsync(record, target, runtime);
         }
 
         await Task.CompletedTask;
@@ -662,13 +629,20 @@ public sealed class TransferQueueService
             return;
         }
 
+        var device = _devices.Devices.FirstOrDefault(d => d.DeviceId == record.DeviceId);
+        if (device == null || string.IsNullOrEmpty(device.Endpoint))
+        {
+            record.ErrorMessage = "Device not found or offline. Cannot retry.";
+            return;
+        }
+
         record.Status = TransferStatus.Queued;
         record.BytesTransferred = 0;
         record.ProgressPercent = 0;
         record.ErrorMessage = "";
         var runtime = new TransferRuntime();
         _runtimes[record.TransferId] = runtime;
-        await RunLocalReferenceTransferAsync(record, runtime);
+        await RunNetworkTransferAsync(record, device, runtime);
     }
 
     public async Task CreateIncomingRequestAsync(DeviceRecord source, IReadOnlyList<StagedTransferItem> items)
@@ -716,7 +690,8 @@ public sealed class TransferQueueService
             Queue.Add(record);
             var runtime = new TransferRuntime();
             _runtimes[record.TransferId] = runtime;
-            _ = RunLocalReferenceTransferAsync(record, runtime);
+            // Accepted incoming transfers still come via network through ReceiveNetworkTransferAsync
+            // so this path is only used for local UI acceptance tracking
         }
 
         await Task.CompletedTask;
@@ -729,53 +704,6 @@ public sealed class TransferQueueService
         else IncomingRequests.Remove(request);
     }
 
-    private async Task RunLocalReferenceTransferAsync(TransferRecord record, TransferRuntime runtime)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        try
-        {
-            record.Status = TransferStatus.Transferring;
-            Directory.CreateDirectory(_settings.Current.DownloadsDirectory);
-            var destinationRoot = Path.Combine(_settings.Current.DownloadsDirectory, record.DeviceName);
-            Directory.CreateDirectory(destinationRoot);
-
-            if (record.IsFolder)
-            {
-                await CopyDirectoryAsync(record, record.SourcePath, destinationRoot, runtime);
-            }
-            else
-            {
-                var destination = ResolveConflictPath(Path.Combine(destinationRoot, Path.GetFileName(record.SourcePath)));
-                await CopyFileAsync(record, record.SourcePath, destination, runtime);
-            }
-
-            record.Status = TransferStatus.Completed;
-            record.CompletedUtc = DateTimeOffset.UtcNow;
-            record.SpeedBytesPerSecond = record.BytesTransferred / Math.Max(stopwatch.Elapsed.TotalSeconds, 1);
-            await VerifyHashesAsync(record);
-            await _history.RecordAsync(record);
-            await _notifications.ShowAsync("CrossDroid transfer complete", $"{record.FileName} transferred successfully.");
-        }
-        catch (OperationCanceledException)
-        {
-            record.Status = TransferStatus.Cancelled;
-            record.CompletedUtc = DateTimeOffset.UtcNow;
-            await _history.RecordAsync(record);
-            await _notifications.ShowAsync("CrossDroid transfer cancelled", record.FileName);
-        }
-        catch (Exception ex)
-        {
-            record.Status = TransferStatus.Failed;
-            record.CompletedUtc = DateTimeOffset.UtcNow;
-            record.ErrorMessage = ex.Message;
-            await _history.RecordAsync(record);
-            await _notifications.ShowAsync("CrossDroid transfer failed", $"{record.FileName}: {ex.Message}");
-        }
-        finally
-        {
-            _runtimes.Remove(record.TransferId);
-        }
-    }
 
     private async Task RunNetworkTransferAsync(TransferRecord record, DeviceRecord target, TransferRuntime runtime)
     {
@@ -795,6 +723,10 @@ public sealed class TransferQueueService
             using var session = new Network.SecureSession(client);
             await session.AuthenticateAsClientAsync(CrossDroidBackend.Current.Identity.GetCertificate(), runtime.Cancellation.Token);
 
+            // Compute file hash
+            var hash = record.IsFolder ? "" : await ComputeHashAsync(record.SourcePath);
+            record.SourceHash = hash;
+
             // Send Offer
             var offer = new Network.ProtocolMessage
             {
@@ -804,17 +736,71 @@ public sealed class TransferQueueService
                     TransferId = record.TransferId,
                     FileName = record.FileName,
                     TotalBytes = record.TotalBytes,
-                    IsFolder = record.IsFolder
+                    IsFolder = record.IsFolder,
+                    Hash = hash
                 })
             };
             await session.WriteMessageAsync(offer, null, runtime.Cancellation.Token);
 
-            // In a full implementation we'd wait for TransferAccept. 
-            // For now, we assume accepted and start sending chunks.
+            // Wait for TransferAccept
+            var (responseMsg, _) = await session.ReadMessageAsync(runtime.Cancellation.Token);
+            if (responseMsg.Type == Network.MessageType.TransferReject)
+            {
+                throw new OperationCanceledException("Transfer rejected by receiver.");
+            }
+            else if (responseMsg.Type != Network.MessageType.TransferAccept)
+            {
+                throw new InvalidDataException("Unexpected message received after transfer offer.");
+            }
+
+            var acceptPayload = JsonSerializer.Deserialize<Network.TransferAcceptPayload>(responseMsg.PayloadJson);
+            if (acceptPayload == null || !acceptPayload.Accepted)
+            {
+                throw new OperationCanceledException("Transfer rejected by receiver.");
+            }
+
             if (record.IsFolder)
             {
-                // To keep it simple, just throw or implement directory sending
-                throw new NotSupportedException("Network folder transfer not fully implemented yet.");
+                var sourceDirInfo = new DirectoryInfo(record.SourcePath);
+                var files = sourceDirInfo.EnumerateFiles("*", SearchOption.AllDirectories).ToList();
+                foreach (var file in files)
+                {
+                    var relative = Path.GetRelativePath(sourceDirInfo.FullName, file.FullName);
+                    await using var input = File.Open(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    var buffer = new byte[1024 * 256];
+                    int read;
+                    long offset = 0;
+                    while ((read = await input.ReadAsync(buffer, runtime.Cancellation.Token)) > 0)
+                    {
+                        while (runtime.IsPaused)
+                        {
+                            record.Status = TransferStatus.Paused;
+                            runtime.PauseEvent.Reset();
+                            runtime.PauseEvent.Wait(runtime.Cancellation.Token);
+                            record.Status = TransferStatus.Transferring;
+                        }
+
+                        var chunkData = buffer.AsSpan(0, read).ToArray();
+                        var chunkMsg = new Network.ProtocolMessage
+                        {
+                            Type = Network.MessageType.FileChunk,
+                            PayloadJson = JsonSerializer.Serialize(new Network.FileChunkPayload
+                            {
+                                TransferId = record.TransferId,
+                                RelativePath = relative,
+                                Offset = offset
+                            })
+                        };
+
+                        await session.WriteMessageAsync(chunkMsg, chunkData, runtime.Cancellation.Token);
+                        offset += read;
+
+                        record.BytesTransferred += read;
+                        record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
+                        var speed = runtime.CalculateSpeed(record.BytesTransferred);
+                        if (speed >= 0) record.SpeedBytesPerSecond = speed;
+                    }
+                }
             }
             else
             {
@@ -848,6 +834,8 @@ public sealed class TransferQueueService
 
                     record.BytesTransferred += read;
                     record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
+                    var speed = runtime.CalculateSpeed(record.BytesTransferred);
+                    if (speed >= 0) record.SpeedBytesPerSecond = speed;
                 }
             }
 
@@ -879,12 +867,17 @@ public sealed class TransferQueueService
 
     public async Task ReceiveNetworkTransferAsync(Network.SecureSession session, Network.TransferOfferPayload offer)
     {
+        var remoteFingerprint = session.RemoteFingerprint;
+        var device = _devices.Devices.FirstOrDefault(d => d.Fingerprint == remoteFingerprint);
+        var deviceId = device?.DeviceId ?? $"Peer-{remoteFingerprint[..Math.Min(8, remoteFingerprint.Length)]}";
+        var deviceName = device?.AliasOrName ?? $"Device ({remoteFingerprint[..Math.Min(6, remoteFingerprint.Length)]})";
+
         var record = new TransferRecord
         {
             TransferId = offer.TransferId,
             Direction = TransferDirection.Incoming,
-            DeviceId = "NetworkPeer", // In full implementation, map from session.RemoteFingerprint
-            DeviceName = "Network Device",
+            DeviceId = deviceId,
+            DeviceName = deviceName,
             FileName = offer.FileName,
             DestinationPath = _settings.Current.DownloadsDirectory,
             IsFolder = offer.IsFolder,
@@ -902,15 +895,26 @@ public sealed class TransferQueueService
             record.Status = TransferStatus.Transferring;
             Directory.CreateDirectory(_settings.Current.DownloadsDirectory);
             var destination = ResolveConflictPath(Path.Combine(_settings.Current.DownloadsDirectory, record.FileName));
-            
-            await using var output = File.Open(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None);
 
             while (record.BytesTransferred < record.TotalBytes)
             {
                 var (msg, binary) = await session.ReadMessageAsync(CancellationToken.None);
                 if (msg.Type == Network.MessageType.FileChunk && binary != null)
                 {
-                    await output.WriteAsync(binary);
+                    var chunkPayload = JsonSerializer.Deserialize<Network.FileChunkPayload>(msg.PayloadJson);
+                    var relative = chunkPayload?.RelativePath ?? "";
+                    var fileDest = string.IsNullOrEmpty(relative) 
+                        ? destination 
+                        : Path.Combine(_settings.Current.DownloadsDirectory, record.FileName, relative);
+                    
+                    Directory.CreateDirectory(Path.GetDirectoryName(fileDest)!);
+
+                    using (var fs = new FileStream(fileDest, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
+                    {
+                        fs.Seek(chunkPayload?.Offset ?? 0, SeekOrigin.Begin);
+                        await fs.WriteAsync(binary);
+                    }
+
                     record.BytesTransferred += binary.Length;
                     record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
                 }
@@ -924,6 +928,12 @@ public sealed class TransferQueueService
             record.Status = TransferStatus.Completed;
             record.CompletedUtc = DateTimeOffset.UtcNow;
             record.SpeedBytesPerSecond = record.BytesTransferred / Math.Max(stopwatch.Elapsed.TotalSeconds, 1);
+            if (!record.IsFolder)
+            {
+                record.SourceHash = offer.Hash;
+                record.DestinationHash = await ComputeHashAsync(destination);
+                await VerifyHashesAsync(record);
+            }
             await _history.RecordAsync(record);
             await _notifications.ShowAsync("CrossDroid network transfer received", $"{record.FileName} received successfully.");
         }
@@ -943,47 +953,6 @@ public sealed class TransferQueueService
         }
     }
 
-    private static async Task CopyDirectoryAsync(TransferRecord record, string sourceDirectory, string destinationRoot, TransferRuntime runtime)
-    {
-        var sourceInfo = new DirectoryInfo(sourceDirectory);
-        var transferRoot = Path.Combine(destinationRoot, sourceInfo.Name);
-        foreach (var file in sourceInfo.EnumerateFiles("*", SearchOption.AllDirectories))
-        {
-            var relative = Path.GetRelativePath(sourceInfo.FullName, file.FullName);
-            var destination = ResolveConflictPath(Path.Combine(transferRoot, relative));
-            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-            await CopyFileAsync(record, file.FullName, destination, runtime);
-        }
-    }
-
-    private static async Task CopyFileAsync(TransferRecord record, string source, string destination, TransferRuntime runtime)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-        await using (var input = File.Open(source, FileMode.Open, FileAccess.Read, FileShare.Read))
-        await using (var output = File.Open(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-        {
-            var buffer = new byte[1024 * 256];
-            int read;
-            while ((read = await input.ReadAsync(buffer, runtime.Cancellation.Token)) > 0)
-            {
-                while (runtime.IsPaused)
-                {
-                    record.Status = TransferStatus.Paused;
-                    runtime.PauseEvent.Reset();
-                    runtime.PauseEvent.Wait(runtime.Cancellation.Token);
-                    record.Status = TransferStatus.Transferring;
-                }
-
-                await output.WriteAsync(buffer.AsMemory(0, read), runtime.Cancellation.Token);
-                record.BytesTransferred += read;
-                record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
-            }
-        }
-
-        record.DestinationPath = destination;
-        record.SourceHash = await ComputeHashAsync(source);
-        record.DestinationHash = await ComputeHashAsync(destination);
-    }
 
     private static async Task VerifyHashesAsync(TransferRecord record)
     {
@@ -1060,22 +1029,6 @@ public sealed class HistoryService
         _store.State.Audit.Add(AuditEvent.Create("TransferRecorded", $"{history.Status}: {history.FileName}"));
         await _store.SaveAsync();
     }
-
-    public async Task ClearAsync()
-    {
-        var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread() ?? CrossDroid.Windows.App.MainWindowInstance?.DispatcherQueue;
-        if (dispatcher != null && !dispatcher.HasThreadAccess)
-        {
-            dispatcher.TryEnqueue(() => Records.Clear());
-        }
-        else
-        {
-            Records.Clear();
-        }
-        _store.State.History.Clear();
-        _store.State.Audit.Add(AuditEvent.Create("HistoryCleared", "Transfer history cleared."));
-        await _store.SaveAsync();
-    }
 }
 
 public sealed class NotificationService
@@ -1089,12 +1042,36 @@ public sealed class NotificationService
 
     public async Task ShowAsync(string title, string message)
     {
-        if (!_settings.Current.ToastNotify)
+        if (_settings.Current.ToastNotify)
         {
-            return;
+            try
+            {
+                var toastXml = global::Windows.UI.Notifications.ToastNotificationManager.GetTemplateContent(global::Windows.UI.Notifications.ToastTemplateType.ToastText02);
+                var textNodes = toastXml.GetElementsByTagName("text");
+                textNodes[0].AppendChild(toastXml.CreateTextNode(title));
+                textNodes[1].AppendChild(toastXml.CreateTextNode(message));
+                var toast = new global::Windows.UI.Notifications.ToastNotification(toastXml);
+                global::Windows.UI.Notifications.ToastNotificationManager.CreateToastNotifier().Show(toast);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Toast notification error: {ex.Message}");
+            }
         }
 
-        Debug.WriteLine($"[CrossDroid Notification] {title}: {message}");
+        if (_settings.Current.SoundNotify)
+        {
+            try
+            {
+                // Use native Windows MessageBeep (0x40 = MB_ICONASTERISK)
+                NativeMethods.MessageBeep(0x00000040);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Sound notification error: {ex.Message}");
+            }
+        }
+
         await Task.CompletedTask;
     }
 }
@@ -1103,9 +1080,31 @@ public sealed class SystemControlService
 {
     public async Task<SystemControlResult> EnsureWifiAvailableAsync()
     {
-        return new SystemControlResult(
-            false,
-            "Windows does not allow this app to silently enable Wi-Fi. Opening Network settings is the supported path.");
+        try
+        {
+            var access = await global::Windows.Devices.Radios.Radio.RequestAccessAsync();
+            if (access != global::Windows.Devices.Radios.RadioAccessStatus.Allowed)
+            {
+                return new SystemControlResult(false, "Access to radio control was denied.");
+            }
+
+            var radios = await global::Windows.Devices.Radios.Radio.GetRadiosAsync();
+            var wifiRadio = radios.FirstOrDefault(r => r.Kind == global::Windows.Devices.Radios.RadioKind.WiFi);
+            if (wifiRadio != null)
+            {
+                if (wifiRadio.State == global::Windows.Devices.Radios.RadioState.Off)
+                {
+                    await wifiRadio.SetStateAsync(global::Windows.Devices.Radios.RadioState.On);
+                    return new SystemControlResult(true, "Wi-Fi enabled successfully.");
+                }
+                return new SystemControlResult(true, "Wi-Fi is already enabled.");
+            }
+            return new SystemControlResult(false, "No Wi-Fi adapter found on this system.");
+        }
+        catch (Exception ex)
+        {
+            return new SystemControlResult(false, $"Failed checking radio: {ex.Message}");
+        }
     }
 
     public async Task OpenWifiSettingsAsync()
@@ -1152,6 +1151,25 @@ public sealed class TransferRuntime
     public CancellationTokenSource Cancellation { get; } = new();
     public ManualResetEventSlim PauseEvent { get; } = new(true);
     public bool IsPaused { get; set; }
+    
+    // Sliding window speed tracking
+    private long _lastBytesSnapshot;
+    private DateTimeOffset _lastSnapshotTime = DateTimeOffset.UtcNow;
+    
+    public double CalculateSpeed(long currentBytesTransferred)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var elapsed = (now - _lastSnapshotTime).TotalSeconds;
+        if (elapsed < 0.5) return -1; // Not enough time has passed
+        
+        var bytesDelta = currentBytesTransferred - _lastBytesSnapshot;
+        var speed = bytesDelta / elapsed;
+        
+        _lastBytesSnapshot = currentBytesTransferred;
+        _lastSnapshotTime = now;
+        
+        return Math.Max(0, speed);
+    }
 }
 
 public sealed class LocalDeviceIdentity
@@ -1181,7 +1199,6 @@ public sealed class DeviceRecord : NotifyBase
     public string DeviceType { get; set; } = "";
     public string Endpoint { get; set; } = "";
     public string Fingerprint { get; set; } = "";
-    public bool IsReferenceReceiver { get; set; }
     public DeviceTrustState TrustState { get => _trustState; set => SetField(ref _trustState, value); }
     public DevicePresence Presence { get => _presence; set => SetField(ref _presence, value); }
     public PairingStatus PairingStatus { get; set; }
@@ -1246,6 +1263,8 @@ public sealed class TransferRecord : NotifyBase
     public string StatusText => Status.ToString();
     public string SizeText => StagedTransferItem.FormatBytes(TotalBytes);
     public string SpeedText => $"{StagedTransferItem.FormatBytes((long)SpeedBytesPerSecond)}/s";
+    public double EstimatedSecondsRemaining => SpeedBytesPerSecond > 0 ? (TotalBytes - BytesTransferred) / SpeedBytesPerSecond : 0;
+    public string ETAText => EstimatedSecondsRemaining > 0 ? $"{TimeSpan.FromSeconds(EstimatedSecondsRemaining):mm\\:ss} remaining" : "";
 }
 
 public sealed class TransferHistoryRecord
@@ -1355,4 +1374,10 @@ public abstract class NotifyBase : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
+}
+
+internal static class NativeMethods
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    internal static extern bool MessageBeep(uint uType);
 }

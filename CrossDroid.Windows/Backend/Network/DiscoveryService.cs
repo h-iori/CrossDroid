@@ -93,8 +93,9 @@ public sealed class DiscoveryService : IDisposable
                     }
                     else if (msg.Action == "PinSearch" && !string.IsNullOrEmpty(msg.Pin))
                     {
-                        var currentPin = CrossDroidBackend.Current?.Pairing?.CurrentPin;
-                        if (currentPin == msg.Pin)
+                        var pairing = CrossDroidBackend.Current?.Pairing;
+                        var currentPin = pairing?.CurrentPin;
+                        if (currentPin == msg.Pin && (pairing?.IsPinValid ?? false))
                         {
                             // A device is searching for us using the correct PIN.
                             // Respond directly with an Announce packet so they can discover us,

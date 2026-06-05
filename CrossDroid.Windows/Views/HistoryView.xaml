@@ -38,11 +38,10 @@
                     <Setter Property="Background" Value="{StaticResource BgElevated}" />
                     <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}" />
                     <Setter Property="BorderThickness" Value="1.2" />
-                    <Setter Property="common:MouseCursorHelper.HandCursor" Value="True" />
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="local:HistoryItemViewModel">
+                <DataTemplate>
                     <Grid ColumnSpacing="12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />

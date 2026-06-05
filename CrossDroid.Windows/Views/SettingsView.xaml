@@ -35,9 +35,9 @@
                     <StackPanel Spacing="16">
                         <TextBlock Text="Startup &amp; System Tray" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                         
-                        <ToggleSwitch x:Name="AutoStartToggle" Header="Auto-start with Windows" OnContent="Enabled" OffContent="Disabled" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5" common:MouseCursorHelper.HandCursor="True"/>
-                        <ToggleSwitch x:Name="StartMinimizedToggle" Header="Start Minimized in System Tray" OnContent="Yes" OffContent="No" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5" common:MouseCursorHelper.HandCursor="True"/>
-                        <ToggleSwitch x:Name="CloseToTrayToggle" Header="Close button minimizes to Tray" OnContent="Minimize to Tray" OffContent="Exit Application" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5" common:MouseCursorHelper.HandCursor="True"/>
+                        <ToggleSwitch x:Name="AutoStartToggle" Header="Auto-start with Windows" OnContent="Enabled" OffContent="Disabled" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5"/>
+                        <ToggleSwitch x:Name="StartMinimizedToggle" Header="Start Minimized in System Tray" OnContent="Yes" OffContent="No" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5"/>
+                        <ToggleSwitch x:Name="CloseToTrayToggle" Header="Close button minimizes to Tray" OnContent="Minimize to Tray" OffContent="Exit Application" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5"/>
                     </StackPanel>
                 </Border>
 
@@ -54,7 +54,7 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="DownloadPathBox" Grid.Column="0" IsReadOnly="True" Text="C:\Users\harsh\Downloads\CrossDroid" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" VerticalAlignment="Center" FontSize="12"/>
-                                <Button Grid.Column="1" Content="Browse Folder" Click="BrowseDownloadFolder_Click" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextBody}" VerticalAlignment="Center" FontSize="12" common:MouseCursorHelper.HandCursor="True">
+                                <Button Grid.Column="1" Content="Browse Folder" Click="BrowseDownloadFolder_Click" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextBody}" VerticalAlignment="Center" FontSize="12">
                                     <Button.Resources>
                                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1D27D7E7" />
                                     </Button.Resources>
@@ -62,7 +62,7 @@
                             </Grid>
                         </StackPanel>
 
-                        <ToggleSwitch x:Name="AutoAcceptTrustedToggle" Header="Auto-accept transfers from Paired Trusted devices" OnContent="Yes, download immediately" OffContent="No, prompt me every time" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5" common:MouseCursorHelper.HandCursor="True"/>
+                        <ToggleSwitch x:Name="AutoAcceptTrustedToggle" Header="Auto-accept transfers from Paired Trusted devices" OnContent="Yes, download immediately" OffContent="No, prompt me every time" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5"/>
                     </StackPanel>
                 </Border>
 
@@ -71,12 +71,12 @@
                     <StackPanel Spacing="16">
                         <TextBlock Text="Connection &amp; Network Rules" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                         
-                        <ToggleSwitch x:Name="WifiOnlyToggle" Header="Transfer over Wi-Fi only" OnContent="Enabled" OffContent="Allow mobile hotspot/fallback" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5" common:MouseCursorHelper.HandCursor="True"/>
-                        <ToggleSwitch x:Name="P2pFallbackToggle" Header="Direct Peer-to-Peer fallback support" OnContent="Allowed if LAN unavailable" OffContent="LAN connection only" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5" common:MouseCursorHelper.HandCursor="True"/>
+                        <ToggleSwitch x:Name="WifiOnlyToggle" Header="Transfer over Wi-Fi only" OnContent="Enabled" OffContent="Allow mobile hotspot/fallback" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5"/>
+                        <ToggleSwitch x:Name="P2pFallbackToggle" Header="Direct Peer-to-Peer fallback support" OnContent="Allowed if LAN unavailable" OffContent="LAN connection only" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5"/>
                         
                         <StackPanel Spacing="8">
                             <TextBlock Text="Preferred Network Band" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
-                            <ComboBox x:Name="NetworkBandCombo" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" SelectedIndex="0" HorizontalAlignment="Stretch" FontSize="12" common:MouseCursorHelper.HandCursor="True">
+                            <ComboBox x:Name="NetworkBandCombo" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextStrong}" SelectedIndex="0" HorizontalAlignment="Stretch" FontSize="12" SelectionChanged="NetworkBandCombo_SelectionChanged">
                                 <ComboBoxItem Content="Prefer 5 GHz Band (Fastest)" />
                                 <ComboBoxItem Content="Prefer 2.4 GHz Band (Longest Range)" />
                                 <ComboBoxItem Content="Auto Negotiate" />
@@ -90,8 +90,8 @@
                     <StackPanel Spacing="16">
                         <TextBlock Text="Notifications" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextStrong}"/>
                         
-                        <ToggleSwitch x:Name="ToastNotifyToggle" Header="Show toast notifications for transfer statuses" OnContent="Enabled" OffContent="Disabled" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5" common:MouseCursorHelper.HandCursor="True"/>
-                        <ToggleSwitch x:Name="SoundNotifyToggle" Header="Play alert sound on completion" OnContent="Enabled" OffContent="Disabled" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5" common:MouseCursorHelper.HandCursor="True"/>
+                        <ToggleSwitch x:Name="ToastNotifyToggle" Header="Show toast notifications for transfer statuses" OnContent="Enabled" OffContent="Disabled" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5"/>
+                        <ToggleSwitch x:Name="SoundNotifyToggle" Header="Play alert sound on completion" OnContent="Enabled" OffContent="Disabled" IsOn="True" Foreground="{StaticResource TextBody}" Toggled="Setting_Toggled" FontSize="12.5"/>
                     </StackPanel>
                 </Border>
 
@@ -109,7 +109,7 @@
                                 <TextBlock Text="CrossDroid Developer Info" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextBody}"/>
                                 <TextBlock Text="App information, versioning and about the developer" FontSize="11.5" Foreground="{StaticResource TextSecondary}"/>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="View About" Click="ViewAbout_Click" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextBody}" VerticalAlignment="Center" FontSize="12" common:MouseCursorHelper.HandCursor="True">
+                            <Button Grid.Column="1" Content="View About" Click="ViewAbout_Click" Background="{StaticResource BgSurface}" BorderBrush="{StaticResource BorderSubtle}" Foreground="{StaticResource TextBody}" VerticalAlignment="Center" FontSize="12">
                                 <Button.Resources>
                                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1DBF00FF" />
                                 </Button.Resources>

@@ -10,11 +10,13 @@ namespace CrossDroid.Windows.Views
 {
     public sealed partial class HomeView : Page
     {
+        private DispatcherTimer? _pinTimer;
 
         public HomeView()
         {
             this.InitializeComponent();
             this.Loaded += HomeView_Loaded;
+            this.Unloaded += HomeView_Unloaded;
         }
 
         private void HomeView_Loaded(object sender, RoutedEventArgs e)
@@ -40,6 +42,52 @@ namespace CrossDroid.Windows.Views
                     }
                 });
             });
+
+            // Start PIN countdown timer (1-second tick)
+            _pinTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _pinTimer.Tick += PinTimer_Tick;
+            _pinTimer.Start();
+        }
+
+        private void HomeView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _pinTimer?.Stop();
+            _pinTimer = null;
+        }
+
+        private void PinTimer_Tick(object? sender, object e)
+        {
+            var pairing = App.Backend.Pairing;
+            if (pairing.RefreshIfExpired())
+            {
+                // PIN was expired and got auto-regenerated
+                PinTextBlock.Text = pairing.CurrentPin;
+                // Also regenerate QR code
+                _ = Task.Run(async () =>
+                {
+                    var bmp = await pairing.GenerateQrCodeAsync();
+                    this.DispatcherQueue.TryEnqueue(async () =>
+                    {
+                        if (bmp != null && QrCodeImage != null)
+                        {
+                            var source = new Microsoft.UI.Xaml.Media.Imaging.SoftwareBitmapSource();
+                            await source.SetBitmapAsync(bmp);
+                            QrCodeImage.Source = source;
+                        }
+                    });
+                });
+            }
+
+            // Update countdown
+            var remaining = pairing.PinRemainingTime;
+            if (remaining.TotalSeconds > 0)
+            {
+                PinCountdownText.Text = $"Expires in {remaining.Minutes:D1}:{remaining.Seconds:D2}";
+            }
+            else
+            {
+                PinCountdownText.Text = "";
+            }
         }
 
 

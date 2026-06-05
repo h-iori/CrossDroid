@@ -23,13 +23,23 @@ namespace CrossDroid.Windows
             // Register/find single instance key
             var keyInstance = AppInstance.FindOrRegisterForKey("CrossDroidWindowsCompanionInstance");
             
-            // Write debug info to log
-            try
+            // Write debug info
+            var debugInfo = $"[{DateTime.Now}] IsCurrent: {keyInstance.IsCurrent}, RegisteredInstance PID: {keyInstance.ProcessId}, Current PID: {Environment.ProcessId}";
+            Debug.WriteLine(debugInfo);
+            
+            // Optional --verbose file logging
+            if (args.Contains("--verbose"))
             {
-                string logContent = $"[{DateTime.Now}] IsCurrent: {keyInstance.IsCurrent}, RegisteredInstance PID: {keyInstance.ProcessId}, Current PID: {Environment.ProcessId}\n";
-                System.IO.File.AppendAllText(@"c:\Users\harsh\OneDrive\Desktop\CrossDroid\debug.log", logContent);
+                try
+                {
+                    var logDir = System.IO.Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "IoriStudios", "CrossDroid");
+                    System.IO.Directory.CreateDirectory(logDir);
+                    System.IO.File.AppendAllText(System.IO.Path.Combine(logDir, "debug.log"), debugInfo + "\n");
+                }
+                catch { }
             }
-            catch {}
 
             if (keyInstance.IsCurrent)
             {

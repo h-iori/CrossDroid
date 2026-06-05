@@ -1,4 +1,4 @@
-<Window
+﻿<Window
     x:Class="CrossDroid.Windows.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -79,7 +79,7 @@
             </StackPanel>
 
             <!-- Close Button for frameless window -->
-            <Button Grid.Column="2" Click="CloseButton_Click" Background="Transparent" BorderThickness="0" Width="40" Height="40" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextSecondary}" local:MouseCursorHelper.HandCursor="True">
+            <Button Grid.Column="2" Click="CloseButton_Click" Background="Transparent" BorderThickness="0" Width="40" Height="40" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource TextSecondary}">
                 <Button.Resources>
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E81123" />
                     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF" />
@@ -91,6 +91,52 @@
 
         <!-- Central Frame hosting views -->
         <Frame x:Name="ContentFrame" Grid.Row="1" Margin="0,0,0,0"/>
+
+        <!-- Global Incoming Transfer Overlay (appears over any page) -->
+        <Grid x:Name="IncomingOverlay" Grid.Row="1" Visibility="Collapsed" Canvas.ZIndex="100">
+            <Border Background="#CC0A0A0F" />
+            <Border CornerRadius="20" MaxWidth="380" MaxHeight="380" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="32">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#4027D7E7" Offset="0.0"/>
+                        <GradientStop Color="#FF12121A" Offset="0.4"/>
+                        <GradientStop Color="#208B5CFF" Offset="1.0"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Border.BorderBrush>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#8027D7E7" Offset="0.0"/>
+                        <GradientStop Color="#30262B38" Offset="1.0"/>
+                    </LinearGradientBrush>
+                </Border.BorderBrush>
+                <Border.BorderThickness>
+                    <Thickness>1.5</Thickness>
+                </Border.BorderThickness>
+                <StackPanel Spacing="20" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE896;" FontSize="40" Foreground="{StaticResource AccentCyan}" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets"/>
+                    <TextBlock x:Name="IncomingTitle" Text="Incoming Transfer" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}" HorizontalAlignment="Center" FontFamily="{StaticResource BrandFont}"/>
+                    <TextBlock x:Name="IncomingDetail" Text="" FontSize="13" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" TextWrapping="WrapWholeWords" TextAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16" Margin="0,8,0,0">
+                        <Button x:Name="AcceptIncomingBtn" Content="Accept" Click="AcceptIncoming_Click" MinWidth="100" HorizontalAlignment="Center" FontWeight="SemiBold">
+                            <Button.Background>
+                                <SolidColorBrush Color="{StaticResource AccentGreenColor}" Opacity="0.25"/>
+                            </Button.Background>
+                            <Button.Foreground>
+                                <SolidColorBrush Color="{StaticResource AccentGreenColor}"/>
+                            </Button.Foreground>
+                        </Button>
+                        <Button x:Name="RejectIncomingBtn" Content="Reject" Click="RejectIncoming_Click" MinWidth="100" HorizontalAlignment="Center" FontWeight="SemiBold">
+                            <Button.Background>
+                                <SolidColorBrush Color="{StaticResource ColorErrorColor}" Opacity="0.2"/>
+                            </Button.Background>
+                            <Button.Foreground>
+                                <SolidColorBrush Color="{StaticResource ColorErrorColor}"/>
+                            </Button.Foreground>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
 
         <!-- Custom Bottom Navigation Bar -->
         <Grid x:Name="BottomNavBar" Grid.Row="2" Height="60" Background="{StaticResource BgPanel}" Opacity="0.98" BorderThickness="0,1,0,0">
@@ -112,7 +158,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Home Tab -->
-            <Button Grid.Column="0" Click="NavTab_Click" Tag="Home" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" local:MouseCursorHelper.HandCursor="True">
+            <Button Grid.Column="0" Click="NavTab_Click" Tag="Home" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
                 <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                         <Grid Width="60" Height="28">
@@ -129,7 +175,7 @@
             </Button>
 
             <!-- Devices Tab -->
-            <Button Grid.Column="1" Click="NavTab_Click" Tag="Devices" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" local:MouseCursorHelper.HandCursor="True">
+            <Button Grid.Column="1" Click="NavTab_Click" Tag="Devices" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
                 <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                         <Grid Width="60" Height="28">
@@ -146,7 +192,7 @@
             </Button>
 
             <!-- History Tab -->
-            <Button Grid.Column="2" Click="NavTab_Click" Tag="History" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" local:MouseCursorHelper.HandCursor="True">
+            <Button Grid.Column="2" Click="NavTab_Click" Tag="History" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
                 <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                         <Grid Width="60" Height="28">
@@ -163,7 +209,7 @@
             </Button>
 
             <!-- Settings Tab -->
-            <Button Grid.Column="3" Click="NavTab_Click" Tag="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0" local:MouseCursorHelper.HandCursor="True">
+            <Button Grid.Column="3" Click="NavTab_Click" Tag="Settings" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0" Padding="0">
                 <Grid Height="54" VerticalAlignment="Center">
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                         <Grid Width="60" Height="28">
