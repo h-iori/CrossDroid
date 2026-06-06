@@ -65,7 +65,7 @@ public class FileChunkPayload
 public static class ProtocolFramer
 {
     // Write length-prefixed message
-    public static async Task WriteMessageAsync(Stream stream, ProtocolMessage message, byte[]? binaryPayload, CancellationToken token)
+    public static async Task WriteMessageAsync(Stream stream, ProtocolMessage message, ReadOnlyMemory<byte> binaryPayload, CancellationToken token)
     {
         var json = JsonSerializer.Serialize(message);
         var jsonBytes = Encoding.UTF8.GetBytes(json);
@@ -73,17 +73,17 @@ public static class ProtocolFramer
         // Format: [4 bytes JSON length] [JSON bytes] [4 bytes binary length] [binary bytes]
         var header = new byte[8];
         BitConverter.TryWriteBytes(header.AsSpan(0, 4), jsonBytes.Length);
-        BitConverter.TryWriteBytes(header.AsSpan(4, 4), binaryPayload?.Length ?? 0);
+        BitConverter.TryWriteBytes(header.AsSpan(4, 4), binaryPayload.Length);
         
         await stream.WriteAsync(header, token);
         await stream.WriteAsync(jsonBytes, token);
-        if (binaryPayload != null && binaryPayload.Length > 0)
+        if (!binaryPayload.IsEmpty)
         {
             await stream.WriteAsync(binaryPayload, token);
         }
     }
 
-    public static async Task<(ProtocolMessage Message, byte[]? BinaryPayload)> ReadMessageAsync(Stream stream, CancellationToken token)
+    public static async Task<(ProtocolMessage Message, byte[]? BinaryPayload, int BinLen)> ReadMessageAsync(Stream stream, CancellationToken token)
     {
         var header = new byte[8];
         if (!await TryReadExactAsync(stream, header, token))
@@ -92,8 +92,8 @@ public static class ProtocolFramer
         var jsonLen = BitConverter.ToInt32(header, 0);
         var binLen = BitConverter.ToInt32(header, 4);
 
-        if (jsonLen > 1024 * 1024 || binLen > 1024 * 1024 * 50) // Arbitrary limits
-            throw new InvalidDataException("Message too large");
+        if (jsonLen < 0 || binLen < 0 || jsonLen > 1024 * 1024 || binLen > 1024 * 1024 * 5) // Enforce strict limits
+            throw new InvalidDataException("Message length invalid");
 
         var jsonBytes = new byte[jsonLen];
         if (!await TryReadExactAsync(stream, jsonBytes, token))
@@ -106,12 +106,32 @@ public static class ProtocolFramer
         byte[]? binaryPayload = null;
         if (binLen > 0)
         {
-            binaryPayload = new byte[binLen];
-            if (!await TryReadExactAsync(stream, binaryPayload, token))
-                throw new EndOfStreamException();
+            binaryPayload = System.Buffers.ArrayPool<byte>.Shared.Rent(binLen);
+            try
+            {
+                if (!await TryReadExactAsync(stream, binaryPayload.AsMemory(0, binLen), token))
+                    throw new EndOfStreamException();
+            }
+            catch
+            {
+                System.Buffers.ArrayPool<byte>.Shared.Return(binaryPayload);
+                throw;
+            }
         }
 
-        return (message, binaryPayload);
+        return (message, binaryPayload, binLen);
+    }
+
+    private static async Task<bool> TryReadExactAsync(Stream stream, Memory<byte> buffer, CancellationToken token)
+    {
+        int totalRead = 0;
+        while (totalRead < buffer.Length)
+        {
+            int read = await stream.ReadAsync(buffer.Slice(totalRead), token);
+            if (read == 0) return false;
+            totalRead += read;
+        }
+        return true;
     }
 
     private static async Task<bool> TryReadExactAsync(Stream stream, byte[] buffer, CancellationToken token)

@@ -19,6 +19,8 @@ public sealed class ConnectionListener : IDisposable
     private Task? _listenTask;
 
     public int Port { get; private set; }
+    
+    private readonly HashSet<string> _activePrompts = new();
 
     public ConnectionListener(IdentityService identity, DeviceService devices, TransferQueueService transfers)
     {
@@ -80,19 +82,28 @@ public sealed class ConnectionListener : IDisposable
             await session.AuthenticateAsServerAsync(_identity.GetCertificate(), token);
 
             // Read the first message
-            var (message, binaryPayload) = await session.ReadMessageAsync(token);
-
-            if (message.Type == MessageType.PairRequest)
+            var (message, binaryPayload, binLen) = await session.ReadMessageAsync(token);
+            try
             {
-                await HandlePairRequestAsync(session, message, token);
+                if (message.Type == MessageType.PairRequest)
+                {
+                    await HandlePairRequestAsync(session, message, token);
+                }
+                else if (message.Type == MessageType.TransferOffer)
+                {
+                    await HandleTransferOfferAsync(session, message, token);
+                }
+                else
+                {
+                    Debug.WriteLine($"Unexpected first message type: {message.Type}");
+                }
             }
-            else if (message.Type == MessageType.TransferOffer)
+            finally
             {
-                await HandleTransferOfferAsync(session, message, token);
-            }
-            else
-            {
-                Debug.WriteLine($"Unexpected first message type: {message.Type}");
+                if (binaryPayload != null)
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(binaryPayload);
+                }
             }
         }
         catch (Exception ex)
@@ -106,19 +117,78 @@ public sealed class ConnectionListener : IDisposable
         var request = JsonSerializer.Deserialize<PairRequestPayload>(message.PayloadJson);
         if (request == null) return;
 
+        var device = _devices.Devices.FirstOrDefault(d => d.Fingerprint == session.RemoteFingerprint)
+            ?? new DeviceRecord
+            {
+                DeviceId = request.DeviceId,
+                DisplayName = request.DisplayName,
+                Fingerprint = session.RemoteFingerprint
+            };
+
+        if (device.IsBlocked) return;
+
         bool accepted = false;
         var pairing = CrossDroidBackend.Current?.Pairing;
-        var currentPin = pairing?.CurrentPin;
-        if (!string.IsNullOrEmpty(currentPin) && request.Pin == currentPin && (pairing?.IsPinValid ?? false))
+
+        if (!string.IsNullOrEmpty(request.Pin))
         {
-            accepted = true;
+            // The client is explicitly attempting PIN authentication
+            if (pairing != null && pairing.IsPinValid)
+            {
+                if (request.Pin == pairing.CurrentPin)
+                {
+                    accepted = true;
+                    pairing.FailedAttempts = 0; // Reset on success
+                }
+                else
+                {
+                    pairing.FailedAttempts++;
+                    if (pairing.FailedAttempts >= 5)
+                    {
+                        pairing.InvalidatePin();
+                    }
+                    accepted = false; // Immediately reject incorrect PINs
+                }
+            }
+            else
+            {
+                accepted = false; // PIN is no longer valid or enabled
+            }
         }
         else
         {
-            var mainWindow = CrossDroid.Windows.App.MainWindowInstance;
-            if (mainWindow != null)
+            // No PIN provided, fall back to manual user approval
+            if (!_activePrompts.Add(device.DeviceId))
             {
-                accepted = await mainWindow.ShowPairingPromptAsync(request.DisplayName, request.Pin);
+                Debug.WriteLine($"Prompt already active for {device.DeviceId}. Rejecting new pair request.");
+                return; // Silently drop
+            }
+
+            try
+            {
+                var mainWindow = CrossDroid.Windows.App.MainWindowInstance;
+                if (mainWindow != null)
+                {
+                    accepted = await mainWindow.ShowPairingPromptAsync(request.DisplayName, request.Pin);
+                }
+
+                if (accepted)
+                {
+                    device.RejectedCount = 0;
+                }
+                else
+                {
+                    device.RejectedCount++;
+                    if (device.RejectedCount >= 3)
+                    {
+                        device.IsBlocked = true;
+                        _ = _devices.SaveDevicesAsync();
+                    }
+                }
+            }
+            finally
+            {
+                _activePrompts.Remove(device.DeviceId);
             }
         }
 
@@ -179,22 +249,50 @@ public sealed class ConnectionListener : IDisposable
                     Accepted = false
                 })
             };
-            await session.WriteMessageAsync(rejectMsg, null, token);
+            await session.WriteMessageAsync(rejectMsg, ReadOnlyMemory<byte>.Empty, token);
             Debug.WriteLine($"Silently rejected transfer from blocked device: {device.AliasOrName}");
             return;
         }
 
         bool accepted = false;
-        if (device.TrustState == DeviceTrustState.Trusted && CrossDroidBackend.Current.Settings.Current.AutoAcceptTrusted)
+        if (device.TrustState == DeviceTrustState.Trusted && CrossDroidBackend.Current?.Settings.Current.AutoAcceptTrusted == true)
         {
             accepted = true;
         }
         else
         {
-            var mainWindow = CrossDroid.Windows.App.MainWindowInstance;
-            if (mainWindow != null)
+            if (!_activePrompts.Add(device.DeviceId))
             {
-                accepted = await mainWindow.ShowIncomingTransferPromptAsync(device, offer);
+                Debug.WriteLine($"Prompt already active for {device.DeviceId}. Rejecting new transfer offer.");
+                await session.WriteMessageAsync(new ProtocolMessage { Type = MessageType.TransferCancel }, ReadOnlyMemory<byte>.Empty, CancellationToken.None);
+                return;
+            }
+
+            try
+            {
+                var mainWindow = CrossDroid.Windows.App.MainWindowInstance;
+                if (mainWindow != null)
+                {
+                    accepted = await mainWindow.ShowIncomingTransferPromptAsync(device, offer);
+                }
+
+                if (accepted)
+                {
+                    device.RejectedCount = 0;
+                }
+                else
+                {
+                    device.RejectedCount++;
+                    if (device.RejectedCount >= 3)
+                    {
+                        device.IsBlocked = true;
+                        _ = _devices.SaveDevicesAsync();
+                    }
+                }
+            }
+            finally
+            {
+                _activePrompts.Remove(device.DeviceId);
             }
         }
 
@@ -209,7 +307,7 @@ public sealed class ConnectionListener : IDisposable
                     Accepted = true
                 })
             };
-            await session.WriteMessageAsync(acceptMsg, null, token);
+            await session.WriteMessageAsync(acceptMsg, ReadOnlyMemory<byte>.Empty, token);
 
             // Hand off to TransferQueueService
             await _transfers.ReceiveNetworkTransferAsync(session, offer);
@@ -225,7 +323,7 @@ public sealed class ConnectionListener : IDisposable
                     Accepted = false
                 })
             };
-            await session.WriteMessageAsync(rejectMsg, null, token);
+            await session.WriteMessageAsync(rejectMsg, ReadOnlyMemory<byte>.Empty, token);
         }
     }
 }

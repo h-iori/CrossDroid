@@ -15,6 +15,7 @@ public class SecureSession : IDisposable
     private SslStream? _sslStream;
     public Stream Stream => _sslStream ?? throw new InvalidOperationException("Session not established");
     
+    private string? _expectedFingerprint;
     public string RemoteFingerprint { get; private set; } = "";
 
     public SecureSession(TcpClient client)
@@ -34,8 +35,9 @@ public class SecureSession : IDisposable
         }, token);
     }
 
-    public async Task AuthenticateAsClientAsync(X509Certificate2 localCert, CancellationToken token)
+    public async Task AuthenticateAsClientAsync(X509Certificate2 localCert, string expectedFingerprint, CancellationToken token)
     {
+        _expectedFingerprint = expectedFingerprint;
         _sslStream = new SslStream(_client.GetStream(), false, ValidateRemoteCertificate);
         await _sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
         {
@@ -50,18 +52,20 @@ public class SecureSession : IDisposable
     {
         if (certificate == null) return false;
         
-        // In a peer-to-peer system using self-signed certs, we ignore NameMismatch and ChainErrors.
-        // We only care about the fingerprint matching our trusted devices list later.
         RemoteFingerprint = certificate.GetCertHashString();
+        if (!string.IsNullOrEmpty(_expectedFingerprint) && !string.Equals(RemoteFingerprint, _expectedFingerprint, StringComparison.OrdinalIgnoreCase))
+        {
+            return false; // MitM detected or spoofed device
+        }
         return true;
     }
 
-    public async Task WriteMessageAsync(ProtocolMessage message, byte[]? binaryPayload, CancellationToken token)
+    public async Task WriteMessageAsync(ProtocolMessage message, ReadOnlyMemory<byte> binaryPayload, CancellationToken token)
     {
         await ProtocolFramer.WriteMessageAsync(Stream, message, binaryPayload, token);
     }
 
-    public async Task<(ProtocolMessage Message, byte[]? BinaryPayload)> ReadMessageAsync(CancellationToken token)
+    public async Task<(ProtocolMessage Message, byte[]? BinaryPayload, int BinLen)> ReadMessageAsync(CancellationToken token)
     {
         return await ProtocolFramer.ReadMessageAsync(Stream, token);
     }

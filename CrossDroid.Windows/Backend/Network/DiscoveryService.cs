@@ -94,27 +94,39 @@ public sealed class DiscoveryService : IDisposable
                     else if (msg.Action == "PinSearch" && !string.IsNullOrEmpty(msg.Pin))
                     {
                         var pairing = CrossDroidBackend.Current?.Pairing;
-                        var currentPin = pairing?.CurrentPin;
-                        if (currentPin == msg.Pin && (pairing?.IsPinValid ?? false))
+                        if (pairing != null && pairing.IsPinValid)
                         {
-                            // A device is searching for us using the correct PIN.
-                            // Respond directly with an Announce packet so they can discover us,
-                            // even if we are normally "Hidden".
-                            var responseMsg = new DiscoveryMessage
+                            if (pairing.CurrentPin == msg.Pin)
                             {
-                                Action = "Announce",
-                                DeviceId = _identity.LocalDevice.DeviceId,
-                                DisplayName = _identity.LocalDevice.DisplayName,
-                                DeviceType = _identity.LocalDevice.DeviceType,
-                                Fingerprint = _identity.LocalDevice.PublicFingerprint,
-                                TcpPort = CrossDroidBackend.Current?.Listener?.Port ?? 53100
-                            };
-                            
-                            var responseJson = JsonSerializer.Serialize(responseMsg);
-                            var responseBytes = Encoding.UTF8.GetBytes(responseJson);
-                            
-                            using var responder = new UdpClient();
-                            await responder.SendAsync(responseBytes, responseBytes.Length, result.RemoteEndPoint);
+                                // A device is searching for us using the correct PIN.
+                                // Respond directly with an Announce packet so they can discover us,
+                                // even if we are normally "Hidden".
+                                var responseMsg = new DiscoveryMessage
+                                {
+                                    Action = "Announce",
+                                    DeviceId = _identity.LocalDevice.DeviceId,
+                                    DisplayName = _identity.LocalDevice.DisplayName,
+                                    DeviceType = _identity.LocalDevice.DeviceType,
+                                    Fingerprint = _identity.LocalDevice.PublicFingerprint,
+                                    TcpPort = CrossDroidBackend.Current?.Listener?.Port ?? 53100
+                                };
+                                
+                                var responseJson = JsonSerializer.Serialize(responseMsg);
+                                var responseBytes = Encoding.UTF8.GetBytes(responseJson);
+                                
+                                using var responder = new UdpClient();
+                                await responder.SendAsync(responseBytes, responseBytes.Length, result.RemoteEndPoint);
+                            }
+                            else
+                            {
+                                // Wrong PIN attempt
+                                pairing.FailedAttempts++;
+                                if (pairing.FailedAttempts >= 5)
+                                {
+                                    pairing.InvalidatePin();
+                                    Debug.WriteLine("Pairing PIN invalidated due to excessive failed attempts.");
+                                }
+                            }
                         }
                     }
                 }

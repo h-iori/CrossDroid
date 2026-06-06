@@ -188,6 +188,7 @@ public sealed class AppSettings : NotifyBase
     public string DownloadsDirectory { get => _downloadsDirectory; set => SetField(ref _downloadsDirectory, value); }
     public bool EnableContextMenu { get => _enableContextMenu; set => SetField(ref _enableContextMenu, value); }
     public int PreferredNetworkBand { get => _preferredNetworkBand; set => SetField(ref _preferredNetworkBand, value); }
+    public int RejectedCount { get; set; } = 0;
 
     public static AppSettings CreateDefault()
     {
@@ -242,7 +243,7 @@ public sealed class IdentityService
     public X509Certificate2 GetCertificate()
     {
         var pfxBytes = UnprotectForCurrentUser(Convert.FromBase64String(_store.State.LocalIdentity!.ProtectedPrivateKey));
-        return new X509Certificate2(pfxBytes, (string)null!, X509KeyStorageFlags.Exportable);
+        return X509CertificateLoader.LoadPkcs12(pfxBytes, (string)null!, X509KeyStorageFlags.Exportable);
     }
 
     public void EnsureLocalIdentity()
@@ -384,6 +385,8 @@ public sealed class DeviceService
 
     public ObservableCollection<DeviceRecord> Devices { get; } = new();
     public IEnumerable<DeviceRecord> TrustedDevices => Devices.Where(d => d.TrustState == DeviceTrustState.Trusted && !d.IsBlocked);
+
+    public Task SaveDevicesAsync() => _store.SaveAsync();
 
     public void LoadFromState()
     {
@@ -721,7 +724,7 @@ public sealed class TransferQueueService
             await client.ConnectAsync(host, port, runtime.Cancellation.Token);
 
             using var session = new Network.SecureSession(client);
-            await session.AuthenticateAsClientAsync(CrossDroidBackend.Current.Identity.GetCertificate(), runtime.Cancellation.Token);
+            await session.AuthenticateAsClientAsync(CrossDroidBackend.Current.Identity.GetCertificate(), target.Fingerprint, runtime.Cancellation.Token);
 
             // Compute file hash
             var hash = record.IsFolder ? "" : await ComputeHashAsync(record.SourcePath);
@@ -740,10 +743,11 @@ public sealed class TransferQueueService
                     Hash = hash
                 })
             };
-            await session.WriteMessageAsync(offer, null, runtime.Cancellation.Token);
+            await session.WriteMessageAsync(offer, ReadOnlyMemory<byte>.Empty, runtime.Cancellation.Token);
 
             // Wait for TransferAccept
-            var (responseMsg, _) = await session.ReadMessageAsync(runtime.Cancellation.Token);
+            var (responseMsg, binary, _) = await session.ReadMessageAsync(runtime.Cancellation.Token);
+            if (binary != null) System.Buffers.ArrayPool<byte>.Shared.Return(binary);
             if (responseMsg.Type == Network.MessageType.TransferReject)
             {
                 throw new OperationCanceledException("Transfer rejected by receiver.");
@@ -763,14 +767,61 @@ public sealed class TransferQueueService
             {
                 var sourceDirInfo = new DirectoryInfo(record.SourcePath);
                 var files = sourceDirInfo.EnumerateFiles("*", SearchOption.AllDirectories).ToList();
-                foreach (var file in files)
+                var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(1024 * 1024 * 2);
+                try
                 {
-                    var relative = Path.GetRelativePath(sourceDirInfo.FullName, file.FullName);
-                    await using var input = File.Open(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    var buffer = new byte[1024 * 256];
+                    foreach (var file in files)
+                    {
+                        var relative = Path.GetRelativePath(sourceDirInfo.FullName, file.FullName);
+                        await using var input = File.Open(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        int read;
+                        long offset = 0;
+                        while ((read = await input.ReadAsync(buffer.AsMemory(0, 1024 * 1024 * 2), runtime.Cancellation.Token)) > 0)
+                        {
+                            while (runtime.IsPaused)
+                            {
+                                record.Status = TransferStatus.Paused;
+                                runtime.PauseEvent.Reset();
+                                runtime.PauseEvent.Wait(runtime.Cancellation.Token);
+                                record.Status = TransferStatus.Transferring;
+                            }
+
+                            var chunkData = buffer.AsMemory(0, read);
+                            var chunkMsg = new Network.ProtocolMessage
+                            {
+                                Type = Network.MessageType.FileChunk,
+                                PayloadJson = JsonSerializer.Serialize(new Network.FileChunkPayload
+                                {
+                                    TransferId = record.TransferId,
+                                    RelativePath = relative,
+                                    Offset = offset
+                                })
+                            };
+
+                            await session.WriteMessageAsync(chunkMsg, chunkData, runtime.Cancellation.Token);
+                            offset += read;
+
+                            record.BytesTransferred += read;
+                            record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
+                            var speed = runtime.CalculateSpeed(record.BytesTransferred);
+                            if (speed >= 0) record.SpeedBytesPerSecond = speed;
+                        }
+                    }
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+            else
+            {
+                await using var input = File.Open(record.SourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(1024 * 1024 * 2);
+                try
+                {
                     int read;
                     long offset = 0;
-                    while ((read = await input.ReadAsync(buffer, runtime.Cancellation.Token)) > 0)
+                    while ((read = await input.ReadAsync(buffer.AsMemory(0, 1024 * 1024 * 2), runtime.Cancellation.Token)) > 0)
                     {
                         while (runtime.IsPaused)
                         {
@@ -780,14 +831,13 @@ public sealed class TransferQueueService
                             record.Status = TransferStatus.Transferring;
                         }
 
-                        var chunkData = buffer.AsSpan(0, read).ToArray();
+                        var chunkData = buffer.AsMemory(0, read);
                         var chunkMsg = new Network.ProtocolMessage
                         {
                             Type = Network.MessageType.FileChunk,
                             PayloadJson = JsonSerializer.Serialize(new Network.FileChunkPayload
                             {
                                 TransferId = record.TransferId,
-                                RelativePath = relative,
                                 Offset = offset
                             })
                         };
@@ -801,41 +851,9 @@ public sealed class TransferQueueService
                         if (speed >= 0) record.SpeedBytesPerSecond = speed;
                     }
                 }
-            }
-            else
-            {
-                await using var input = File.Open(record.SourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var buffer = new byte[1024 * 256];
-                int read;
-                long offset = 0;
-                while ((read = await input.ReadAsync(buffer, runtime.Cancellation.Token)) > 0)
+                finally
                 {
-                    while (runtime.IsPaused)
-                    {
-                        record.Status = TransferStatus.Paused;
-                        runtime.PauseEvent.Reset();
-                        runtime.PauseEvent.Wait(runtime.Cancellation.Token);
-                        record.Status = TransferStatus.Transferring;
-                    }
-
-                    var chunkData = buffer.AsSpan(0, read).ToArray();
-                    var chunkMsg = new Network.ProtocolMessage
-                    {
-                        Type = Network.MessageType.FileChunk,
-                        PayloadJson = JsonSerializer.Serialize(new Network.FileChunkPayload
-                        {
-                            TransferId = record.TransferId,
-                            Offset = offset
-                        })
-                    };
-
-                    await session.WriteMessageAsync(chunkMsg, chunkData, runtime.Cancellation.Token);
-                    offset += read;
-
-                    record.BytesTransferred += read;
-                    record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
-                    var speed = runtime.CalculateSpeed(record.BytesTransferred);
-                    if (speed >= 0) record.SpeedBytesPerSecond = speed;
+                    System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
                 }
             }
 
@@ -895,33 +913,89 @@ public sealed class TransferQueueService
             record.Status = TransferStatus.Transferring;
             Directory.CreateDirectory(_settings.Current.DownloadsDirectory);
             var destination = ResolveConflictPath(Path.Combine(_settings.Current.DownloadsDirectory, record.FileName));
+            var baseDestDir = Path.GetFullPath(record.IsFolder ? destination : Path.GetDirectoryName(destination)!);
 
-            while (record.BytesTransferred < record.TotalBytes)
+            string? currentStreamPath = null;
+            FileStream? currentStream = null;
+
+            try
             {
-                var (msg, binary) = await session.ReadMessageAsync(CancellationToken.None);
-                if (msg.Type == Network.MessageType.FileChunk && binary != null)
+                if (record.IsFolder)
                 {
-                    var chunkPayload = JsonSerializer.Deserialize<Network.FileChunkPayload>(msg.PayloadJson);
-                    var relative = chunkPayload?.RelativePath ?? "";
-                    var fileDest = string.IsNullOrEmpty(relative) 
-                        ? destination 
-                        : Path.Combine(_settings.Current.DownloadsDirectory, record.FileName, relative);
-                    
-                    Directory.CreateDirectory(Path.GetDirectoryName(fileDest)!);
+                    Directory.CreateDirectory(baseDestDir);
+                }
+                else if (record.TotalBytes == 0)
+                {
+                    File.Create(destination).Dispose();
+                }
 
-                    using (var fs = new FileStream(fileDest, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
+                while (record.BytesTransferred < record.TotalBytes)
+                {
+                    var (msg, binary, binLen) = await session.ReadMessageAsync(CancellationToken.None);
+                    try
                     {
-                        fs.Seek(chunkPayload?.Offset ?? 0, SeekOrigin.Begin);
-                        await fs.WriteAsync(binary);
-                    }
+                        if (msg.Type == Network.MessageType.FileChunk && binary != null)
+                        {
+                            var chunkPayload = JsonSerializer.Deserialize<Network.FileChunkPayload>(msg.PayloadJson);
+                            var relative = chunkPayload?.RelativePath ?? "";
+                            
+                            string fileDest;
+                            if (!record.IsFolder || string.IsNullOrEmpty(relative))
+                            {
+                                fileDest = Path.GetFullPath(destination);
+                            }
+                            else
+                            {
+                                // Path traversal protection: strip illegal characters and resolve path safely
+                                var safeRelative = relative.Replace("..", "").Replace(":", "");
+                                fileDest = Path.GetFullPath(Path.Combine(baseDestDir, safeRelative));
+                                
+                                // Ensure the resulting path is strictly inside the base destination directory
+                                if (!fileDest.StartsWith(baseDestDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) && 
+                                    !fileDest.Equals(baseDestDir, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    throw new InvalidOperationException("Path traversal attempt detected and blocked.");
+                                }
+                            }
 
-                    record.BytesTransferred += binary.Length;
-                    record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
+                            Directory.CreateDirectory(Path.GetDirectoryName(fileDest)!);
+
+                            if (currentStreamPath != fileDest)
+                            {
+                                currentStream?.Dispose();
+                                // Use CreateNew if offset is 0 to avoid overwriting existing local files maliciously, else OpenOrCreate
+                                var mode = (chunkPayload?.Offset ?? 0) == 0 ? FileMode.CreateNew : FileMode.OpenOrCreate;
+                                currentStream = new FileStream(fileDest, mode, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous);
+                                currentStreamPath = fileDest;
+                            }
+
+                            if (currentStream!.Position != (chunkPayload?.Offset ?? 0))
+                            {
+                                currentStream.Seek(chunkPayload?.Offset ?? 0, SeekOrigin.Begin);
+                            }
+                            
+                            await currentStream.WriteAsync(binary!.AsMemory(0, binLen));
+
+                            record.BytesTransferred += binLen;
+                            record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
+                        }
+                        else if (msg.Type == Network.MessageType.TransferCancel)
+                        {
+                            throw new OperationCanceledException("Transfer cancelled by sender.");
+                        }
+                    }
+                    finally
+                    {
+                        if (binary != null)
+                        {
+                            System.Buffers.ArrayPool<byte>.Shared.Return(binary);
+                        }
+                    }
                 }
-                else if (msg.Type == Network.MessageType.TransferCancel)
-                {
-                    throw new OperationCanceledException("Transfer cancelled by sender.");
-                }
+            }
+            finally
+            {
+                currentStream?.Dispose();
             }
 
             record.DestinationPath = destination;
@@ -1207,6 +1281,7 @@ public sealed class DeviceRecord : NotifyBase
     public bool IsBlocked { get => _isBlocked; set => SetField(ref _isBlocked, value); }
     public DateTimeOffset LastSeenUtc { get; set; }
     public DateTimeOffset? LastTransferUtc { get => _lastTransferUtc; set => SetField(ref _lastTransferUtc, value); }
+    public int RejectedCount { get; set; } = 0;
 }
 
 public sealed class StagedTransferItem

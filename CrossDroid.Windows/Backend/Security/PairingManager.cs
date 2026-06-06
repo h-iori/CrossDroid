@@ -16,6 +16,7 @@ public class PairingManager
     public DateTimeOffset PinExpiresUtc { get; private set; } = DateTimeOffset.MinValue;
     public bool IsPinValid => !string.IsNullOrEmpty(CurrentPin) && DateTimeOffset.UtcNow < PinExpiresUtc;
     public TimeSpan PinRemainingTime => IsPinValid ? PinExpiresUtc - DateTimeOffset.UtcNow : TimeSpan.Zero;
+    public int FailedAttempts { get; set; } = 0;
 
     public PairingManager(IdentityService identity)
     {
@@ -66,7 +67,15 @@ public class PairingManager
         // Cryptographically secure 6-digit PIN
         CurrentPin = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         PinExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(5);
+        FailedAttempts = 0;
         return CurrentPin;
+    }
+
+    public void InvalidatePin()
+    {
+        CurrentPin = string.Empty;
+        PinExpiresUtc = DateTimeOffset.MinValue;
+        FailedAttempts = 0;
     }
 
     /// <summary>
