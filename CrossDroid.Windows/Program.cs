@@ -52,6 +52,21 @@ namespace CrossDroid.Windows
             }
             else
             {
+                // Write our actual command line args to a temp file for the primary instance to read.
+                // WinUI 3's GetActivatedEventArgs often fails to capture command-line args for Win32 CreateProcess launches.
+                try
+                {
+                    var argsToWrite = Environment.GetCommandLineArgs();
+                    if (argsToWrite.Length > 1)
+                    {
+                        var tempDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "IoriStudios", "CrossDroid", "Activation");
+                        System.IO.Directory.CreateDirectory(tempDir);
+                        var tempFile = System.IO.Path.Combine(tempDir, $"cmd_{Guid.NewGuid():N}.txt");
+                        System.IO.File.WriteAllLines(tempFile, argsToWrite);
+                    }
+                }
+                catch { }
+
                 // Redirect arguments and exit
                 var currentArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
                 RedirectActivation(keyInstance, currentArgs);
@@ -70,18 +85,50 @@ namespace CrossDroid.Windows
             if (App.MainWindowInstance != null)
             {
                 string[] cmdArgs = Array.Empty<string>();
-                if (args.Kind == ExtendedActivationKind.Launch)
+                
+                // 1. Try reading from temp files first (contains actual Win32 args)
+                try
                 {
-                    if (args.Data is global::Windows.ApplicationModel.Activation.LaunchActivatedEventArgs launchArgs)
+                    var tempDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "IoriStudios", "CrossDroid", "Activation");
+                    if (System.IO.Directory.Exists(tempDir))
                     {
-                        cmdArgs = SplitCommandLine(launchArgs.Arguments);
+                        var files = System.IO.Directory.GetFiles(tempDir, "cmd_*.txt");
+                        foreach (var file in files)
+                        {
+                            try
+                            {
+                                var lines = System.IO.File.ReadAllLines(file);
+                                System.IO.File.Delete(file);
+                                if (lines.Length > 1)
+                                {
+                                    // Environment.GetCommandLineArgs() includes the executable path at index 0.
+                                    // We skip it so ProcessCommandLineArgsAsync only sees the arguments.
+                                    cmdArgs = lines.Skip(1).ToArray();
+                                    break;
+                                }
+                            }
+                            catch { }
+                        }
                     }
                 }
-                else if (args.Kind == ExtendedActivationKind.CommandLineLaunch)
+                catch { }
+
+                // 2. Fallback to WinRT args if temp file wasn't found
+                if (cmdArgs.Length == 0)
                 {
-                    if (args.Data is global::Windows.ApplicationModel.Activation.CommandLineActivatedEventArgs cmdLineArgs)
+                    if (args.Kind == ExtendedActivationKind.Launch)
                     {
-                        cmdArgs = SplitCommandLine(cmdLineArgs.Operation.Arguments);
+                        if (args.Data is global::Windows.ApplicationModel.Activation.LaunchActivatedEventArgs launchArgs)
+                        {
+                            cmdArgs = SplitCommandLine(launchArgs.Arguments);
+                        }
+                    }
+                    else if (args.Kind == ExtendedActivationKind.CommandLineLaunch)
+                    {
+                        if (args.Data is global::Windows.ApplicationModel.Activation.CommandLineActivatedEventArgs cmdLineArgs)
+                        {
+                            cmdArgs = SplitCommandLine(cmdLineArgs.Operation.Arguments);
+                        }
                     }
                 }
 
