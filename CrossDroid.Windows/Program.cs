@@ -94,12 +94,11 @@ namespace CrossDroid.Windows
                     }
 
                     // Bring main window to front
+                    // ProcessCommandLineArgsAsync already handles Radar navigation when files are present,
+                    // so we only need to show the window here for bare re-launch scenarios
                     App.MainWindowInstance.AppWindow.Show();
                     var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindowInstance);
                     User32.SetForegroundWindow(hwnd);
-                    
-                    // If files were shared, navigate to Radar for device selection
-                    App.MainWindowInstance.NavigateToPage("Radar");
                 });
             }
         }

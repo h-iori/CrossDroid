@@ -106,18 +106,22 @@ public sealed class ShellIntegrationService
                     baseKey.SetValue("", "Share using CrossDroid");
 
                     string exePath;
+                    string iconPath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
                     if (IsPackaged())
                     {
                         exePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\WindowsApps\crossdroid.exe");
                     }
                     else
                     {
-                        exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
+                        exePath = iconPath;
                     }
 
                     if (!string.IsNullOrEmpty(exePath))
                     {
-                        baseKey.SetValue("Icon", exePath);
+                        if (!string.IsNullOrEmpty(iconPath))
+                        {
+                            baseKey.SetValue("Icon", iconPath);
+                        }
                         var cmdKey = baseKey.CreateSubKey("command");
                         cmdKey.SetValue("", $"\"{exePath}\" --send \"%1\"");
                     }

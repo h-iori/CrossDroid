@@ -50,14 +50,27 @@ namespace CrossDroid.Windows;
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
-        protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            CrossDroidBackend.InitializeAsync().GetAwaiter().GetResult();
+            try
+            {
+                CrossDroidBackend.InitializeAsync().GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Backend initialization failed: {ex.Message}");
+            }
+
             MainWindowInstance = new MainWindow();
             
             // Check command line arguments
             string[] cmdArgs = Environment.GetCommandLineArgs();
-            bool runMinimized = cmdArgs.Contains("--minimized") || cmdArgs.Contains("-m") || cmdArgs.Contains("--hidden") || StartMinimized;
+            
+            bool hasFilesToShare = cmdArgs.Contains("--send") || cmdArgs.Skip(1).Any(arg => 
+                arg != "--minimized" && arg != "-m" && arg != "--hidden" && arg != "--verbose" && 
+                (System.IO.File.Exists(arg) || System.IO.Directory.Exists(arg)));
+
+            bool runMinimized = (cmdArgs.Contains("--minimized") || cmdArgs.Contains("-m") || cmdArgs.Contains("--hidden") || StartMinimized) && !hasFilesToShare;
             
             if (runMinimized)
             {
@@ -69,7 +82,18 @@ namespace CrossDroid.Windows;
                 MainWindowInstance.Activate();
             }
 
-            await ProcessCommandLineArgsAsync(cmdArgs.Skip(1).ToArray());
+            // Process command line arguments on the dispatcher queue to ensure the window and UI thread are fully ready
+            MainWindowInstance.DispatcherQueue.TryEnqueue(async () =>
+            {
+                try
+                {
+                    await ProcessCommandLineArgsAsync(cmdArgs.Skip(1).ToArray());
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to process command line arguments: {ex.Message}");
+                }
+            });
         }
 
         public static async Task ProcessCommandLineArgsAsync(string[] cmdArgs)
@@ -104,36 +128,53 @@ namespace CrossDroid.Windows;
 
             if (filesToShare.Count > 0)
             {
-                var storageItems = new List<IStorageItem>();
+                LogShareDebug($"Staging {filesToShare.Count} path(s) for sharing");
+
+                // Stage all paths using System.IO-based staging (works reliably in all contexts,
+                // unlike StorageFile.GetFileFromPathAsync which throws UnauthorizedAccessException
+                // on MSIX cold start)
                 foreach (var path in filesToShare)
                 {
                     try
                     {
-                        if (System.IO.Directory.Exists(path))
-                        {
-                            var folder = await StorageFolder.GetFolderFromPathAsync(path);
-                            await Backend.Staging.StagePathAsync(folder.Path);
-                        }
-                        else
-                        {
-                            var file = await StorageFile.GetFileFromPathAsync(path);
-                            storageItems.Add(file);
-                        }
+                        await Backend.Staging.StagePathAsync(path);
+                        LogShareDebug($"Staged: {path}");
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Failed to load path: {path}. Error: {ex.Message}");
+                        LogShareDebug($"Failed to stage path: {path}. Error: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"Failed to stage path: {path}. Error: {ex.Message}");
                     }
                 }
 
-                if (storageItems.Count > 0)
-                {
-                    MainWindowInstance.StageTransfers(storageItems);
-                }
-                
-                // Show the window and navigate to Radar for device selection
+                // ALWAYS show window and navigate to Radar when files were requested for sharing,
+                // even if some staging calls failed — the Radar screen should still appear
+                MainWindowInstance.AppWindow.Show();
                 MainWindowInstance.Activate();
+
+                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(MainWindowInstance);
+                User32.SetForegroundWindow(hwnd);
+
                 MainWindowInstance.NavigateToPage("Radar");
+                LogShareDebug("Navigated to Radar screen");
             }
+        }
+
+        /// <summary>
+        /// Writes a debug log entry to the CrossDroid log file for diagnosing cold-start share issues.
+        /// </summary>
+        private static void LogShareDebug(string message)
+        {
+            try
+            {
+                var logDir = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "IoriStudios", "CrossDroid");
+                System.IO.Directory.CreateDirectory(logDir);
+                System.IO.File.AppendAllText(
+                    System.IO.Path.Combine(logDir, "share-debug.log"),
+                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}\n");
+            }
+            catch { }
         }
     }

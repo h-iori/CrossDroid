@@ -15,6 +15,7 @@ namespace CrossDroid.Windows
         public IStorageFolder? StagedFolderInstance { get; set; }
         public ObservableCollection<Views.HistoryItemViewModel> HistoryRecords { get; } = new();
         public bool IsPickingFile { get; set; } = false;
+        private Type? _currentNavigatingType;
 
         public System.Windows.Input.ICommand OpenCommand { get; }
         public System.Windows.Input.ICommand ToggleReceiveCommand { get; }
@@ -88,6 +89,11 @@ namespace CrossDroid.Windows
 
             // Register window closing event
             appWindow.Closing += AppWindow_Closing;
+
+            ContentFrame.Navigated += (s, e) =>
+            {
+                _currentNavigatingType = e.SourcePageType;
+            };
 
             // Bind tray commands
             OpenCommand = new RelayCommand(() => this.DispatcherQueue.TryEnqueue(RestoreWindow));
@@ -332,8 +338,9 @@ namespace CrossDroid.Windows
                 _ => typeof(Views.HomeView)
             };
 
-            if (pageType != null && ContentFrame.CurrentSourcePageType != pageType)
+            if (pageType != null && _currentNavigatingType != pageType && ContentFrame.CurrentSourcePageType != pageType)
             {
+                _currentNavigatingType = pageType;
                 ContentFrame.Navigate(pageType);
             }
 
