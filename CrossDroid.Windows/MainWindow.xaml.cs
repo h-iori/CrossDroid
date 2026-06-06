@@ -325,6 +325,7 @@ namespace CrossDroid.Windows
                 "Home" => typeof(Views.HomeView),
                 "Devices" => typeof(Views.DevicesView),
                 "Transfers" => typeof(Views.TransfersView),
+                "Radar" => typeof(Views.RadarView),
                 "History" => typeof(Views.HistoryView),
                 "Settings" => typeof(Views.SettingsView),
                 "About" => typeof(Views.AboutView),
@@ -399,7 +400,16 @@ namespace CrossDroid.Windows
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            this.AppWindow.Hide();
+            if (App.CloseToTray)
+            {
+                this.AppWindow.Hide();
+            }
+            else
+            {
+                // Actually close the application
+                TrayIcon.Dispose();
+                Environment.Exit(0);
+            }
         }
 
         // File Staging
@@ -407,7 +417,7 @@ namespace CrossDroid.Windows
         {
             StagedFilesList.AddRange(items);
             _ = App.Backend.Staging.StageStorageItemsAsync(items);
-            NavigateToPage("Transfers");
+            NavigateToPage("Radar");
 
             // If we are currently showing the Transfers view, reload the list
             if (ContentFrame.Content is Views.TransfersView transfersView)
@@ -420,7 +430,7 @@ namespace CrossDroid.Windows
         {
             StagedFolderInstance = folder;
             _ = App.Backend.Staging.StagePathAsync(folder.Path);
-            NavigateToPage("Transfers");
+            NavigateToPage("Radar");
 
             if (ContentFrame.Content is Views.TransfersView transfersView)
             {

@@ -131,9 +131,9 @@ namespace CrossDroid.Windows;
                     MainWindowInstance.StageTransfers(storageItems);
                 }
                 
-                // Show the window and navigate to transfers since user explicitly started a share action
+                // Show the window and navigate to Radar for device selection
                 MainWindowInstance.Activate();
-                MainWindowInstance.NavigateToPage("Transfers");
+                MainWindowInstance.NavigateToPage("Radar");
             }
         }
     }

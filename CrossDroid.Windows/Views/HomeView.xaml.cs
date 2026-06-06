@@ -21,21 +21,36 @@ namespace CrossDroid.Windows.Views
 
         private void HomeView_Loaded(object sender, RoutedEventArgs e)
         {
-            GenerateNewPin();
+            // Only generate a new PIN if one doesn't exist yet or it has expired
+            var pairing = App.Backend.Pairing;
+            if (!pairing.IsPinValid)
+            {
+                GenerateNewPin();
+            }
+            else
+            {
+                // Display the existing valid PIN without regenerating
+                PinTextBlock.Text = pairing.CurrentPin;
+                // Refresh QR code display
+                _ = Task.Run(async () =>
+                {
+                    var bmp = await pairing.GenerateQrCodeAsync();
+                    this.DispatcherQueue.TryEnqueue(async () =>
+                    {
+                        if (bmp != null && QrCodeImage != null)
+                        {
+                            var source = new Microsoft.UI.Xaml.Media.Imaging.SoftwareBitmapSource();
+                            await source.SetBitmapAsync(bmp);
+                            QrCodeImage.Source = source;
+                        }
+                    });
+                });
+            }
             
             _ = Task.Run(async () =>
             {
-                var bmp = await App.Backend.Pairing.GenerateQrCodeAsync();
-                
                 this.DispatcherQueue.TryEnqueue(async () =>
                 {
-                    if (bmp != null && QrCodeImage != null)
-                    {
-                        var source = new Microsoft.UI.Xaml.Media.Imaging.SoftwareBitmapSource();
-                        await source.SetBitmapAsync(bmp);
-                        QrCodeImage.Source = source;
-                    }
-
                     if (VisibilityToggle != null)
                     {
                         VisibilityToggle.IsOn = App.Backend.Settings.Current.Discoverable;

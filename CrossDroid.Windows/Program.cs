@@ -98,8 +98,8 @@ namespace CrossDroid.Windows
                     var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindowInstance);
                     User32.SetForegroundWindow(hwnd);
                     
-                    // If files were shared, we navigate to the transfers queue view
-                    App.MainWindowInstance.NavigateToPage("Transfers");
+                    // If files were shared, navigate to Radar for device selection
+                    App.MainWindowInstance.NavigateToPage("Radar");
                 });
             }
         }
