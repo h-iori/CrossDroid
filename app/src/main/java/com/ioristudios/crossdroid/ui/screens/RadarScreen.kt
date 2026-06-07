@@ -52,7 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.data.DeviceNode
-import com.ioristudios.crossdroid.data.MockData
+// import com.ioristudios.crossdroid.data.MockData
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.components.NearbyDeviceChip
 import com.ioristudios.crossdroid.ui.components.RadarWidget
@@ -85,7 +85,7 @@ fun RadarScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val radarDevices = MockData.deviceNodes.filter { it.status == "Nearby" || it.status == "Paired" }
+    val radarDevices by viewModel.discoveredDevices.collectAsState()
     val chosenFiles = viewModel.selectedFiles.collectAsState().value.toList()
 
     Column(

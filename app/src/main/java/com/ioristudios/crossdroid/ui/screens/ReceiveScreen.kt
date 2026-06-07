@@ -53,7 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
-import com.ioristudios.crossdroid.ui.components.ConfirmationPopup
+
 import com.ioristudios.crossdroid.ui.components.TopAppBar
 import com.ioristudios.crossdroid.ui.theme.AccentCyan
 import com.ioristudios.crossdroid.ui.theme.BgElevated
@@ -78,8 +78,7 @@ fun ReceiveScreen(
     viewModel: CrossDroidViewModel,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val showPopup by viewModel.showReceivePopup.collectAsState()
+    val currentPin by viewModel.currentPin.collectAsState()
     
     var activeTrigger by remember { mutableStateOf(false) }
     var heroTrigger by remember { mutableStateOf(false) }
@@ -235,23 +234,12 @@ fun ReceiveScreen(
                         translationY = pinOffsetY.dp.toPx()
                     }
                 ) {
-                    ConnectionPinCard()
+                    ConnectionPinCard(currentPin)
                 }
                 Spacer(modifier = Modifier.weight(1f))
             }
         }
     }
-
-    ConfirmationPopup(
-        visible = showPopup,
-        deviceName = "STUDIO-WORKSTATION",
-        filesCount = 2,
-        totalSize = "16.6 MB",
-        fileNames = listOf("Neon_Vibes_Chill.mp3", "IORI_Studios_Logo.png"),
-
-        onAccept = { viewModel.acceptIncomingTransfer(context) },
-        onDecline = { viewModel.declineIncomingTransfer(context) }
-    )
 }
 
 @Composable
@@ -529,7 +517,7 @@ private fun BroadcastNode() {
 }
 
 @Composable
-private fun ConnectionPinCard() {
+private fun ConnectionPinCard(pinCode: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -569,7 +557,7 @@ private fun ConnectionPinCard() {
 
         Spacer(modifier = Modifier.width(Spacing.Medium))
 
-        val pinDigits = listOf("1", "2", "3", "4")
+        val pinDigits = pinCode.takeIf { it.length == 6 }?.map { it.toString() } ?: listOf("-", "-", "-", "-", "-", "-")
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically

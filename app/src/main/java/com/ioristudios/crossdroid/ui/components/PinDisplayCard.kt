@@ -69,7 +69,7 @@ fun PinDisplayCard(
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val maxLen = 4
+    val maxLen = 6
     val canConfirm = pinCode.length == maxLen
 
     // Hardware-accelerated horizontal shake offset for error state
@@ -97,7 +97,7 @@ fun PinDisplayCard(
         val widthBasedKeySize = ((maxWidth - 112.dp) / 3).coerceIn(50.dp, 64.dp)
         val heightBasedKeySize = ((maxHeight - 156.dp) / 4).coerceIn(46.dp, 64.dp)
         val keySize = minOf(widthBasedKeySize, heightBasedKeySize)
-        val pinBoxSize = ((maxWidth - 104.dp) / 4).coerceIn(46.dp, 58.dp)
+        val pinBoxSize = ((maxWidth - 64.dp) / 6).coerceIn(38.dp, 52.dp)
         val rowSpacing = if (maxHeight < 420.dp) Spacing.Tiny else Spacing.Small
 
         Column(
@@ -158,7 +158,7 @@ fun PinDisplayCard(
 
                     Box(
                         modifier = Modifier
-                            .padding(horizontal = Spacing.Tiny)
+                            .padding(horizontal = 4.dp)
                             .size(pinBoxSize)
                             .clip(RoundedCornerShape(15.dp))
                             .background(BgPanelMuted)

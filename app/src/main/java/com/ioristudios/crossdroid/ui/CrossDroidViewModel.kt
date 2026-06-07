@@ -10,7 +10,6 @@ import com.ioristudios.crossdroid.data.DeviceNode
 import com.ioristudios.crossdroid.data.FileItem
 import com.ioristudios.crossdroid.data.FileKind
 import com.ioristudios.crossdroid.data.HistoryItem
-import com.ioristudios.crossdroid.data.MockData
 import com.ioristudios.crossdroid.data.FileType
 import android.provider.MediaStore
 import android.content.ContentUris
@@ -127,8 +126,7 @@ class CrossDroidViewModel : ViewModel() {
     private val _isTransferComplete = MutableStateFlow(false)
     val isTransferComplete: StateFlow<Boolean> = _isTransferComplete.asStateFlow()
 
-    // Dynamic History list that appends simulated finishes
-    private val _historyRecords = MutableStateFlow(MockData.historyItems)
+    private val _historyRecords = MutableStateFlow<List<HistoryItem>>(emptyList())
     val historyRecords: StateFlow<List<HistoryItem>> = _historyRecords.asStateFlow()
 
     private val _selectedHistorySession = MutableStateFlow<HistorySession?>(null)
@@ -142,8 +140,112 @@ class CrossDroidViewModel : ViewModel() {
         _isSidebarVisible.value = visible
     }
 
+    private var backendService: com.ioristudios.crossdroid.backend.CrossDroidBackendService? = null
+    private val _discoveredDevices = MutableStateFlow<List<DeviceNode>>(emptyList())
+    val discoveredDevices: StateFlow<List<DeviceNode>> = _discoveredDevices.asStateFlow()
+
+    private val _currentPin = MutableStateFlow("")
+    val currentPin: StateFlow<String> = _currentPin.asStateFlow()
+
+    fun setBackendService(service: com.ioristudios.crossdroid.backend.CrossDroidBackendService) {
+        backendService = service
+        viewModelScope.launch {
+            service.pairingManager.currentPin.collect { pin ->
+                _currentPin.value = pin
+            }
+        }
+        viewModelScope.launch {
+            service.discoveryService.discoveredDevices.collect { devices ->
+                val nodes = devices.map { discovered ->
+                    DeviceNode(
+                        id = discovered.deviceId,
+                        name = discovered.name,
+                        status = "Available",
+                        signalStrength = 4,
+                        osType = "unknown",
+                        lastSeen = "Just now"
+                    )
+                }
+                _discoveredDevices.value = nodes
+            }
+        }
+        viewModelScope.launch {
+            service.activeTransfers.collect { active: Map<String, com.ioristudios.crossdroid.backend.network.TransferProgress> ->
+                val bubbles = active.values.map { progress: com.ioristudios.crossdroid.backend.network.TransferProgress ->
+                    TransferBubble(
+                        id = progress.transferId,
+                        file = FileItem(
+                            id = progress.transferId,
+                            name = progress.fileName,
+                            size = progress.totalBytes.toReadableSize(),
+                            type = FileType.DOCUMENT,
+                            detail = "",
+                            kind = FileKind.FILE,
+                            path = "",
+                            childrenCount = 0,
+                            lastModified = ""
+                        ),
+                        progress = if (progress.totalBytes > 0) progress.bytesTransferred.toFloat() / progress.totalBytes else 0f,
+                        speed = "Estimating...",
+                        status = when (progress.status) {
+                            0 -> TransferStatus.Pending
+                            1 -> if (progress.isIncoming) TransferStatus.Receiving else TransferStatus.Sending
+                            2 -> TransferStatus.Paused
+                            3 -> TransferStatus.Completed
+                            4 -> TransferStatus.Canceled
+                            5 -> TransferStatus.Failed
+                            else -> TransferStatus.Pending
+                        },
+                        isIncoming = progress.isIncoming
+                    )
+                }
+                _transferBubbles.value = bubbles
+                if (bubbles.any { it.status == TransferStatus.Receiving || it.status == TransferStatus.Sending }) {
+                    _isTransferActive.value = true
+                    _isTransferComplete.value = false
+                    if (_currentScreen.value != Screen.TRANSFER) {
+                        navigateTo(Screen.TRANSFER, null)
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            service.transferHistory.collect { history ->
+                val formatter = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault())
+                _historyRecords.value = history.map { entity ->
+                    HistoryItem(
+                        id = entity.transferId,
+                        fileName = entity.fileName,
+                        size = entity.totalBytes.toReadableSize(),
+                        date = formatter.format(java.util.Date(entity.completedUtc)),
+                        isIncoming = entity.isIncoming,
+                        isSuccess = entity.status == 3,
+                        deviceName = entity.deviceName
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
+            service.incomingTransferRequest.collect { request ->
+                if (_pendingIncomingRequest.value != null) {
+                    // We are already showing a popup, auto-reject concurrent requests
+                    request.deferredResponse.complete(false)
+                    return@collect
+                }
+
+                val deviceName = service.discoveryService.discoveredDevices.value
+                    .firstOrNull { it.fingerprint == request.remoteFingerprint }?.name 
+                    ?: "Unknown Device"
+                
+                _pendingIncomingRequest.value = request.copy(deviceName = deviceName)
+                
+                // Show popup with actual request data
+                _showReceivePopup.value = true
+            }
+        }
+    }
+
     private var transferJob: Job? = null
-    private var receiveSimulationJob: Job? = null
 
     fun navigateTo(screen: Screen, context: Context? = null) {
         val current = _currentScreen.value
@@ -172,12 +274,8 @@ class CrossDroidViewModel : ViewModel() {
             _pinError.value = null
         }
         
-        // Start or cancel receiver simulations based on screen
-        if (screen == Screen.RECEIVE) {
-            startReceiveSimulation(context)
-        } else {
-            cancelReceiveSimulation()
-        }
+        // We no longer start simulation based on Receive screen.
+        // We handle real requests instead.
     }
 
     fun historySessions(): List<HistorySession> = buildHistorySessions(_historyRecords.value)
@@ -230,11 +328,6 @@ class CrossDroidViewModel : ViewModel() {
             if (prevScreen != Screen.ENTER_CODE) {
                 _pinCode.value = ""
                 _pinError.value = null
-            }
-            if (prevScreen == Screen.RECEIVE) {
-                startReceiveSimulation(context)
-            } else {
-                cancelReceiveSimulation()
             }
         }
     }
@@ -450,7 +543,7 @@ class CrossDroidViewModel : ViewModel() {
 
     // --- PIN Entry Logics ---
     fun appendPinChar(char: Char, context: Context) {
-        if (_pinCode.value.length < 4) {
+        if (_pinCode.value.length < 6) {
             _pinCode.value += char
             _pinError.value = null
             HapticHelper.triggerLight(context)
@@ -472,162 +565,76 @@ class CrossDroidViewModel : ViewModel() {
     }
 
     fun verifyPinCode(context: Context) {
-        if (_pinCode.value == "1234") {
+        if (_pinCode.value.length == 6) {
             HapticHelper.triggerSuccess(context)
             _pinError.value = null
-            // Trigger transfer with chosen files
-            val defaultDevice = MockData.deviceNodes.first { it.osType == "android" }
-            startTransferFlow(defaultDevice, _selectedFiles.value.toList(), isIncoming = false, context = context)
+            val pin = _pinCode.value
+            backendService?.discoveryService?.broadcastPinSearch(pin)
+            
+            // Navigate to Home to see the matched device on Radar
+            navigateTo(Screen.HOME, context)
         } else {
             HapticHelper.triggerError(context)
-            _pinError.value = "Invalid connection code"
+            _pinError.value = "PIN must be 6 digits"
         }
     }
 
-    // --- Receive Page Simulation ---
-    private fun startReceiveSimulation(context: Context?) {
-        cancelReceiveSimulation()
-        receiveSimulationJob = viewModelScope.launch {
-            // Wait 4 seconds, then show confirmation popup
-            delay(4000)
-            context?.let { HapticHelper.triggerStrong(it) }
-            _showReceivePopup.value = true
+    fun handleScannedQrPayload(payload: String, context: Context) {
+        try {
+            val uri = android.net.Uri.parse(payload)
+            val deviceId = uri.getQueryParameter("id")
+            val pin = uri.getQueryParameter("pin")
+            val fp = uri.getQueryParameter("fp")
+            
+            if (!pin.isNullOrEmpty()) {
+                _pinCode.value = pin
+                backendService?.discoveryService?.broadcastPinSearch(pin)
+            }
+            
+            // Regardless of PIN, if we have a valid device fingerprint/id, 
+            // navigate to Home so the user can see it or auto-pair.
+            if (!deviceId.isNullOrEmpty() || !fp.isNullOrEmpty()) {
+                navigateTo(Screen.HOME, context)
+            }
+        } catch (e: Exception) {
+            // Invalid URI format
         }
     }
 
-    private fun cancelReceiveSimulation() {
-        receiveSimulationJob?.cancel()
-        _showReceivePopup.value = false
-    }
+    private val _pendingIncomingRequest = MutableStateFlow<com.ioristudios.crossdroid.backend.network.TransferReceiver.IncomingRequest?>(null)
+    val pendingIncomingRequest: StateFlow<com.ioristudios.crossdroid.backend.network.TransferReceiver.IncomingRequest?> = _pendingIncomingRequest.asStateFlow()
 
+    // This is called from the UI when user hits Accept
     fun acceptIncomingTransfer(context: Context) {
         _showReceivePopup.value = false
-        val incomingDevice = MockData.deviceNodes.first { it.name == "STUDIO-WORKSTATION" }
-        // Receive 2 mock files
-        val incomingFiles = listOf(
-            MockData.filesList[1], // Neon_Vibes_Chill.mp3
-            MockData.filesList[2]  // IORI_Studios_Logo.png
-        )
-        HapticHelper.triggerSuccess(context)
-        startTransferFlow(incomingDevice, incomingFiles, isIncoming = true, context = context)
+        _pendingIncomingRequest.value?.deferredResponse?.complete(true)
+        _pendingIncomingRequest.value = null
     }
 
+    // This is called from the UI when user hits Decline
     fun declineIncomingTransfer(context: Context) {
         _showReceivePopup.value = false
+        _pendingIncomingRequest.value?.deferredResponse?.complete(false)
+        _pendingIncomingRequest.value = null
         HapticHelper.triggerError(context)
         navigateTo(Screen.HOME, context)
     }
 
-    // --- Active Transfer Simulation ---
+    // --- Active Transfer Flow ---
     fun startTransferFlow(device: DeviceNode, files: List<FileItem>, isIncoming: Boolean, context: Context, append: Boolean = false) {
-        transferJob?.cancel()
         _transferDevice.value = device
-        _isTransferActive.value = true
-        _isTransferComplete.value = false
-        _isTransferPaused.value = false
-
-        val newBubbles = files.map { file ->
-            TransferBubble(
-                file = file,
-                progress = 0f,
-                speed = "0 MB/s",
-                status = TransferStatus.Pending,
-                isIncoming = isIncoming
-            )
-        }
-        if (append) {
-            _transferBubbles.value = _transferBubbles.value + newBubbles
-        } else {
-            _transferBubbles.value = newBubbles
-        }
-        navigateTo(Screen.TRANSFER, context)
-
-        transferJob = viewModelScope.launch {
-            val orderedIds = newBubbles.map { it.id }
-            val activeStatus = if (isIncoming) TransferStatus.Receiving else TransferStatus.Sending
-
-            for (bubbleId in orderedIds) {
-                if (bubbleById(bubbleId)?.status == TransferStatus.Canceled) continue
-
-                updateTransferBubble(bubbleId) { current ->
-                    if (current.status == TransferStatus.Pending) {
-                        current.copy(status = activeStatus, speed = "0 MB/s")
-                    } else {
-                        current
-                    }
-                }
-
-                while (true) {
-                    val current = bubbleById(bubbleId) ?: break
-
-                    when (current.status) {
-                        TransferStatus.Canceled,
-                        TransferStatus.Failed,
-                        TransferStatus.Completed -> break
-                        TransferStatus.Paused -> {
-                            delay(250)
-                            continue
-                        }
-                        TransferStatus.Pending -> {
-                            updateTransferBubble(bubbleId) { it.copy(status = activeStatus) }
-                            continue
-                        }
-                        TransferStatus.Sending,
-                        TransferStatus.Receiving -> Unit
-                    }
-
-                    if (current.progress >= 1.0f) {
-                        updateTransferBubble(bubbleId) {
-                            it.copy(progress = 1.0f, speed = "0 MB/s", status = TransferStatus.Completed)
-                        }
-                        break
-                    }
-
-                    delay(120)
-
-                    val latest = bubbleById(bubbleId) ?: break
-                    if (latest.status != TransferStatus.Sending && latest.status != TransferStatus.Receiving) {
-                        delay(250)
-                        continue
-                    }
-
-                    val nextProgress = (latest.progress + 0.08f + (Math.random() * 0.12).toFloat()).coerceAtMost(1.0f)
-                    val randomSpeed = (20 + (Math.random() * 35).toInt())
-                    updateTransferBubble(bubbleId) {
-                        it.copy(
-                            progress = nextProgress,
-                            speed = if (nextProgress >= 1.0f) "0 MB/s" else "$randomSpeed MB/s",
-                            status = if (nextProgress >= 1.0f) TransferStatus.Completed else activeStatus
-                        )
-                    }
-
-                    if (nextProgress >= 1.0f) {
-                        HapticHelper.triggerLight(context)
-                        delay(200)
-                        break
-                    }
-                }
-
-                if (_transferBubbles.value.all { it.status == TransferStatus.Completed || it.status == TransferStatus.Canceled }) {
-                    break
-                }
+        
+        if (!isIncoming) {
+            val discovered = backendService?.discoveryService?.discoveredDevices?.value?.find { it.deviceId == device.id }
+            if (discovered != null) {
+                val ipAndPort = discovered.endpoint.split(":")
+                val ip = java.net.InetAddress.getByName(ipAndPort[0])
+                val port = ipAndPort[1].toInt()
+                val realFiles = files.map { File(it.path) }.filter { it.exists() }
+                val pin = _pinCode.value.takeIf { it.length == 6 }
+                backendService?.sendFiles(ip, port, discovered.fingerprint, realFiles, pin)
             }
-
-            _transferBubbles.value = _transferBubbles.value.map { bubble ->
-                if (bubble.status == TransferStatus.Pending || bubble.status == TransferStatus.Paused) {
-                    bubble.copy(status = TransferStatus.Canceled, speed = "0 MB/s")
-                } else {
-                    bubble
-                }
-            }
-
-            _isTransferActive.value = false
-            _isTransferComplete.value = true
-            _isTransferPaused.value = false
-            context.let { HapticHelper.triggerSuccess(it) }
-
-            logTransferResults(device, _transferBubbles.value)
-            _selectedFiles.value = emptySet()
+            navigateTo(Screen.TRANSFER, context)
         }
     }
 
@@ -673,7 +680,6 @@ class CrossDroidViewModel : ViewModel() {
             _isTransferActive.value = false
             _isTransferPaused.value = false
             _isTransferComplete.value = true
-            _transferDevice.value?.let { logTransferResults(it, _transferBubbles.value) }
             _selectedFiles.value = emptySet()
         }
 
@@ -722,52 +728,14 @@ class CrossDroidViewModel : ViewModel() {
         _isTransferComplete.value = false
         _isTransferPaused.value = false
 
-        _transferDevice.value?.let { logTransferResults(it, _transferBubbles.value) }
-
         HapticHelper.triggerError(context)
         navigateTo(Screen.HOME, context)
-    }
-
-    private fun bubbleById(id: String): TransferBubble? {
-        return _transferBubbles.value.firstOrNull { it.id == id }
     }
 
     private fun updateTransferBubble(id: String, transform: (TransferBubble) -> TransferBubble) {
         _transferBubbles.value = _transferBubbles.value.map { bubble ->
             if (bubble.id == id) transform(bubble) else bubble
         }
-    }
-
-    private fun logTransferResults(device: DeviceNode, bubbles: List<TransferBubble>) {
-        if (bubbles.isEmpty()) return
-
-        val dateStr = "May 23, 17:50"
-        val historyRecordsCopy = _historyRecords.value.toMutableList()
-        bubbles
-            .filter { it.status == TransferStatus.Completed || it.status == TransferStatus.Canceled || it.status == TransferStatus.Failed }
-            .forEach { item ->
-                val exists = historyRecordsCopy.any { record ->
-                    record.fileName == item.file.name &&
-                    record.size == item.file.size &&
-                    record.deviceName == device.name &&
-                    record.isIncoming == item.isIncoming &&
-                    record.date == dateStr
-                }
-                if (!exists) {
-                    historyRecordsCopy.add(
-                        0,
-                        HistoryItem(
-                            fileName = item.file.name,
-                            size = item.file.size,
-                            date = dateStr,
-                            isIncoming = item.isIncoming,
-                            isSuccess = item.status == TransferStatus.Completed,
-                            deviceName = device.name
-                        )
-                    )
-                }
-            }
-        _historyRecords.value = historyRecordsCopy
     }
 }
 

@@ -7,6 +7,8 @@ using System.Text.Json;
 using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
+using Makaretu.Dns;
+using System.Linq;
 
 namespace CrossDroid.Windows.Backend.Network;
 
@@ -23,14 +25,12 @@ public class DiscoveryMessage
 
 public sealed class DiscoveryService : IDisposable
 {
-    private const int DiscoveryPort = 53100;
     private readonly IdentityService _identity;
     private readonly DeviceService _devices;
     private readonly SettingsService _settings;
-    private UdpClient? _listener;
-    private CancellationTokenSource? _cts;
-    private Task? _listenTask;
-    private Task? _broadcastTask;
+    private MulticastService? _mdns;
+    private ServiceDiscovery? _sd;
+    private ServiceProfile? _profile;
 
     public DiscoveryService(IdentityService identity, DeviceService devices, SettingsService settings)
     {
@@ -41,31 +41,137 @@ public sealed class DiscoveryService : IDisposable
 
     public void Start(int tcpPort)
     {
-        if (_cts != null) return;
-        _cts = new CancellationTokenSource();
+        if (_mdns != null) return;
 
         try
         {
-            _listener = new UdpClient(new IPEndPoint(IPAddress.Any, DiscoveryPort));
-            _listener.EnableBroadcast = true;
+            _mdns = new MulticastService();
+            _mdns.Start();
+
+            _sd = new ServiceDiscovery(_mdns);
+            
+            _profile = new ServiceProfile(_identity.LocalDevice.DeviceId, "_crossdroid._tcp", (ushort)tcpPort);
+            _profile.AddProperty("DeviceId", _identity.LocalDevice.DeviceId);
+            _profile.AddProperty("DisplayName", _identity.LocalDevice.DisplayName);
+            _profile.AddProperty("DeviceType", _identity.LocalDevice.DeviceType);
+            _profile.AddProperty("Fingerprint", _identity.LocalDevice.PublicFingerprint);
+            
+            _sd.ServiceDiscovered += OnServiceDiscovered;
+            _sd.ServiceInstanceDiscovered += OnServiceInstanceDiscovered;
+            
+            if (_settings.Current.Discoverable)
+            {
+                _sd.Advertise(_profile);
+            }
+            
+            // Query for existing services
+            _mdns.SendQuery("_crossdroid._tcp.local");
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to bind discovery UDP port {DiscoveryPort}: {ex.Message}");
-            return;
+            Debug.WriteLine($"Failed to start mDNS discovery: {ex.Message}");
         }
+    }
 
-        _listenTask = Task.Run(() => ListenLoopAsync(_cts.Token), _cts.Token);
-        _broadcastTask = Task.Run(() => BroadcastLoopAsync(tcpPort, _cts.Token), _cts.Token);
+    private void OnServiceDiscovered(object? sender, DomainName e)
+    {
+        if (e.ToString().Contains("_crossdroid._tcp"))
+        {
+            _mdns?.SendQuery(e);
+        }
+    }
+
+    private void OnServiceInstanceDiscovered(object? sender, ServiceInstanceDiscoveryEventArgs e)
+    {
+        try
+        {
+            var msg = new DiscoveryMessage
+            {
+                DeviceId = GetProperty(e.Message, "DeviceId"),
+                DisplayName = GetProperty(e.Message, "DisplayName"),
+                DeviceType = GetProperty(e.Message, "DeviceType"),
+                Fingerprint = GetProperty(e.Message, "Fingerprint")
+            };
+
+            if (msg.DeviceId == _identity.LocalDevice.DeviceId) return;
+            if (string.IsNullOrEmpty(msg.DeviceId)) return;
+
+            var incomingPin = GetProperty(e.Message, "Pin");
+            if (!string.IsNullOrEmpty(incomingPin))
+            {
+                var pairing = CrossDroidBackend.Current?.Pairing;
+                if (pairing != null && pairing.IsPinValid)
+                {
+                    if (pairing.CurrentPin == incomingPin)
+                    {
+                        // Valid PIN search: Temporarily broadcast ourselves if we are hidden
+                        if (!_settings.Current.Discoverable && _profile != null)
+                        {
+                            _sd?.Advertise(_profile);
+                            Task.Run(async () => {
+                                await Task.Delay(30000);
+                                if (!_settings.Current.Discoverable)
+                                    _sd?.Unadvertise(_profile);
+                            });
+                        }
+                    }
+                    else
+                    {
+                        // Wrong PIN attempt
+                        pairing.FailedAttempts++;
+                        if (pairing.FailedAttempts >= 5)
+                        {
+                            pairing.InvalidatePin();
+                            Debug.WriteLine("Pairing PIN invalidated due to excessive failed attempts.");
+                        }
+                    }
+                }
+            }
+
+            var srv = e.Message.AdditionalRecords.OfType<SRVRecord>().FirstOrDefault() ?? e.Message.Answers.OfType<SRVRecord>().FirstOrDefault();
+            var a = e.Message.AdditionalRecords.OfType<ARecord>().FirstOrDefault() ?? e.Message.Answers.OfType<ARecord>().FirstOrDefault();
+
+            if (srv != null && a != null)
+            {
+                msg.TcpPort = srv.Port;
+                HandleDiscovery(msg, a.Address.ToString());
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error parsing mDNS record: {ex.Message}");
+        }
+    }
+
+    private string GetProperty(Makaretu.Dns.Message msg, string key)
+    {
+        var txt = msg.AdditionalRecords.OfType<TXTRecord>().FirstOrDefault() ?? msg.Answers.OfType<TXTRecord>().FirstOrDefault();
+        if (txt != null)
+        {
+            var prefix = key + "=";
+            var str = txt.Strings.FirstOrDefault(s => s.StartsWith(prefix));
+            if (str != null)
+            {
+                return str.Substring(prefix.Length);
+            }
+        }
+        return "";
     }
 
     public void Stop()
     {
-        _cts?.Cancel();
-        _listener?.Close();
-        _listener?.Dispose();
-        _cts?.Dispose();
-        _cts = null;
+        if (_sd != null)
+        {
+            if (_profile != null) _sd.Unadvertise(_profile);
+            _sd.Dispose();
+            _sd = null;
+        }
+        if (_mdns != null)
+        {
+            _mdns.Stop();
+            _mdns.Dispose();
+            _mdns = null;
+        }
     }
 
     public void Dispose()
@@ -73,190 +179,32 @@ public sealed class DiscoveryService : IDisposable
         Stop();
     }
 
-    private async Task ListenLoopAsync(CancellationToken token)
-    {
-        if (_listener == null) return;
-        
-        while (!token.IsCancellationRequested)
-        {
-            try
-            {
-                var result = await _listener.ReceiveAsync(token);
-                var json = Encoding.UTF8.GetString(result.Buffer);
-                var msg = JsonSerializer.Deserialize<DiscoveryMessage>(json);
-
-                if (msg != null && msg.DeviceId != _identity.LocalDevice.DeviceId)
-                {
-                    if (msg.Action == "Announce")
-                    {
-                        HandleDiscovery(msg, result.RemoteEndPoint.Address.ToString());
-                    }
-                    else if (msg.Action == "PinSearch" && !string.IsNullOrEmpty(msg.Pin))
-                    {
-                        var pairing = CrossDroidBackend.Current?.Pairing;
-                        if (pairing != null && pairing.IsPinValid)
-                        {
-                            if (pairing.CurrentPin == msg.Pin)
-                            {
-                                // A device is searching for us using the correct PIN.
-                                // Respond directly with an Announce packet so they can discover us,
-                                // even if we are normally "Hidden".
-                                var responseMsg = new DiscoveryMessage
-                                {
-                                    Action = "Announce",
-                                    DeviceId = _identity.LocalDevice.DeviceId,
-                                    DisplayName = _identity.LocalDevice.DisplayName,
-                                    DeviceType = _identity.LocalDevice.DeviceType,
-                                    Fingerprint = _identity.LocalDevice.PublicFingerprint,
-                                    TcpPort = CrossDroidBackend.Current?.Listener?.Port ?? 53100
-                                };
-                                
-                                var responseJson = JsonSerializer.Serialize(responseMsg);
-                                var responseBytes = Encoding.UTF8.GetBytes(responseJson);
-                                
-                                using var responder = new UdpClient();
-                                await responder.SendAsync(responseBytes, responseBytes.Length, result.RemoteEndPoint);
-                            }
-                            else
-                            {
-                                // Wrong PIN attempt
-                                pairing.FailedAttempts++;
-                                if (pairing.FailedAttempts >= 5)
-                                {
-                                    pairing.InvalidatePin();
-                                    Debug.WriteLine("Pairing PIN invalidated due to excessive failed attempts.");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (OperationCanceledException) { break; }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Discovery listen error: {ex.Message}");
-                await Task.Delay(1000, token); // Backoff on error
-            }
-        }
-    }
-
-    private async Task BroadcastLoopAsync(int tcpPort, CancellationToken token)
-    {
-        using var broadcaster = new UdpClient();
-        broadcaster.EnableBroadcast = true;
-
-        while (!token.IsCancellationRequested)
-        {
-            try
-            {
-                if (_settings.Current.Discoverable && NetworkInterface.GetIsNetworkAvailable())
-                {
-                    var msg = new DiscoveryMessage
-                    {
-                        Action = "Announce",
-                        DeviceId = _identity.LocalDevice.DeviceId,
-                        DisplayName = _identity.LocalDevice.DisplayName,
-                        DeviceType = _identity.LocalDevice.DeviceType,
-                        Fingerprint = _identity.LocalDevice.PublicFingerprint,
-                        TcpPort = tcpPort
-                    };
-
-                    var json = JsonSerializer.Serialize(msg);
-                    var bytes = Encoding.UTF8.GetBytes(json);
-
-                    foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
-                    {
-                        if (ni.OperationalStatus == OperationalStatus.Up && 
-                            ni.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                        {
-                            foreach (var ip in ni.GetIPProperties().UnicastAddresses)
-                            {
-                                if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
-                                {
-                                    var broadcast = GetBroadcastAddress(ip.Address, ip.IPv4Mask);
-                                    if (broadcast != null)
-                                    {
-                                        try {
-                                            await broadcaster.SendAsync(bytes, bytes.Length, new IPEndPoint(broadcast, DiscoveryPort));
-                                        } catch { /* Ignore per-interface errors */ }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Discovery broadcast error: {ex.Message}");
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(3), token);
-        }
-    }
-
-    private static IPAddress? GetBroadcastAddress(IPAddress address, IPAddress mask)
-    {
-        if (mask == null) return null;
-        var ipAddressBytes = address.GetAddressBytes();
-        var subnetMaskBytes = mask.GetAddressBytes();
-
-        if (ipAddressBytes.Length != subnetMaskBytes.Length)
-            return null;
-
-        var broadcastAddress = new byte[ipAddressBytes.Length];
-        for (int i = 0; i < broadcastAddress.Length; i++)
-        {
-            broadcastAddress[i] = (byte)(ipAddressBytes[i] | (subnetMaskBytes[i] ^ 255));
-        }
-        return new IPAddress(broadcastAddress);
-    }
-
     public async Task BroadcastPinSearchAsync(string pin)
     {
-        if (!NetworkInterface.GetIsNetworkAvailable()) return;
-
-        var msg = new DiscoveryMessage
+        if (_profile != null && _sd != null)
         {
-            Action = "PinSearch",
-            DeviceId = _identity.LocalDevice.DeviceId,
-            DisplayName = _identity.LocalDevice.DisplayName,
-            DeviceType = _identity.LocalDevice.DeviceType,
-            Pin = pin,
-            TcpPort = CrossDroidBackend.Current?.Listener?.Port ?? 53100
-        };
-
-        var json = JsonSerializer.Serialize(msg);
-        var bytes = Encoding.UTF8.GetBytes(json);
-
-        using var broadcaster = new UdpClient();
-        broadcaster.EnableBroadcast = true;
-
-        foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
-        {
-            if (ni.OperationalStatus == OperationalStatus.Up && 
-                ni.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+            _sd.Unadvertise(_profile);
+            
+            var pinProfile = new ServiceProfile(_identity.LocalDevice.DeviceId, "_crossdroid._tcp", (ushort)_profile.Resources.OfType<SRVRecord>().First().Port);
+            pinProfile.AddProperty("DeviceId", _identity.LocalDevice.DeviceId);
+            pinProfile.AddProperty("DisplayName", _identity.LocalDevice.DisplayName);
+            pinProfile.AddProperty("DeviceType", _identity.LocalDevice.DeviceType);
+            pinProfile.AddProperty("Fingerprint", _identity.LocalDevice.PublicFingerprint);
+            pinProfile.AddProperty("Pin", pin);
+            
+            _sd.Advertise(pinProfile);
+            await Task.Delay(5000);
+            _sd.Unadvertise(pinProfile);
+            
+            if (_settings.Current.Discoverable)
             {
-                foreach (var ip in ni.GetIPProperties().UnicastAddresses)
-                {
-                    if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
-                    {
-                        var broadcast = GetBroadcastAddress(ip.Address, ip.IPv4Mask);
-                        if (broadcast != null)
-                        {
-                            try {
-                                await broadcaster.SendAsync(bytes, bytes.Length, new IPEndPoint(broadcast, DiscoveryPort));
-                            } catch { /* Ignore */ }
-                        }
-                    }
-                }
+                _sd.Advertise(_profile);
             }
         }
     }
 
     private void HandleDiscovery(DiscoveryMessage msg, string ipAddress)
     {
-        // Must marshal to UI thread if we update ObservableCollections
         var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread() ?? CrossDroid.Windows.App.MainWindowInstance?.DispatcherQueue;
         dispatcher?.TryEnqueue(() =>
         {

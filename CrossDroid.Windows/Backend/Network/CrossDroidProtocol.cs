@@ -46,12 +46,14 @@ public class TransferOfferPayload
     public bool IsFolder { get; set; }
     public int ItemCount { get; set; }
     public string Hash { get; set; } = "";
+    public long Offset { get; set; }
 }
 
 public class TransferAcceptPayload
 {
     public string TransferId { get; set; } = "";
     public bool Accepted { get; set; }
+    public long RequestedOffset { get; set; }
 }
 
 public class FileChunkPayload
@@ -64,10 +66,15 @@ public class FileChunkPayload
 
 public static class ProtocolFramer
 {
+    public static readonly JsonSerializerOptions Options = new()
+    {
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    };
+
     // Write length-prefixed message
     public static async Task WriteMessageAsync(Stream stream, ProtocolMessage message, ReadOnlyMemory<byte> binaryPayload, CancellationToken token)
     {
-        var json = JsonSerializer.Serialize(message);
+        var json = JsonSerializer.Serialize(message, Options);
         var jsonBytes = Encoding.UTF8.GetBytes(json);
         
         // Format: [4 bytes JSON length] [JSON bytes] [4 bytes binary length] [binary bytes]
@@ -100,7 +107,7 @@ public static class ProtocolFramer
             throw new EndOfStreamException();
 
         var json = Encoding.UTF8.GetString(jsonBytes);
-        var message = JsonSerializer.Deserialize<ProtocolMessage>(json) 
+        var message = JsonSerializer.Deserialize<ProtocolMessage>(json, Options) 
             ?? throw new InvalidDataException("Invalid JSON message");
 
         byte[]? binaryPayload = null;

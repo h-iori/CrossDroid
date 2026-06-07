@@ -25,8 +25,10 @@ import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.Text
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
@@ -43,7 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ioristudios.crossdroid.data.DeviceNode
-import com.ioristudios.crossdroid.data.MockData
+// import com.ioristudios.crossdroid.data.MockData
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.components.TopAppBar
 import com.ioristudios.crossdroid.ui.theme.AccentCyan
@@ -67,8 +69,9 @@ fun DevicesScreen(
     viewModel: CrossDroidViewModel,
     modifier: Modifier = Modifier
 ) {
-    val devices = MockData.deviceNodes
+    val devices by viewModel.discoveredDevices.collectAsState()
     val groupedDevices = listOf(
+        "Available Devices" to devices.filter { it.status == "Available" },
         "Previously Connected" to devices.filter { it.status == "Connected" },
         "Paired & Saved" to devices.filter { it.status == "Paired" }
     ).filter { it.second.isNotEmpty() }

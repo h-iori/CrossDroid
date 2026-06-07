@@ -263,7 +263,7 @@ public sealed class IdentityService
         _store.State.LocalIdentity = new LocalDeviceIdentity
         {
             DeviceId = Guid.NewGuid().ToString("N"),
-            DisplayName = Environment.MachineName,
+            DisplayName = "[Harsh's Windows Device]",
             DeviceType = "Windows PC",
             CreatedUtc = DateTimeOffset.UtcNow,
             PublicFingerprint = publicFingerprint,
@@ -583,7 +583,7 @@ public sealed class TransferQueueService
                 CreatedUtc = DateTimeOffset.UtcNow
             };
             Queue.Add(record);
-            var runtime = new TransferRuntime();
+            var runtime = new TransferRuntime(record.BytesTransferred);
             _runtimes[record.TransferId] = runtime;
             
             if (string.IsNullOrEmpty(target.Endpoint))
@@ -643,7 +643,7 @@ public sealed class TransferQueueService
         record.BytesTransferred = 0;
         record.ProgressPercent = 0;
         record.ErrorMessage = "";
-        var runtime = new TransferRuntime();
+        var runtime = new TransferRuntime(record.BytesTransferred);
         _runtimes[record.TransferId] = runtime;
         await RunNetworkTransferAsync(record, device, runtime);
     }
@@ -691,7 +691,7 @@ public sealed class TransferQueueService
                 CreatedUtc = DateTimeOffset.UtcNow
             };
             Queue.Add(record);
-            var runtime = new TransferRuntime();
+            var runtime = new TransferRuntime(record.BytesTransferred);
             _runtimes[record.TransferId] = runtime;
             // Accepted incoming transfers still come via network through ReceiveNetworkTransferAsync
             // so this path is only used for local UI acceptance tracking
@@ -740,7 +740,8 @@ public sealed class TransferQueueService
                     FileName = record.FileName,
                     TotalBytes = record.TotalBytes,
                     IsFolder = record.IsFolder,
-                    Hash = hash
+                    Hash = hash,
+                    Offset = record.BytesTransferred
                 })
             };
             await session.WriteMessageAsync(offer, ReadOnlyMemory<byte>.Empty, runtime.Cancellation.Token);
@@ -820,7 +821,18 @@ public sealed class TransferQueueService
                 try
                 {
                     int read;
-                    long offset = 0;
+                    long offset = acceptPayload.RequestedOffset;
+                    if (offset > 0 && offset < input.Length)
+                    {
+                        input.Position = offset;
+                        record.BytesTransferred = offset;
+                    }
+                    else
+                    {
+                        offset = 0;
+                        record.BytesTransferred = 0;
+                    }
+
                     while ((read = await input.ReadAsync(buffer.AsMemory(0, 1024 * 1024 * 2), runtime.Cancellation.Token)) > 0)
                     {
                         while (runtime.IsPaused)
@@ -883,36 +895,58 @@ public sealed class TransferQueueService
         }
     }
 
-    public async Task ReceiveNetworkTransferAsync(Network.SecureSession session, Network.TransferOfferPayload offer)
+    public async Task ReceiveNetworkTransferAsync(Network.SecureSession session, Network.TransferOfferPayload offer, string? existingDestinationPath = null)
     {
         var remoteFingerprint = session.RemoteFingerprint;
         var device = _devices.Devices.FirstOrDefault(d => d.Fingerprint == remoteFingerprint);
         var deviceId = device?.DeviceId ?? $"Peer-{remoteFingerprint[..Math.Min(8, remoteFingerprint.Length)]}";
         var deviceName = device?.AliasOrName ?? $"Device ({remoteFingerprint[..Math.Min(6, remoteFingerprint.Length)]})";
 
-        var record = new TransferRecord
+        long startOffset = 0;
+        if (!string.IsNullOrEmpty(existingDestinationPath) && File.Exists(existingDestinationPath))
         {
-            TransferId = offer.TransferId,
-            Direction = TransferDirection.Incoming,
-            DeviceId = deviceId,
-            DeviceName = deviceName,
-            FileName = offer.FileName,
-            DestinationPath = _settings.Current.DownloadsDirectory,
-            IsFolder = offer.IsFolder,
-            TotalBytes = offer.TotalBytes,
-            Status = TransferStatus.Queued,
-            CreatedUtc = DateTimeOffset.UtcNow
-        };
+            startOffset = new FileInfo(existingDestinationPath).Length;
+        }
 
-        var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread() ?? CrossDroid.Windows.App.MainWindowInstance?.DispatcherQueue;
-        dispatcher?.TryEnqueue(() => Queue.Add(record));
+        var record = Queue.FirstOrDefault(r => r.TransferId == offer.TransferId);
+        if (record == null)
+        {
+            record = new TransferRecord
+            {
+                TransferId = offer.TransferId,
+                Direction = TransferDirection.Incoming,
+                DeviceId = deviceId,
+                DeviceName = deviceName,
+                FileName = offer.FileName,
+                DestinationPath = existingDestinationPath ?? "",
+                IsFolder = offer.IsFolder,
+                TotalBytes = offer.TotalBytes,
+                BytesTransferred = startOffset,
+                Status = TransferStatus.Queued,
+                CreatedUtc = DateTimeOffset.UtcNow
+            };
+            
+            var dispatcher = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread() ?? CrossDroid.Windows.App.MainWindowInstance?.DispatcherQueue;
+            dispatcher?.TryEnqueue(() => Queue.Add(record));
+        }
+        else
+        {
+            record.Status = TransferStatus.Queued;
+            record.BytesTransferred = startOffset;
+        }
+
+        var runtime = new TransferRuntime(startOffset);
+        _runtimes[record.TransferId] = runtime;
 
         var stopwatch = Stopwatch.StartNew();
         try
         {
             record.Status = TransferStatus.Transferring;
             Directory.CreateDirectory(_settings.Current.DownloadsDirectory);
-            var destination = ResolveConflictPath(Path.Combine(_settings.Current.DownloadsDirectory, record.FileName));
+            var destination = !string.IsNullOrEmpty(existingDestinationPath) 
+                ? existingDestinationPath 
+                : ResolveConflictPath(Path.Combine(_settings.Current.DownloadsDirectory, record.FileName));
+            record.DestinationPath = destination;
             var baseDestDir = Path.GetFullPath(record.IsFolder ? destination : Path.GetDirectoryName(destination)!);
 
             string? currentStreamPath = null;
@@ -931,7 +965,15 @@ public sealed class TransferQueueService
 
                 while (record.BytesTransferred < record.TotalBytes)
                 {
-                    var (msg, binary, binLen) = await session.ReadMessageAsync(CancellationToken.None);
+                    while (runtime.IsPaused)
+                    {
+                        record.Status = TransferStatus.Paused;
+                        runtime.PauseEvent.Reset();
+                        runtime.PauseEvent.Wait(runtime.Cancellation.Token);
+                        record.Status = TransferStatus.Transferring;
+                    }
+
+                    var (msg, binary, binLen) = await session.ReadMessageAsync(runtime.Cancellation.Token);
                     try
                     {
                         if (msg.Type == Network.MessageType.FileChunk && binary != null)
@@ -963,8 +1005,8 @@ public sealed class TransferQueueService
                             if (currentStreamPath != fileDest)
                             {
                                 currentStream?.Dispose();
-                                // Use CreateNew if offset is 0 to avoid overwriting existing local files maliciously, else OpenOrCreate
-                                var mode = (chunkPayload?.Offset ?? 0) == 0 ? FileMode.CreateNew : FileMode.OpenOrCreate;
+                                // Use Create if offset is 0 to cleanly overwrite files during a retry, else OpenOrCreate
+                                var mode = (chunkPayload?.Offset ?? 0) == 0 ? FileMode.Create : FileMode.OpenOrCreate;
                                 currentStream = new FileStream(fileDest, mode, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous);
                                 currentStreamPath = fileDest;
                             }
@@ -978,6 +1020,8 @@ public sealed class TransferQueueService
 
                             record.BytesTransferred += binLen;
                             record.ProgressPercent = Math.Min(100, record.BytesTransferred * 100d / Math.Max(record.TotalBytes, 1));
+                            var speed = runtime.CalculateSpeed(record.BytesTransferred);
+                            if (speed >= 0) record.SpeedBytesPerSecond = speed;
                         }
                         else if (msg.Type == Network.MessageType.TransferCancel)
                         {
@@ -1001,7 +1045,7 @@ public sealed class TransferQueueService
             record.DestinationPath = destination;
             record.Status = TransferStatus.Completed;
             record.CompletedUtc = DateTimeOffset.UtcNow;
-            record.SpeedBytesPerSecond = record.BytesTransferred / Math.Max(stopwatch.Elapsed.TotalSeconds, 1);
+            record.SpeedBytesPerSecond = (record.BytesTransferred - startOffset) / Math.Max(stopwatch.Elapsed.TotalSeconds, 1);
             if (!record.IsFolder)
             {
                 record.SourceHash = offer.Hash;
@@ -1226,10 +1270,14 @@ public sealed class TransferRuntime
     public ManualResetEventSlim PauseEvent { get; } = new(true);
     public bool IsPaused { get; set; }
     
-    // Sliding window speed tracking
     private long _lastBytesSnapshot;
     private DateTimeOffset _lastSnapshotTime = DateTimeOffset.UtcNow;
     
+    public TransferRuntime(long startOffset = 0)
+    {
+        _lastBytesSnapshot = startOffset;
+    }
+
     public double CalculateSpeed(long currentBytesTransferred)
     {
         var now = DateTimeOffset.UtcNow;

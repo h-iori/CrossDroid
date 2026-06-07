@@ -254,8 +254,28 @@ public sealed class ConnectionListener : IDisposable
             return;
         }
 
+        bool isResume = false;
+        long requestedOffset = 0;
+        
+        // Check if this is a resume attempt for an existing transfer
+        string? existingDestinationPath = null;
+        var histRecord = CrossDroidBackend.Current?.History.Records.FirstOrDefault(r => r.TransferId == offer.TransferId);
+        if (histRecord != null) existingDestinationPath = histRecord.DestinationPath;
+        else 
+        {
+            var queueRecord = _transfers.Queue.FirstOrDefault(r => r.TransferId == offer.TransferId);
+            if (queueRecord != null) existingDestinationPath = queueRecord.DestinationPath;
+        }
+
+        if (!string.IsNullOrEmpty(existingDestinationPath) && File.Exists(existingDestinationPath))
+        {
+            isResume = true;
+            requestedOffset = new FileInfo(existingDestinationPath).Length;
+            Debug.WriteLine($"Resuming incoming transfer {offer.TransferId} at offset {requestedOffset}");
+        }
+
         bool accepted = false;
-        if (device.TrustState == DeviceTrustState.Trusted && CrossDroidBackend.Current?.Settings.Current.AutoAcceptTrusted == true)
+        if (isResume || (device.TrustState == DeviceTrustState.Trusted && CrossDroidBackend.Current?.Settings.Current.AutoAcceptTrusted == true))
         {
             accepted = true;
         }
@@ -304,13 +324,14 @@ public sealed class ConnectionListener : IDisposable
                 PayloadJson = JsonSerializer.Serialize(new TransferAcceptPayload
                 {
                     TransferId = offer.TransferId,
-                    Accepted = true
+                    Accepted = true,
+                    RequestedOffset = requestedOffset
                 })
             };
             await session.WriteMessageAsync(acceptMsg, ReadOnlyMemory<byte>.Empty, token);
 
             // Hand off to TransferQueueService
-            await _transfers.ReceiveNetworkTransferAsync(session, offer);
+            await _transfers.ReceiveNetworkTransferAsync(session, offer, existingDestinationPath);
         }
         else
         {

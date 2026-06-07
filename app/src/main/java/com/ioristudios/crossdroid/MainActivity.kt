@@ -30,6 +30,7 @@ import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
 import com.ioristudios.crossdroid.ui.components.AppSidebar
 import com.ioristudios.crossdroid.ui.components.BottomNavbar
+import com.ioristudios.crossdroid.ui.components.ConfirmationPopup
 import com.ioristudios.crossdroid.ui.navigation.NavigationHost
 import com.ioristudios.crossdroid.ui.theme.BgMain
 import com.ioristudios.crossdroid.ui.theme.CrossDroidTheme
@@ -80,8 +81,33 @@ import com.ioristudios.crossdroid.ui.theme.AccentCyan
 class MainActivity : ComponentActivity() {
     private val viewModel: CrossDroidViewModel by viewModels()
 
+    private var backendService: com.ioristudios.crossdroid.backend.CrossDroidBackendService? = null
+    private var isBound = false
+
+    private val serviceConnection = object : android.content.ServiceConnection {
+        override fun onServiceConnected(name: android.content.ComponentName?, service: android.os.IBinder?) {
+            val binder = service as com.ioristudios.crossdroid.backend.CrossDroidBackendService.LocalBinder
+            backendService = binder.getService()
+            isBound = true
+            viewModel.setBackendService(backendService!!)
+        }
+
+        override fun onServiceDisconnected(name: android.content.ComponentName?) {
+            isBound = false
+            backendService = null
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        val serviceIntent = android.content.Intent(this, com.ioristudios.crossdroid.backend.CrossDroidBackendService::class.java)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+        bindService(serviceIntent, serviceConnection, android.content.Context.BIND_AUTO_CREATE)
         
         // Turn on edge-to-edge system display values
         enableEdgeToEdge()
@@ -90,8 +116,19 @@ class MainActivity : ComponentActivity() {
             CrossDroidTheme {
                 val currentScreen by viewModel.currentScreen.collectAsState()
                 val isSidebarVisible by viewModel.isSidebarVisible.collectAsState()
+                val showReceivePopup by viewModel.showReceivePopup.collectAsState()
+                val pendingRequest by viewModel.pendingIncomingRequest.collectAsState()
+                
                 val context = LocalContext.current
                 val scope = rememberCoroutineScope()
+                
+                // To readable size extension
+                fun Long.toReadableSize(): String {
+                    if (this <= 0) return "0 B"
+                    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+                    val digitGroups = (Math.log10(this.toDouble()) / Math.log10(1024.0)).toInt()
+                    return String.format(java.util.Locale.US, "%.1f %s", this / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
+                }
                 
                 var hasRequestedPermissions by remember {
                     val sharedPrefs = context.getSharedPreferences("crossdroid_prefs", android.content.Context.MODE_PRIVATE)
@@ -287,6 +324,18 @@ class MainActivity : ComponentActivity() {
                             viewModel.navigateTo(Screen.ABOUT)
                         }
                     )
+                    
+                    if (pendingRequest != null) {
+                        ConfirmationPopup(
+                            visible = showReceivePopup,
+                            deviceName = pendingRequest!!.deviceName,
+                            filesCount = 1, // Single file offer
+                            totalSize = pendingRequest!!.offer.TotalBytes.toReadableSize(),
+                            fileNames = listOf(pendingRequest!!.offer.FileName),
+                            onAccept = { viewModel.acceptIncomingTransfer(context) },
+                            onDecline = { viewModel.declineIncomingTransfer(context) }
+                        )
+                    }
                 }
             }
         }

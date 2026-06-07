@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -20,8 +21,18 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("release.jks")
+            storePassword = "crossdroid123"
+            keyAlias = "crossdroid"
+            keyPassword = "crossdroid123"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -72,6 +83,18 @@ dependencies {
     implementation("androidx.camera:camera-mlkit-vision:1.4.2")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
+    // Room
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
+    
+    // Datastore
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    
+    // JSON & Crypto
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("org.bouncycastle:bcpkix-jdk15to18:1.77")
+    
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

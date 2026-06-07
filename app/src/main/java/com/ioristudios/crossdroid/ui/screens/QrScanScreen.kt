@@ -70,7 +70,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
-import com.ioristudios.crossdroid.data.MockData
+// import com.ioristudios.crossdroid.data.MockData
 import com.ioristudios.crossdroid.ui.CrossDroidViewModel
 import com.ioristudios.crossdroid.ui.Screen
 import com.ioristudios.crossdroid.ui.components.TopAppBar
@@ -156,19 +156,24 @@ fun QrScanScreen(
                 onGrantCamera = {
                     permissionLauncher.launch(Manifest.permission.CAMERA)
                 },
-                onQrDetected = {
+                onQrDetected = { payload ->
                     if (!scanLocked) {
                         scanLocked = true
                         scannerStatus = "Receiver verified"
-                        val defaultDevice = MockData.deviceNodes.first { it.osType == "windows" }
-                        val filesToSend = viewModel.selectedFiles.value.toList()
-                        HapticHelper.triggerSuccess(context)
-                        viewModel.startTransferFlow(
-                            defaultDevice,
-                            filesToSend,
-                            isIncoming = false,
-                            context = context
-                        )
+                        
+                        // Handle the payload: crossdroid://pair?id=X&fp=Y&name=Z&pin=W
+                        if (payload.startsWith("crossdroid://pair")) {
+                            HapticHelper.triggerSuccess(context)
+                            viewModel.handleScannedQrPayload(payload, context)
+                        } else {
+                            HapticHelper.triggerError(context)
+                            scannerStatus = "Invalid QR code"
+                            // Unlock after brief delay
+                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                scanLocked = false
+                                scannerStatus = "Scanning receiver identity"
+                            }, 2000)
+                        }
                     }
                 },
                 modifier = Modifier
@@ -224,7 +229,7 @@ private fun ScannerSurface(
     torchEnabled: Boolean,
     onTorchChange: (Boolean) -> Unit,
     onGrantCamera: () -> Unit,
-    onQrDetected: () -> Unit,
+    onQrDetected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(
@@ -278,7 +283,7 @@ private fun ScannerSurface(
 private fun CameraPreview(
     torchEnabled: Boolean,
     onTorchChange: (Boolean) -> Unit,
-    onQrDetected: () -> Unit,
+    onQrDetected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -301,8 +306,10 @@ private fun CameraPreview(
                 executor
             ) { result ->
                 val barcodes = result?.getValue(scanner).orEmpty()
-                if (barcodes.any { it.rawValue?.isNotBlank() == true }) {
-                    onQrDetected()
+                val validBarcode = barcodes.firstOrNull { it.rawValue?.isNotBlank() == true }
+                if (validBarcode != null) {
+                    val rawValue = validBarcode.rawValue!!
+                    onQrDetected(rawValue)
                 }
             }
         )
